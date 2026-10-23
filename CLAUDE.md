@@ -16,6 +16,7 @@ Status: week 1 of 8, no code yet. Budget: at most ~20 USD/month, so check cost b
 - Frontend: React + Vite, tRPC BFF.
 - Infra: Terraform, LocalStack, Infracost on PRs, GitHub Actions.
 - Tooling: Python with uv and ruff.
+- Extraction: cheapest Claude model that passes the golden set; re-extract only when the raw HTML hash changes.
 
 ## Roadmap
 
@@ -69,3 +70,9 @@ This file is an index, not a manual. When a topic needs depth (scrapers, schema,
 ## TBD
 
 To be settled in the week 2 spec: build and test commands, branching, folder names, AWS region, target developers (constructoras).
+
+## How we work
+- The owner writes in Spanish: reply in Spanish. Code, commits and docs stay in English.
+- Use plan mode for non-trivial tasks; implement only what the current week's spec says.
+- Small commits, Conventional Commits (feat:, fix:, docs:, chore:).
+- Ask before anything that costs money: terraform apply, AWS deploys, paid API calls in loops.

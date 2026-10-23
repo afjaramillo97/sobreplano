@@ -43,12 +43,13 @@ evals/       golden set and judge
 - Pydantic models at the edges (scraper output, API I/O, tool I/O).
 - Write a spec in `specs/` before implementing each week.
 - Code, commits, and docs in English.
-- Commit style, branching, test commands: TBD.
+- Commits follow Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
+- Branching and test commands: TBD.
 
 ## Scraper rules
 
 - One visit per site per day.
-- Own user-agent that identifies the project (exact value: TBD).
+- Own user-agent that identifies the project (`SobreplanoBot/0.1 (+https://github.com/afjaramillo97/sobreplano)`).
 - Respect robots.txt and each site's terms of use.
 - Store raw HTML so it can be re-extracted without revisiting.
 - No personal data.
@@ -63,8 +64,8 @@ evals/       golden set and judge
 
 ## Keeping this file small
 
-This file is an index, not a manual. When a topic needs depth (scrapers, schema, advisor, evals, infra), put it in its own sub-document and link it here with one line. Sub-document location: TBD.
+This file is an index, not a manual. When a topic needs depth (scrapers, schema, advisor, evals, infra), put it in its own sub-document and link it here with one line. Sub-documents live in `docs/`.
 
 ## TBD
 
-Build and test commands, folder names, user-agent string, AWS region, target developers (constructoras), sub-document location.
+To be settled in the week 2 spec: build and test commands, branching, folder names, AWS region, target developers (constructoras).

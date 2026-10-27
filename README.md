@@ -47,4 +47,5 @@ Colombian listing portals (Fincaraíz, Metrocuadrado, La Haus) show a project's 
 ## Author
 
 Built by Andrés Jaramillo as a portfolio project, end to end.
+
 [andres-jaramillo.vercel.app](https://andres-jaramillo.vercel.app) · [LinkedIn](https://www.linkedin.com/in/AFJR)

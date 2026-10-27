@@ -230,3 +230,9 @@ node_modules/
 *.tfvars
 # Scraped data: never commit
 data/
+# Playwright, Terraform plans, env files
+playwright-report/
+test-results/
+tfplan*
+.env.*
+!.env.example

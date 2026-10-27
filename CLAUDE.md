@@ -43,7 +43,7 @@ evals/       golden set and judge
 - Type hints everywhere.
 - Pydantic models at the edges (scraper output, API I/O, tool I/O).
 - Write a spec in `specs/` before implementing each week.
-- Code, commits, and docs in English.
+- Code, commits, and docs in English, except specs in `specs/` and `docs/constitution.md`, which are in Spanish.
 - Commits follow Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
 - Branching and test commands: TBD.
 
@@ -67,12 +67,17 @@ evals/       golden set and judge
 
 This file is an index, not a manual. When a topic needs depth (scrapers, schema, advisor, evals, infra), put it in its own sub-document and link it here with one line. Sub-documents live in `docs/`.
 
+## Specs
+
+Los specs viven en `specs/NN-slug.md`, se escriben con `/spec` y se implementan con `/spec-impl`. Antes de escribir o implementar un spec, lee `docs/constitution.md`.
+
+## How we work
+
+- The owner writes in Spanish: reply in Spanish. Code, commits and docs stay in English.
+- Use plan mode for non-trivial tasks; implement only what the current week's spec says.
+- Small commits.
+- Ask before anything that costs money: terraform apply, AWS deploys, paid API calls in loops.
+
 ## TBD
 
 To be settled in the week 2 spec: build and test commands, branching, folder names, AWS region, target developers (constructoras).
-
-## How we work
-- The owner writes in Spanish: reply in Spanish. Code, commits and docs stay in English.
-- Use plan mode for non-trivial tasks; implement only what the current week's spec says.
-- Small commits, Conventional Commits (feat:, fix:, docs:, chore:).
-- Ask before anything that costs money: terraform apply, AWS deploys, paid API calls in loops.

@@ -8,6 +8,7 @@ dependencies = []
 
 [dependency-groups]
 dev = [
+    "pyright>=1.1.414",
     "pytest>=9.1.1",
     "ruff>=0.17.3",
 ]
@@ -22,3 +23,7 @@ target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.pyright]
+typeCheckingMode = "strict"
+include = ["src", "tests"]

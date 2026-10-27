@@ -1,0 +1,14 @@
+[project]
+name = "sobreplano"
+version = "0.1.0"
+description = "Search engine for new off-plan housing in the Aburrá Valley, with price history and an AI advisor."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = []
+
+[build-system]
+requires = ["uv_build>=0.13.4,<0.14"]
+build-backend = "uv_build"

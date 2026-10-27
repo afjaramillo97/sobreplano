@@ -45,7 +45,35 @@ evals/       golden set and judge
 - Write a spec in `specs/` before implementing each week.
 - Code, commits, and docs in English, except specs in `specs/` and `docs/constitution.md`, which are in Spanish.
 - Commits follow Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
-- Branching and test commands: TBD.
+- Branching: TBD.
+
+## Python package layout
+
+Single package in `src/sobreplano/` (src layout), installed in editable mode by `uv sync`. Layers depend in one direction, enforced by import-linter (see `docs/constitution.md`, principle 1):
+
+```
+src/sobreplano/
+  domain/          entities and ports (typing.Protocol)
+  application/     use cases
+  infrastructure/  SQLAlchemy, Playwright, Anthropic, S3
+  interface/       FastAPI, Lambda handler, MCP server
+tests/             outside src/, not packaged
+```
+
+`interface` may import `application` and `infrastructure`; those two are siblings and both depend on `domain`. `domain` and `application` never import `sqlalchemy` or `fastapi`.
+
+## Commands
+
+```
+uv sync                    # install dependencies (CI uses uv sync --locked)
+uv run ruff check          # lint
+uv run ruff format --check # formatting
+uv run pyright             # types, strict mode
+uv run pytest              # tests
+uv run lint-imports        # layer contracts
+```
+
+All five checks run in CI (`.github/workflows/ci.yml`) on every PR to `main`. A Claude Code hook (`.claude/hooks/ruff-edited.sh`) runs ruff on edited `.py` files and needs `jq`.
 
 ## Scraper rules
 
@@ -73,11 +101,11 @@ Los specs viven en `specs/NN-slug.md`, se escriben con `/spec` y se implementan 
 
 ## How we work
 
-- The owner writes in Spanish: reply in Spanish. Code, commits and docs stay in English.
+- The owner writes in Spanish: reply in Spanish. Code, commits and docs stay in English, except `specs/` and `docs/constitution.md`, which are in Spanish.
 - Use plan mode for non-trivial tasks; implement only what the current week's spec says.
 - Small commits.
 - Ask before anything that costs money: terraform apply, AWS deploys, paid API calls in loops.
 
 ## TBD
 
-To be settled in the week 2 spec: build and test commands, branching, folder names, AWS region, target developers (constructoras).
+To be settled in later specs: branching, folder names for the non-Python parts, AWS region, target developers (constructoras).

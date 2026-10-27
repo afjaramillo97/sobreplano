@@ -1,16 +1,16 @@
 # Constitución de Sobreplano
 
-Versión 1.0 · 2026-10-26
+Versión 1.0.1 · 2026-10-26
 
 Este documento manda sobre `CLAUDE.md` si ambos se contradicen. Todo spec debe cumplirlo; un spec que lo viole se corrige o enmienda esta constitución primero (con entrada en el changelog).
 
-Cada principio trae la regla o el comando que lo verifica. Las rutas de ejemplo (`domain/`, `application/`) se fijan en el spec de la semana 2.
+Cada principio trae la regla o el comando que lo verifica. Las rutas de ejemplo (`src/sobreplano/domain/`, `src/sobreplano/application/`) las fija el SPEC 01.
 
 ## 1. Las capas dependen en una sola dirección
 
 `interface → application → domain`; `infrastructure` implementa los puertos de `domain`. `domain` y `application` no importan `sqlalchemy` ni `fastapi`.
 
-Verifica: `grep -rEn "^(from|import) (sqlalchemy|fastapi)" domain/ application/` no devuelve resultados.
+Verifica: `uv run lint-imports` reporta todos los contratos cumplidos (capas, y sin `sqlalchemy` ni `fastapi` en `domain` y `application`).
 
 ## 2. Las observaciones de precio son append-only
 
@@ -50,4 +50,5 @@ Verifica: cada spec cita rutas reales (`archivo:línea`) del código que toca; `
 
 ## Changelog
 
+- **1.0.1** (2026-10-26): la verificación del principio 1 pasa de `grep` a `uv run lint-imports` (import-linter detecta también imports indirectos); las rutas de ejemplo apuntan a `src/sobreplano/`. Spec: `specs/01-python-foundations.md`.
 - **1.0** (2026-10-26): versión inicial con siete principios.

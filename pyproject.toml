@@ -1,0 +1,49 @@
+[project]
+name = "sobreplano"
+version = "0.1.0"
+description = "Search engine for new off-plan housing in the Aburrá Valley, with price history and an AI advisor."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "import-linter>=2.15",
+    "pyright>=1.1.414",
+    "pytest>=9.1.1",
+    "ruff>=0.17.3",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.4,<0.14"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.pyright]
+typeCheckingMode = "strict"
+include = ["src", "tests"]
+
+[tool.importlinter]
+root_package = "sobreplano"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Layers"
+type = "layers"
+layers = [
+    "sobreplano.interface",
+    "sobreplano.application | sobreplano.infrastructure",
+    "sobreplano.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "No framework in domain/application"
+type = "forbidden"
+source_modules = ["sobreplano.domain", "sobreplano.application"]
+forbidden_modules = ["sqlalchemy", "fastapi"]

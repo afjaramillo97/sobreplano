@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/ruff-edited.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "security-guidance@claude-plugins-official": true,
+    "pyright-lsp@claude-plugins-official": true
+  }
+}

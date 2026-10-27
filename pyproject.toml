@@ -8,6 +8,7 @@ dependencies = []
 
 [dependency-groups]
 dev = [
+    "import-linter>=2.15",
     "pyright>=1.1.414",
     "pytest>=9.1.1",
     "ruff>=0.17.3",
@@ -27,3 +28,22 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
 [tool.pyright]
 typeCheckingMode = "strict"
 include = ["src", "tests"]
+
+[tool.importlinter]
+root_package = "sobreplano"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Layers"
+type = "layers"
+layers = [
+    "sobreplano.interface",
+    "sobreplano.application | sobreplano.infrastructure",
+    "sobreplano.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "No framework in domain/application"
+type = "forbidden"
+source_modules = ["sobreplano.domain", "sobreplano.application"]
+forbidden_modules = ["sqlalchemy", "fastapi"]

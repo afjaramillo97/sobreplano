@@ -1,6 +1,6 @@
 # SPEC 01 — Fundaciones del proyecto Python
 
-> **Estado:** aprobado
+> **Estado:** implementado
 > **Depende de:** ninguno
 > **Fecha:** 2026-10-26
 > **Objetivo:** Crear el paquete Python `sobreplano` con sus cuatro capas y los controles de calidad (ruff, pyright strict, pytest, import-linter) que cada PR debe pasar en CI.

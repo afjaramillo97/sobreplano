@@ -46,6 +46,7 @@ evals/       golden set and judge
 - Code, commits, and docs in English, except specs in `specs/` and `docs/constitution.md`, which are in Spanish.
 - Commits follow Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
 - Branching: TBD.
+- "Every module has a one-line docstring saying what it is for. Public classes and functions have a docstring: what they do, what they validate, what they raise. Inline comments explain why (invariants, non-obvious decisions, gotchas), never what the code already says. Comments in English, short and plain."
 
 ## Python package layout
 

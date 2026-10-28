@@ -56,41 +56,70 @@ Dataclasses congeladas con validación en `__post_init__`. Los ids son `UUID` ge
 ```python
 # catalog.py
 class Municipality(StrEnum):
-    MEDELLIN = "medellin"; BELLO = "bello"; ITAGUI = "itagui"; ENVIGADO = "envigado"
-    SABANETA = "sabaneta"; LA_ESTRELLA = "la_estrella"; CALDAS = "caldas"
-    COPACABANA = "copacabana"; GIRARDOTA = "girardota"; BARBOSA = "barbosa"
+    MEDELLIN = "medellin"
+    BELLO = "bello"
+    ITAGUI = "itagui"
+    ENVIGADO = "envigado"
+    SABANETA = "sabaneta"
+    LA_ESTRELLA = "la_estrella"
+    CALDAS = "caldas"
+    COPACABANA = "copacabana"
+    GIRARDOTA = "girardota"
+    BARBOSA = "barbosa"
+
 
 @dataclass(frozen=True)
 class GeoPoint:
     lat: float  # 5.95 <= lat <= 6.60: Valle de Aburrá
     lon: float  # -75.80 <= lon <= -75.20
 
+
 @dataclass(frozen=True)
 class Developer:
-    id: UUID; name: str; slug: str; website_url: str
+    id: UUID
+    name: str
+    slug: str
+    website_url: str
+
 
 @dataclass(frozen=True)
 class Project:
-    id: UUID; developer_id: UUID; name: str; slug: str
-    municipality: Municipality; neighborhood: str | None
-    location: GeoPoint; source_url: str
+    id: UUID
+    developer_id: UUID
+    name: str
+    slug: str
+    municipality: Municipality
+    neighborhood: str | None
+    location: GeoPoint
+    source_url: str
+
 
 @dataclass(frozen=True)
 class UnitType:
-    id: UUID; project_id: UUID; name: str
-    private_area_m2: Decimal | None; built_area_m2: Decimal | None  # al menos una
-    bedrooms: int; bathrooms: int
+    id: UUID
+    project_id: UUID
+    name: str
+    private_area_m2: Decimal | None
+    built_area_m2: Decimal | None  # al menos una
+    bedrooms: int
+    bathrooms: int
+
 
 # pricing.py
 class ObservationSource(StrEnum):
-    MANUAL = "manual"; SCRAPER = "scraper"
+    MANUAL = "manual"
+    SCRAPER = "scraper"
+
 
 @dataclass(frozen=True)
 class PriceObservation:
-    id: UUID; unit_type_id: UUID; price_cop: int  # pesos enteros, > 0
+    id: UUID
+    unit_type_id: UUID
+    price_cop: int  # pesos enteros, > 0
     observed_at: datetime  # con zona horaria
-    observed_on: date      # fecha de observed_at en America/Bogota
-    source: ObservationSource; source_url: str
+    observed_on: date  # fecha de observed_at en America/Bogota
+    source: ObservationSource
+    source_url: str
 ```
 
 Las violaciones lanzan `DomainValidationError` (`errors.py`).
@@ -105,6 +134,7 @@ class CatalogRepository(Protocol):
     def get_project_by_slug(self, slug: str) -> Project | None: ...
     def add_unit_type(self, unit_type: UnitType) -> None: ...
     def list_unit_types(self, project_id: UUID) -> list[UnitType]: ...
+
 
 class PriceObservationRepository(Protocol):
     def add(self, observation: PriceObservation) -> None: ...

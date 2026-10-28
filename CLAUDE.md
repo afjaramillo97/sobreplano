@@ -4,7 +4,7 @@
 
 Sobreplano is a portfolio project (AI Engineer): a search engine for new off-plan housing in the Aburrá Valley, Colombia, with a daily price history and an AI advisor. Its differentiator versus portals (Fincaraíz, Metrocuadrado, La Haus) is showing how much each project has risen since its first observed price.
 
-Status: week 1 of 8, no code yet. Budget: at most ~20 USD/month, so check cost before proposing any new service.
+Status: week 2 of 8. Schema v1 and the append-only price repository are in place (SPEC 02); no scrapers, API or advisor yet. Budget: at most ~20 USD/month, so check cost before proposing any new service.
 
 ## Stack
 
@@ -24,7 +24,7 @@ W2 monorepo and schema · W3 scrapers and first daily snapshot · W4 history, pr
 
 ## Monorepo structure (planned)
 
-Folder names are a proposal, to be settled in the week 2 spec.
+`migrations/` (Alembic) and `seeds/` already exist; the other folder names are still a proposal.
 
 ```
 specs/       one spec per week, written before implementing
@@ -74,7 +74,19 @@ uv run pytest              # tests
 uv run lint-imports        # layer contracts
 ```
 
-All five checks run in CI (`.github/workflows/ci.yml`) on every PR to `main`. A Claude Code hook (`.claude/hooks/ruff-edited.sh`) runs ruff on edited `.py` files and needs `jq`.
+Database (needs Docker and a `.env` copied from `.env.example`):
+
+```
+supabase db start                                       # local Postgres on port 54322
+uv run --env-file .env alembic upgrade head             # apply migrations
+uv run --env-file .env alembic check                    # models and migrations agree
+uv run --env-file .env pytest                           # all tests, integration included
+uv run pytest -m "not integration"                      # unit tests only, no database
+uv run --env-file .env python -m sobreplano.interface.cli.seed   # load seeds/projects.json
+supabase stop                                           # stop the local stack
+```
+
+All five checks run in CI (`.github/workflows/ci.yml`) on every PR to `main`; CI also starts Postgres, runs the migrations and the integration tests. Tools to install: `jq` for the Claude Code hook (`.claude/hooks/ruff-edited.sh`, runs ruff on edited `.py` files) and the Supabase CLI (`brew install supabase/tap/supabase`); `psql` is optional (`brew install libpq`, keg-only, so add it to PATH).
 
 ## Scraper rules
 
@@ -95,6 +107,8 @@ All five checks run in CI (`.github/workflows/ci.yml`) on every PR to `main`. A 
 ## Keeping this file small
 
 This file is an index, not a manual. When a topic needs depth (scrapers, schema, advisor, evals, infra), put it in its own sub-document and link it here with one line. Sub-documents live in `docs/`.
+
+- Schema: `docs/schema.md`.
 
 ## Specs
 

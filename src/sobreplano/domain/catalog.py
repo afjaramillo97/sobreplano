@@ -1,3 +1,5 @@
+"""Catalog entities: developers, projects and their unit types."""
+
 from dataclasses import dataclass
 from decimal import Decimal
 from enum import StrEnum
@@ -7,6 +9,8 @@ from sobreplano.domain.errors import DomainValidationError
 
 
 class Municipality(StrEnum):
+    """Municipalities of the Aburrá Valley; values are the slugs stored in the database."""
+
     MEDELLIN = "medellin"
     BELLO = "bello"
     ITAGUI = "itagui"
@@ -21,10 +25,17 @@ class Municipality(StrEnum):
 
 @dataclass(frozen=True)
 class GeoPoint:
-    lat: float  # 5.95 <= lat <= 6.60: Valle de Aburrá
-    lon: float  # -75.80 <= lon <= -75.20
+    """A WGS84 point inside the Aburrá Valley.
+
+    Raises:
+        DomainValidationError: if lat or lon fall outside the valley's bounding box.
+    """
+
+    lat: float
+    lon: float
 
     def __post_init__(self) -> None:
+        # The range check catches the classic mistake of swapping lat and lon.
         if not 5.95 <= self.lat <= 6.60:
             raise DomainValidationError(
                 f"lat {self.lat} outside the Aburrá Valley (5.95 to 6.60); lat and lon swapped?"
@@ -37,6 +48,8 @@ class GeoPoint:
 
 @dataclass(frozen=True)
 class Developer:
+    """A construction company that sells off-plan projects."""
+
     id: UUID
     name: str
     slug: str
@@ -45,6 +58,8 @@ class Developer:
 
 @dataclass(frozen=True)
 class Project:
+    """An off-plan housing project by one developer."""
+
     id: UUID
     developer_id: UUID
     name: str
@@ -57,11 +72,17 @@ class Project:
 
 @dataclass(frozen=True)
 class UnitType:
+    """A floor-plan type inside a project; prices are observed per unit type.
+
+    Raises:
+        DomainValidationError: if both areas are missing or any given area is not > 0.
+    """
+
     id: UUID
     project_id: UUID
     name: str
     private_area_m2: Decimal | None
-    built_area_m2: Decimal | None  # al menos una
+    built_area_m2: Decimal | None  # at least one of the two areas must be present
     bedrooms: int
     bathrooms: int
 

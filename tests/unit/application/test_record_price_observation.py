@@ -1,3 +1,5 @@
+"""Unit tests for the RecordPriceObservation use case, with an in-memory repository."""
+
 from datetime import UTC, date, datetime
 from uuid import UUID, uuid4
 
@@ -89,7 +91,7 @@ def test_observed_on_uses_bogota_day(
     use_case: RecordPriceObservation, repo: InMemoryPriceObservationRepository
 ) -> None:
     unit_type_id = uuid4()
-    # 03:00 UTC del 29 es 22:00 del 28 en Bogotá; 05:00 UTC del 29 es 00:00 del 29.
+    # 03:00 UTC on the 29th is 22:00 on the 28th in Bogotá; 05:00 UTC is 00:00 on the 29th.
     record(use_case, unit_type_id, datetime(2026, 10, 29, 3, 0, tzinfo=UTC))
     record(use_case, unit_type_id, datetime(2026, 10, 29, 5, 0, tzinfo=UTC))
     assert [o.observed_on for o in repo.items] == [date(2026, 10, 28), date(2026, 10, 29)]

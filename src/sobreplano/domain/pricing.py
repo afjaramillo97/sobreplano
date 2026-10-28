@@ -1,3 +1,5 @@
+"""Price observation entity; observations are append-only (constitution, principle 2)."""
+
 from dataclasses import dataclass
 from datetime import date, datetime
 from enum import StrEnum
@@ -7,17 +9,28 @@ from sobreplano.domain.errors import DomainValidationError
 
 
 class ObservationSource(StrEnum):
+    """How a price was obtained."""
+
     MANUAL = "manual"
     SCRAPER = "scraper"
 
 
 @dataclass(frozen=True)
 class PriceObservation:
+    """One price seen for a unit type at a point in time.
+
+    price_cop is whole pesos. observed_on is the date of observed_at in America/Bogota,
+    computed by the caller.
+
+    Raises:
+        DomainValidationError: if price_cop is not > 0 or observed_at has no timezone.
+    """
+
     id: UUID
     unit_type_id: UUID
-    price_cop: int  # pesos enteros, > 0
-    observed_at: datetime  # con zona horaria
-    observed_on: date  # fecha de observed_at en America/Bogota
+    price_cop: int
+    observed_at: datetime
+    observed_on: date
     source: ObservationSource
     source_url: str
 

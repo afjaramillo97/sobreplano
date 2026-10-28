@@ -1,3 +1,5 @@
+"""Use case: record one price observation per unit type per day."""
+
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
@@ -12,12 +14,16 @@ BOGOTA = ZoneInfo("America/Bogota")
 
 
 class RecordResult(StrEnum):
+    """Outcome of recording an observation."""
+
     RECORDED = "recorded"
     ALREADY_RECORDED = "already_recorded"
 
 
 @dataclass(frozen=True)
 class RecordPriceObservation:
+    """Records a price observation unless one already exists for that day in Bogotá."""
+
     observations: PriceObservationRepository
 
     def execute(
@@ -29,6 +35,15 @@ class RecordPriceObservation:
         source: ObservationSource,
         source_url: str,
     ) -> RecordResult:
+        """Insert the observation, or skip it if the unit type already has one that day.
+
+        Returns RECORDED when inserted and ALREADY_RECORDED when skipped, so retrying a
+        scraper is not an error.
+
+        Raises:
+            DomainValidationError: if observed_at has no timezone or price_cop is not > 0.
+        """
+        # astimezone() on a naive datetime would silently assume the machine's local zone.
         if observed_at.tzinfo is None:
             raise DomainValidationError("observed_at must be timezone-aware")
         observation = PriceObservation(

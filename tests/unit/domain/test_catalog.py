@@ -1,3 +1,5 @@
+"""Unit tests for catalog entity validation."""
+
 from decimal import Decimal
 from uuid import uuid4
 

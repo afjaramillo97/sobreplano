@@ -1,3 +1,5 @@
+"""Unit tests for price observation validation."""
+
 from datetime import UTC, date, datetime
 from uuid import uuid4
 

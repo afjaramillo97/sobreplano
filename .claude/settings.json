@@ -12,8 +12,14 @@
       }
     ]
   },
+  "extraKnownMarketplaces": {
+    "supabase-agent-skills": {
+      "source": { "source": "github", "repo": "supabase/agent-skills" }
+    }
+  },
   "enabledPlugins": {
     "security-guidance@claude-plugins-official": true,
-    "pyright-lsp@claude-plugins-official": true
+    "pyright-lsp@claude-plugins-official": true,
+    "postgres-best-practices@supabase-agent-skills": true
   }
 }

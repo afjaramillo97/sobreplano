@@ -1,0 +1,148 @@
+{
+  "projects": [
+    {
+      "developer": {
+        "name": "Constructora Capital",
+        "slug": "constructora-capital",
+        "website_url": "https://www.constructoracapital.com/"
+      },
+      "name": "AXIS - Ciudad Peldar",
+      "slug": "axis-ciudad-peldar",
+      "municipality": "envigado",
+      "neighborhood": "Las Vegas",
+      "lat": 6.1735,
+      "lon": -75.5925,
+      "source_url": "https://www.constructoracapital.com/proyecto/1/medellin-y-alrededores/envigado/262/axis",
+      "unit_types": [
+        {
+          "name": "Tipo 04",
+          "private_area_m2": 54.06,
+          "built_area_m2": 60.01,
+          "bedrooms": 1,
+          "bathrooms": 2,
+          "observation": {
+            "price_cop": 710200000,
+            "observed_at": "2026-10-28T14:14:06-05:00",
+            "source_url": "https://www.constructoracapital.com/proyecto/1/medellin-y-alrededores/envigado/262/axis"
+          }
+        },
+        {
+          "name": "Tipo 02",
+          "private_area_m2": 54.98,
+          "built_area_m2": 60.67,
+          "bedrooms": 1,
+          "bathrooms": 2,
+          "observation": {
+            "price_cop": 716500000,
+            "observed_at": "2026-10-28T14:14:06-05:00",
+            "source_url": "https://www.constructoracapital.com/proyecto/1/medellin-y-alrededores/envigado/262/axis"
+          }
+        },
+        {
+          "name": "Tipo 12",
+          "private_area_m2": 54.94,
+          "built_area_m2": 60.1,
+          "bedrooms": 1,
+          "bathrooms": 2,
+          "observation": {
+            "price_cop": 736200000,
+            "observed_at": "2026-10-28T14:14:06-05:00",
+            "source_url": "https://www.constructoracapital.com/proyecto/1/medellin-y-alrededores/envigado/262/axis"
+          }
+        },
+        {
+          "name": "Tipo 06",
+          "private_area_m2": 78.74,
+          "built_area_m2": 85.86,
+          "bedrooms": 2,
+          "bathrooms": 3,
+          "observation": {
+            "price_cop": 956200000,
+            "observed_at": "2026-10-28T14:14:06-05:00",
+            "source_url": "https://www.constructoracapital.com/proyecto/1/medellin-y-alrededores/envigado/262/axis"
+          }
+        },
+        {
+          "name": "Tipo 14",
+          "private_area_m2": 88.18,
+          "built_area_m2": 94.73,
+          "bedrooms": 2,
+          "bathrooms": 3,
+          "observation": {
+            "price_cop": 1079700000,
+            "observed_at": "2026-10-28T14:14:06-05:00",
+            "source_url": "https://www.constructoracapital.com/proyecto/1/medellin-y-alrededores/envigado/262/axis"
+          }
+        }
+      ]
+    },
+    {
+      "developer": {
+        "name": "Constructora Capital",
+        "slug": "constructora-capital",
+        "website_url": "https://www.constructoracapital.com/"
+      },
+      "name": "Murano - Ciudad Peldar",
+      "slug": "murano-ciudad-peldar",
+      "municipality": "envigado",
+      "neighborhood": "Las Vegas",
+      "lat": 6.172,
+      "lon": -75.5941,
+      "source_url": "https://www.constructoracapital.com/proyecto/1/medellin-y-alrededores/envigado/227/murano",
+      "unit_types": [
+        {
+          "name": "Apto 09",
+          "private_area_m2": 60.44,
+          "built_area_m2": 67.41,
+          "bedrooms": 2,
+          "bathrooms": 3,
+          "observation": {
+            "price_cop": 736300000,
+            "observed_at": "2026-10-28T14:25:03-05:00",
+            "source_url": "https://www.constructoracapital.com/proyecto/1/medellin-y-alrededores/envigado/227/murano"
+          }
+        },
+        {
+          "name": "Apto 02",
+          "private_area_m2": 68.44,
+          "built_area_m2": 74.73,
+          "bedrooms": 3,
+          "bathrooms": 2,
+          "observation": {
+            "price_cop": 826100000,
+            "observed_at": "2026-10-28T14:25:03-05:00",
+            "source_url": "https://www.constructoracapital.com/proyecto/1/medellin-y-alrededores/envigado/227/murano"
+          }
+        }
+      ]
+    },
+    {
+      "developer": {
+        "name": "Constructora Capital",
+        "slug": "constructora-capital",
+        "website_url": "https://www.constructoracapital.com/"
+      },
+      "name": "Acento - Ciudad Peldar",
+      "slug": "acento-ciudad-peldar",
+      "municipality": "envigado",
+      "neighborhood": "Las Vegas",
+      "lat": 6.172,
+      "lon": -75.5942,
+      "source_url": "https://www.constructoracapital.com/proyecto/1/medellin-y-alrededores/envigado/235/acento",
+      "unit_types": [
+        {
+          "name": "Tipo 2",
+          "private_area_m2": 73.38,
+          "built_area_m2": 78.46,
+          "bedrooms": 3,
+          "bathrooms": 2,
+          "observation": {
+            "price_cop": 822200000,
+            "observed_at": "2026-10-28T14:30:04-05:00",
+            "source_url": "https://www.constructoracapital.com/proyecto/1/medellin-y-alrededores/envigado/235/acento"
+          }
+        }
+      ]
+    }
+  ]
+}

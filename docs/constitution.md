@@ -1,6 +1,6 @@
 # Constitución de Sobreplano
 
-Versión 1.0.1 · 2026-10-26
+Versión 1.1.0 · 2026-10-28
 
 Este documento manda sobre `CLAUDE.md` si ambos se contradicen. Todo spec debe cumplirlo; un spec que lo viole se corrige o enmienda esta constitución primero (con entrada en el changelog).
 
@@ -14,9 +14,9 @@ Verifica: `uv run lint-imports` reporta todos los contratos cumplidos (capas, y 
 
 ## 2. Las observaciones de precio son append-only
 
-Una observación de precio nunca se actualiza ni se borra. La API del repositorio solo expone `add` y lecturas; no existe `update` ni `delete` para observaciones.
+Una observación de precio nunca se actualiza ni se borra. La API del repositorio solo expone `add` y lecturas; no existe `update` ni `delete` para observaciones. La base de datos lo hace cumplir con un trigger, así que la regla también vale para `psql` y para cualquier script.
 
-Verifica: test que confirma que el repositorio no expone esos métodos, y `grep -rEn "UPDATE|DELETE" migrations/ infrastructure/` sin coincidencias sobre la tabla de observaciones.
+Verifica: dos tests. Uno unitario confirma que el repositorio no expone `update` ni `delete`. Otro de integración confirma que la base de datos rechaza `UPDATE`, `DELETE` y `TRUNCATE` sobre `price_observations` (`uv run --env-file .env pytest tests/unit/infrastructure tests/integration/test_db_rules.py`).
 
 ## 3. Scraping responsable
 
@@ -50,5 +50,6 @@ Verifica: cada spec cita rutas reales (`archivo:línea`) del código que toca; `
 
 ## Changelog
 
+- **1.1.0** (2026-10-28): la verificación del principio 2 pasa del `grep` de `UPDATE|DELETE` (daba falso positivo con el propio trigger y es más débil) a dos tests: el repositorio no expone `update` ni `delete`, y la base de datos rechaza `UPDATE`, `DELETE` y `TRUNCATE`. Spec: `specs/02-schema-v1.md`.
 - **1.0.1** (2026-10-26): la verificación del principio 1 pasa de `grep` a `uv run lint-imports` (import-linter detecta también imports indirectos); las rutas de ejemplo apuntan a `src/sobreplano/`. Spec: `specs/01-python-foundations.md`.
 - **1.0** (2026-10-26): versión inicial con siete principios.

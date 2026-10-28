@@ -4,7 +4,13 @@ version = "0.1.0"
 description = "Search engine for new off-plan housing in the Aburrá Valley, with price history and an AI advisor."
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "alembic>=1.20.1",
+    "geoalchemy2>=0.20.0",
+    "psycopg[binary]>=3.3.6",
+    "pydantic>=2.14.1",
+    "sqlalchemy>=2.1.6",
+]
 
 [dependency-groups]
 dev = [
@@ -24,6 +30,9 @@ target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.pytest.ini_options]
+markers = ["integration: tests that need a running Postgres (supabase db start)"]
 
 [tool.pyright]
 typeCheckingMode = "strict"
@@ -46,4 +55,4 @@ layers = [
 name = "No framework in domain/application"
 type = "forbidden"
 source_modules = ["sobreplano.domain", "sobreplano.application"]
-forbidden_modules = ["sqlalchemy", "fastapi"]
+forbidden_modules = ["sqlalchemy", "fastapi", "geoalchemy2", "psycopg", "alembic"]

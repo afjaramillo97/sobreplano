@@ -6,7 +6,7 @@ Search for new off-plan housing projects in the Aburrá Valley (Medellín area),
 
 Colombian listing portals (Fincaraíz, Metrocuadrado, La Haus) show a project's current price. Sobreplano shows how much each project has risen since its first observed price, so buyers can see the real cost of waiting and compare projects on price per m² by zone.
 
-**Status:** Under construction · week 1 of 8
+**Status:** Under construction · week 2 of 8
 
 ## What this demonstrates
 

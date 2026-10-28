@@ -12,6 +12,9 @@ permissions:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    env:
+      # Same URL as .env.example: the Supabase CLI serves Postgres on 54322.
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:54322/postgres
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -22,7 +25,19 @@ jobs:
         run: uv run ruff format --check
       - name: pyright
         run: uv run pyright
-      - name: pytest
-        run: uv run pytest
       - name: lint-imports
         run: uv run lint-imports
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: supabase db start
+        run: supabase db start
+      - name: alembic upgrade head
+        run: uv run alembic upgrade head
+      - name: alembic check
+        run: uv run alembic check
+      - name: alembic single head
+        run: test "$(uv run alembic heads | wc -l)" -eq 1
+      # Includes the integration tests, which need the database above.
+      - name: pytest
+        run: uv run pytest

@@ -1,6 +1,6 @@
 # SPEC 02 — Esquema v1 y repositorio de precios append-only
 
-> **Estado:** aprobado
+> **Estado:** implementado
 > **Depende de:** SPEC 01
 > **Fecha:** 2026-10-28
 > **Objetivo:** Persistir constructoras, proyectos, tipologías y observaciones de precio en Postgres (Supabase local) con Alembic, de forma que la base de datos misma impida modificar o borrar una observación de precio.

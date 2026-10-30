@@ -1,4 +1,3 @@
-# pylint: skip-file
 """Schema v1: catalog tables, append-only price observations, RLS.
 
 Revision ID: 0001
@@ -238,4 +237,3 @@ def downgrade() -> None:
     op.drop_geospatial_table("projects")
     op.drop_table("developers")
     op.execute("DROP FUNCTION prevent_price_observation_changes()")
-    op.execute("DROP EXTENSION IF EXISTS postgis")

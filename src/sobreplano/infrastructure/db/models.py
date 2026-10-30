@@ -100,7 +100,7 @@ class ProjectRow(IdMixin, TimestampsMixin, Base):
     slug: Mapped[str] = mapped_column(Text, unique=True)
     municipality: Mapped[Municipality] = mapped_column(_str_enum(Municipality, "municipality"))
     neighborhood: Mapped[str | None] = mapped_column(Text)
-    # Written as WKTElement("POINT(lon lat)"), read back as WKB; geoalchemy2 adds the GIST index.
+    # Written as a WKT element and read back as WKB (see geo.py); geoalchemy2 adds the GIST index.
     location: Mapped[WKBElement | WKTElement] = mapped_column(
         Geography(geometry_type="POINT", srid=4326)
     )

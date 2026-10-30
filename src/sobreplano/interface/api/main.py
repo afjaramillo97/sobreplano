@@ -7,7 +7,7 @@ from fastapi import FastAPI
 
 from sobreplano.infrastructure.db.engine import create_db_engine, create_session_factory
 from sobreplano.infrastructure.settings import Settings, load_settings
-from sobreplano.interface.api.routes import health
+from sobreplano.interface.api.routes import health, projects
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -27,6 +27,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title="Sobreplano", lifespan=lifespan)
     app.include_router(health.router)
+    app.include_router(projects.router)
     return app
 
 

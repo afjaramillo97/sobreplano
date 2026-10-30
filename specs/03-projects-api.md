@@ -54,35 +54,50 @@ Este spec no cambia el esquema ni agrega migraciones. Agrega un modelo de lectur
 ```python
 @dataclass(frozen=True)
 class LatestPrice:
-    price_cop: int; observed_on: date; source: ObservationSource
+    price_cop: int
+    observed_on: date
+    source: ObservationSource
+
 
 class AreaBasis(StrEnum):
-    PRIVATE = "private"; BUILT = "built"
+    PRIVATE = "private"
+    BUILT = "built"
+
 
 @dataclass(frozen=True)
 class UnitTypeListing:
-    id: UUID; name: str
-    private_area_m2: Decimal | None; built_area_m2: Decimal | None
-    bedrooms: int; bathrooms: int
+    id: UUID
+    name: str
+    private_area_m2: Decimal | None
+    built_area_m2: Decimal | None
+    bedrooms: int
+    bathrooms: int
     latest_price: LatestPrice | None  # None si la tipología no tiene observaciones
 
     @property
-    def area_basis(self) -> AreaBasis: ...       # PRIVATE si hay área privada; si no, BUILT
+    def area_basis(self) -> AreaBasis: ...  # PRIVATE si hay área privada; si no, BUILT
     @property
     def price_per_m2_cop(self) -> int | None: ...  # round(price_cop / área base); None sin precio
 
+
 @dataclass(frozen=True)
 class ProjectListing:
-    id: UUID; slug: str; name: str
-    developer_name: str; developer_slug: str
-    municipality: Municipality; neighborhood: str | None
-    location: GeoPoint; source_url: str
+    id: UUID
+    slug: str
+    name: str
+    developer_name: str
+    developer_slug: str
+    municipality: Municipality
+    neighborhood: str | None
+    location: GeoPoint
+    source_url: str
     unit_types: list[UnitTypeListing]  # ordenadas por nombre
+
 
 @dataclass(frozen=True)
 class ProjectPage:
     items: list[ProjectListing]  # ordenados por nombre de proyecto
-    total: int                   # total con el filtro aplicado, sin paginar
+    total: int  # total con el filtro aplicado, sin paginar
 ```
 
 ### Puerto (`src/sobreplano/domain/ports.py`)

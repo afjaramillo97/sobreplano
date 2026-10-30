@@ -41,6 +41,8 @@ markers = ["integration: tests that need a running Postgres (supabase db start)"
 [tool.pyright]
 typeCheckingMode = "strict"
 include = ["src", "tests"]
+# Alembic env.py: geoalchemy2.alembic_helpers is only partially typed, which strict mode rejects.
+ignore = ["migrations"]
 
 [tool.importlinter]
 root_package = "sobreplano"

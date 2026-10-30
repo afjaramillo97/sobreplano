@@ -1,9 +1,10 @@
 """SQLAlchemy engine and session factory built from DATABASE_URL."""
 
-import os
-
+from pydantic import ValidationError
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
+
+from sobreplano.infrastructure.settings import load_settings
 
 
 def get_database_url() -> str:
@@ -12,10 +13,10 @@ def get_database_url() -> str:
     Raises:
         RuntimeError: if DATABASE_URL is not set.
     """
-    url = os.environ.get("DATABASE_URL")
-    if not url:
-        raise RuntimeError("DATABASE_URL is not set; copy .env.example to .env")
-    return url
+    try:
+        return load_settings().database_url
+    except ValidationError as error:
+        raise RuntimeError("DATABASE_URL is not set; copy .env.example to .env") from error
 
 
 def create_db_engine(url: str | None = None) -> Engine:

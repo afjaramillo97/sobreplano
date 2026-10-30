@@ -39,6 +39,28 @@ Colombian listing portals (Fincaraíz, Metrocuadrado, La Haus) show a project's 
 | 7 | Frontend |
 | 8 | Launch and demo |
 
+## Run locally
+
+Needs [uv](https://docs.astral.sh/uv/), Docker and the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) (`brew install supabase/tap/supabase`).
+
+```bash
+uv sync
+cp .env.example .env                                              # local DATABASE_URL
+supabase db start                                                 # Postgres on port 54322
+uv run --env-file .env alembic upgrade head                       # create the schema
+uv run --env-file .env python -m sobreplano.interface.cli.seed    # load seeds/projects.json
+uv run --env-file .env uvicorn sobreplano.interface.api.main:app  # API on http://localhost:8000
+```
+
+Then open [localhost:8000/docs](http://localhost:8000/docs), or:
+
+```bash
+curl -s localhost:8000/health
+curl -s "localhost:8000/projects?municipality=envigado" | jq '.items[0].unit_types'
+```
+
+Tests: `uv run pytest -m "not integration"` needs no database; `uv run --env-file .env pytest` runs everything. Stop the database with `supabase stop`.
+
 ## Scraping policy
 
 - One visit per site per day, with an identifying user-agent; robots.txt and each site's terms are respected.

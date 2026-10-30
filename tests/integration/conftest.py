@@ -5,6 +5,7 @@ from decimal import Decimal
 from uuid import uuid4
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
@@ -14,6 +15,9 @@ from sobreplano.infrastructure.db.engine import create_db_engine
 from sobreplano.infrastructure.db.price_observation_repository import (
     SqlPriceObservationRepository,
 )
+from sobreplano.infrastructure.settings import load_settings
+from sobreplano.interface.api.dependencies import get_session
+from sobreplano.interface.api.main import create_app
 
 
 @pytest.fixture(scope="session")
@@ -36,6 +40,15 @@ def session(engine: Engine) -> Iterator[Session]:
         with Session(bind=connection, join_transaction_mode="create_savepoint") as session:
             yield session
         transaction.rollback()
+
+
+@pytest.fixture
+def client(session: Session) -> Iterator[TestClient]:
+    """API client whose requests use the test's transactional session."""
+    app = create_app(load_settings())
+    app.dependency_overrides[get_session] = lambda: session
+    with TestClient(app) as client:
+        yield client
 
 
 @pytest.fixture

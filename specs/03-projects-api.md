@@ -1,6 +1,6 @@
 # SPEC 03 — API de proyectos con último precio y precio por m²
 
-> **Estado:** aprobado
+> **Estado:** implementado
 > **Depende de:** SPEC 01, SPEC 02
 > **Fecha:** 2026-10-29
 > **Objetivo:** Exponer con FastAPI `GET /health` y `GET /projects`, que lista los proyectos con el último precio y el precio por m² de cada tipología, en tres consultas SQL como máximo.
@@ -174,7 +174,7 @@ Cada paso deja los controles en verde y se puede commitear solo.
 Cada criterio se verifica pegando el comando y su salida en el PR (constitución, principio 6).
 
 - [ ] `uv run --env-file .env uvicorn sobreplano.interface.api.main:app` arranca y `curl -s localhost:8000/health` devuelve `{"status":"ok","database":"ok"}`.
-- [ ] Con la base de datos apagada (`supabase db stop`), `curl -i localhost:8000/health` devuelve `503`.
+- [ ] Con la base de datos apagada (`supabase stop`), `curl -i localhost:8000/health` devuelve `503`.
 - [ ] Con la semilla cargada, `curl -s "localhost:8000/projects" | jq '.total, (.items | length)'` imprime `3` y `3`.
 - [ ] `curl -s "localhost:8000/projects?municipality=envigado" | jq .total` imprime `3`, y con `municipality=bello` imprime `0`.
 - [ ] `curl -s -o /dev/null -w "%{http_code}" "localhost:8000/projects?municipality=nope"` imprime `422`; con `limit=101` también.
@@ -219,6 +219,8 @@ Cada criterio se verifica pegando el comando y su salida en el PR (constitución
 - **Sí:** `/health` revisa la base de datos y responde `503` si falla. **No:** separar liveness y readiness; no hay orquestador que los use.
 - **Sí:** `fastapi[standard]`, que trae `uvicorn` y `httpx` para `TestClient`.
 - **Sí:** un solo módulo (`infrastructure/db/geo.py`) para escribir y leer coordenadas. PostGIS usa (x, y) = (longitud, latitud), al revés de como se suelen escribir; con dos copias del código, la tercera consulta geográfica (distancias, semana 5) tendría tres oportunidades de invertirlas.
+- **Sí:** excluir `.claude/` de ruff (`extend-exclude` y `force-exclude`). Son skills de terceros copiados sin cambios; reformatearlos rompería la comparación con el original auditado.
+- **Sí:** `ignore = ["migrations"]` en `[tool.pyright]`. `geoalchemy2.alembic_helpers` está tipado a medias y el modo estricto lo rechaza; sin `# pyright: basic` en `env.py`, el editor (que analiza los archivos abiertos aunque estén fuera de `include`) marcaba errores. `pyright` en CLI y en CI no cambia.
 - **Sí:** reglas de Alembic escritas en `CLAUDE.md` aunque este spec no cree migraciones, para el próximo que toque el esquema (`scrape_runs`, semana 3):
   - Revisar a mano cada `--autogenerate` antes de `upgrade`. Alembic no detecta renombres: los ve como borrar y crear la columna, y se pierden los datos. Los renombres se escriben con `op.alter_column(..., new_column_name=...)` o `op.rename_table`.
   - Cambiar la expresión de un `CheckConstraint` no genera migración, porque Alembic los compara por nombre. Se escribe a mano: borrar el CHECK viejo y crear el nuevo.

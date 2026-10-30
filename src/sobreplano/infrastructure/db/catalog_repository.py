@@ -2,16 +2,12 @@
 
 from uuid import UUID
 
-from geoalchemy2 import WKTElement
-from sqlalchemy import Float, func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from sobreplano.domain.catalog import Developer, GeoPoint, Project, UnitType
+from sobreplano.infrastructure.db.geo import LAT, LON, to_wkt_point
 from sobreplano.infrastructure.db.models import DeveloperRow, ProjectRow, UnitTypeRow
-
-# geoalchemy2.shape.to_shape fails pyright strict, so coordinates are read with PostGIS functions.
-_LAT = func.ST_Y(func.geometry(ProjectRow.location), type_=Float())
-_LON = func.ST_X(func.geometry(ProjectRow.location), type_=Float())
 
 
 def _to_developer(row: DeveloperRow) -> Developer:
@@ -61,7 +57,6 @@ class SqlCatalogRepository:
 
     def add_project(self, project: Project) -> None:
         """Insert a project; the slug must be unique and the developer must exist."""
-        point = project.location
         self._session.add(
             ProjectRow(
                 id=project.id,
@@ -70,7 +65,7 @@ class SqlCatalogRepository:
                 slug=project.slug,
                 municipality=project.municipality,
                 neighborhood=project.neighborhood,
-                location=WKTElement(f"POINT({point.lon} {point.lat})", srid=4326),
+                location=to_wkt_point(project.location),
                 source_url=project.source_url,
             )
         )
@@ -79,7 +74,7 @@ class SqlCatalogRepository:
     def get_project_by_slug(self, slug: str) -> Project | None:
         """Return the project with this slug, or None."""
         result = self._session.execute(
-            select(ProjectRow, _LAT, _LON).where(ProjectRow.slug == slug)
+            select(ProjectRow, LAT, LON).where(ProjectRow.slug == slug)
         ).one_or_none()
         if result is None:
             return None

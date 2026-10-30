@@ -1,7 +1,3 @@
-# pyright: basic
-# geoalchemy2.alembic_helpers is only partially typed, which strict mode rejects.
-# pylint: skip-file
-# (the project does not use Pylint; it misreads the members Alembic injects into alembic.context)
 """Alembic environment: URL from DATABASE_URL, metadata from the SQLAlchemy models."""
 
 from logging.config import fileConfig

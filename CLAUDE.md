@@ -57,7 +57,7 @@ src/sobreplano/
   domain/          entities and ports (typing.Protocol)
   application/     use cases
   infrastructure/  SQLAlchemy, Playwright, Anthropic, S3
-  interface/       FastAPI, Lambda handler, MCP server
+  interface/       FastAPI (api/), Lambda handler, MCP server
 tests/             outside src/, not packaged
 ```
 
@@ -86,7 +86,33 @@ uv run --env-file .env python -m sobreplano.interface.cli.seed   # load seeds/pr
 supabase stop                                           # stop the local stack
 ```
 
+API (docs at `/docs`):
+
+```
+uv run --env-file .env uvicorn sobreplano.interface.api.main:app --reload   # http://localhost:8000
+```
+
 All five checks run in CI (`.github/workflows/ci.yml`) on every PR to `main`; CI also starts Postgres, runs the migrations and the integration tests. Tools to install: `jq` for the Claude Code hook (`.claude/hooks/ruff-edited.sh`, runs ruff on edited `.py` files) and the Supabase CLI (`brew install supabase/tap/supabase`); `psql` is optional (`brew install libpq`, keg-only, so add it to PATH).
+
+## FastAPI conventions
+
+Rules for every endpoint in `src/sobreplano/interface/api/` (SPEC 03):
+
+- Endpoints are `def`, never `async def`: SQLAlchemy is synchronous, and a blocking call inside `async def` stalls the event loop. The lifespan is the only `async` function; ruff's `ASYNC` rules are on.
+- The engine is created once, in the lifespan, and stored via a `sessionmaker` in `app.state`. Requests only open sessions (`get_session`, one per request, no commit). Never create an engine inside a dependency.
+- Dependencies use `Annotated` with a reusable alias (`SessionDep`, `ListingQueryDep`), never `x: T = Depends(f)`.
+- Errors are raised with `raise HTTPException(...)`, never returned (a `return` answers 200). `/health` is the documented exception: its 503 is part of the contract.
+- Tests swap dependencies with `app.dependency_overrides`, never `unittest.mock`.
+
+## Migration rules
+
+For any change to the schema (Alembic is its only owner):
+
+- Review every `--autogenerate` by hand before `upgrade`. Alembic does not detect renames: it sees drop and create, and the data is lost. Write renames with `op.alter_column(..., new_column_name=...)` or `op.rename_table`.
+- Changing a `CheckConstraint` expression generates no migration (Alembic compares them by name). Write it by hand: drop the old CHECK and create the new one.
+- `CREATE EXTENSION`, triggers, functions and RLS are not detected by `--autogenerate`; add them by hand, and always `WITH SCHEMA extensions` for extensions.
+- Nullability comes from the type only (`Mapped[T]` is `NOT NULL`, `Mapped[T | None]` is `NULL`); do not use `nullable=` in the models.
+- Never `supabase db diff` or `supabase/migrations/`. This makes `supabase stop --no-backup` safe locally: rebuild the schema with `alembic upgrade head` and the data with the seed.
 
 ## Scraper rules
 

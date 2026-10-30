@@ -4,7 +4,8 @@ from datetime import date
 from typing import Protocol
 from uuid import UUID
 
-from sobreplano.domain.catalog import Developer, Project, UnitType
+from sobreplano.domain.catalog import Developer, Municipality, Project, UnitType
+from sobreplano.domain.listings import ProjectPage
 from sobreplano.domain.pricing import PriceObservation
 
 
@@ -25,3 +26,11 @@ class PriceObservationRepository(Protocol):
     def add(self, observation: PriceObservation) -> None: ...
     def exists_for_day(self, unit_type_id: UUID, observed_on: date) -> bool: ...
     def list_by_unit_type(self, unit_type_id: UUID) -> list[PriceObservation]: ...
+
+
+class ProjectListingQuery(Protocol):
+    """Read-only listing of projects with the latest price of each unit type."""
+
+    def list_projects(
+        self, *, municipality: Municipality | None, limit: int, offset: int
+    ) -> ProjectPage: ...

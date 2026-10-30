@@ -219,6 +219,7 @@ Cada criterio se verifica pegando el comando y su salida en el PR (constitución
 - **Sí:** `/health` revisa la base de datos y responde `503` si falla. **No:** separar liveness y readiness; no hay orquestador que los use.
 - **Sí:** `fastapi[standard]`, que trae `uvicorn` y `httpx` para `TestClient`.
 - **Sí:** un solo módulo (`infrastructure/db/geo.py`) para escribir y leer coordenadas. PostGIS usa (x, y) = (longitud, latitud), al revés de como se suelen escribir; con dos copias del código, la tercera consulta geográfica (distancias, semana 5) tendría tres oportunidades de invertirlas.
+- **Sí:** excluir `.claude/` de ruff (`extend-exclude` y `force-exclude`). Son skills de terceros copiados sin cambios; reformatearlos rompería la comparación con el original auditado.
 - **Sí:** reglas de Alembic escritas en `CLAUDE.md` aunque este spec no cree migraciones, para el próximo que toque el esquema (`scrape_runs`, semana 3):
   - Revisar a mano cada `--autogenerate` antes de `upgrade`. Alembic no detecta renombres: los ve como borrar y crear la columna, y se pierden los datos. Los renombres se escriben con `op.alter_column(..., new_column_name=...)` o `op.rename_table`.
   - Cambiar la expresión de un `CheckConstraint` no genera migración, porque Alembic los compara por nombre. Se escribe a mano: borrar el CHECK viejo y crear el nuevo.

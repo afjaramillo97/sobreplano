@@ -1,6 +1,6 @@
 # SPEC 03 — API de proyectos con último precio y precio por m²
 
-> **Estado:** aprobado
+> **Estado:** implementado
 > **Depende de:** SPEC 01, SPEC 02
 > **Fecha:** 2026-10-29
 > **Objetivo:** Exponer con FastAPI `GET /health` y `GET /projects`, que lista los proyectos con el último precio y el precio por m² de cada tipología, en tres consultas SQL como máximo.
@@ -174,7 +174,7 @@ Cada paso deja los controles en verde y se puede commitear solo.
 Cada criterio se verifica pegando el comando y su salida en el PR (constitución, principio 6).
 
 - [ ] `uv run --env-file .env uvicorn sobreplano.interface.api.main:app` arranca y `curl -s localhost:8000/health` devuelve `{"status":"ok","database":"ok"}`.
-- [ ] Con la base de datos apagada (`supabase db stop`), `curl -i localhost:8000/health` devuelve `503`.
+- [ ] Con la base de datos apagada (`supabase stop`), `curl -i localhost:8000/health` devuelve `503`.
 - [ ] Con la semilla cargada, `curl -s "localhost:8000/projects" | jq '.total, (.items | length)'` imprime `3` y `3`.
 - [ ] `curl -s "localhost:8000/projects?municipality=envigado" | jq .total` imprime `3`, y con `municipality=bello` imprime `0`.
 - [ ] `curl -s -o /dev/null -w "%{http_code}" "localhost:8000/projects?municipality=nope"` imprime `422`; con `limit=101` también.

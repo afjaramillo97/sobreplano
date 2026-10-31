@@ -39,7 +39,10 @@ force-exclude = true
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "ASYNC"]
 
 [tool.pytest.ini_options]
-markers = ["integration: tests that need a running Postgres (supabase db start)"]
+markers = [
+    "integration: tests that need a running Postgres (supabase db start)",
+    "llm: paid calls to a real LLM API; skipped unless RUN_LLM_TESTS=1",
+]
 
 [tool.pyright]
 typeCheckingMode = "strict"
@@ -72,5 +75,6 @@ forbidden_modules = [
     "alembic",
     "openai",
     "httpx",
+    "httpx2",
     "bs4",
 ]

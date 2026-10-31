@@ -58,7 +58,9 @@ class RawPageStore(Protocol):
 class ProjectPageExtractor(Protocol):
     """Reads a project and its unit types from the clean text of a page."""
 
-    def extract(self, page_text: str) -> ExtractionResult: ...
+    model: str  # "provider:model", the reuse key next to the content hash
+
+    def extract(self, page_text: str) -> ExtractionResult: ...  # ExtractionError
 
 
 class ScrapeRunRepository(Protocol):

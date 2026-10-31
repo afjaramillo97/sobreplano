@@ -131,6 +131,7 @@ class RawPageStore(Protocol):
 
 class ProjectPageExtractor(Protocol):
     model: str  # "proveedor:modelo"; el caso de uso lo necesita para buscar la extracción guardada
+
     def extract(self, page_text: str) -> ExtractionResult: ...  # proyecto, modelo y tokens
 
 

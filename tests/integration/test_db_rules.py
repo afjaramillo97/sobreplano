@@ -9,6 +9,7 @@ from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.orm import Session
 
 from sobreplano.domain.catalog import Developer, GeoPoint, Municipality, Project, UnitType
+from sobreplano.domain.errors import DuplicateObservationError
 from sobreplano.domain.pricing import ObservationSource, PriceObservation
 from sobreplano.infrastructure.db.catalog_repository import SqlCatalogRepository
 from sobreplano.infrastructure.db.price_observation_repository import (
@@ -17,7 +18,16 @@ from sobreplano.infrastructure.db.price_observation_repository import (
 
 pytestmark = pytest.mark.integration
 
-TABLES = {"developers", "projects", "unit_types", "price_observations", "alembic_version"}
+TABLES = {
+    "developers",
+    "projects",
+    "unit_types",
+    "price_observations",
+    "alembic_version",
+    "scrape_runs",
+    "scraped_pages",
+    "page_extractions",
+}
 
 
 def make_observation(unit_type: UnitType, price_cop: int = 320_000_000) -> PriceObservation:
@@ -64,8 +74,10 @@ def test_truncate_is_rejected(session: Session, observation: PriceObservation) -
 def test_second_observation_on_the_same_day_is_rejected(
     observations: SqlPriceObservationRepository, unit_type: UnitType, observation: PriceObservation
 ) -> None:
-    with pytest.raises(IntegrityError):
+    # The repository translates the violation; the database constraint is what rejects it.
+    with pytest.raises(DuplicateObservationError) as raised:
         observations.add(make_observation(unit_type, price_cop=330_000_000))
+    assert isinstance(raised.value.__cause__, IntegrityError)
 
 
 def test_unit_type_without_areas_is_rejected(session: Session, project: Project) -> None:

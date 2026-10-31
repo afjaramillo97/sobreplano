@@ -34,8 +34,8 @@ class UnitTypeListing:
     name: str
     private_area_m2: Decimal | None
     built_area_m2: Decimal | None
-    bedrooms: int
-    bathrooms: int
+    bedrooms: int | None
+    bathrooms: int | None
     latest_price: LatestPrice | None
 
     @property

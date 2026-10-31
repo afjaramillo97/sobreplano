@@ -50,8 +50,8 @@ class UnitTypeOut(BaseModel):
     name: str
     private_area_m2: float | None
     built_area_m2: float | None
-    bedrooms: int
-    bathrooms: int
+    bedrooms: int | None
+    bathrooms: int | None
     latest_price: LatestPriceOut | None
     price_per_m2_cop: int | None
     area_basis: AreaBasis

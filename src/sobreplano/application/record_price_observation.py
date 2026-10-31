@@ -6,7 +6,7 @@ from enum import StrEnum
 from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
-from sobreplano.domain.errors import DomainValidationError
+from sobreplano.domain.errors import DomainValidationError, DuplicateObservationError
 from sobreplano.domain.ports import PriceObservationRepository
 from sobreplano.domain.pricing import ObservationSource, PriceObservation
 
@@ -57,5 +57,9 @@ class RecordPriceObservation:
         )
         if self.observations.exists_for_day(unit_type_id, observation.observed_on):
             return RecordResult.ALREADY_RECORDED
-        self.observations.add(observation)
+        # Two runs can both pass the check above; the unique constraint settles the race.
+        try:
+            self.observations.add(observation)
+        except DuplicateObservationError:
+            return RecordResult.ALREADY_RECORDED
         return RecordResult.RECORDED

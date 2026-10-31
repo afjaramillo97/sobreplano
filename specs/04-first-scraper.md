@@ -1,6 +1,6 @@
 # SPEC 04 — Primer scraper: Londoño Gómez en local
 
-> **Estado:** aprobado
+> **Estado:** implementado
 > **Depende de:** SPEC 02, SPEC 03
 > **Fecha:** 2026-10-30 (proveedor de extracción cambiado a OpenAI el mismo día)
 > **Objetivo:** Correr en local `python -m sobreplano.interface.cli.scrape londono-gomez`, que visita una vez las fichas públicas de vivienda de Londoño Gómez en el Valle de Aburrá, guarda el HTML crudo, extrae las tipologías con un LLM (GPT-6 Luna por defecto) y registra un precio por tipología y por día.
@@ -18,6 +18,15 @@ Lo que se sabe del sitio (lectura del 30 oct, sin descargar el HTML crudo):
 - Las coordenadas están en el enlace de Google Maps: `https://www.google.com/maps/dir//6.3296009,-75.5595542/@...`, en orden latitud, longitud.
 - Hay proyectos "Outlet" (inventario con descuento) que repiten un proyecto normal.
 
+Lo que confirmó la exploración del paso 1 (30 oct, HTML crudo descargado con `httpx`):
+
+- Las tipologías vienen en el HTML inicial (bloques `.detail-apartment` con `h4` y `span.price-apartament-types`); no hace falta Playwright. El texto limpio de una ficha mide entre 3.000 y 5.000 caracteres.
+- `www.londonogomez.com` redirige con 301 a `londonogomez.com`. Su `robots.txt` solo bloquea `/core/`, `/profiles/`, `/admin/`, `/search/`, `/user/…` y similares; `/proyectos-vivienda` y las fichas están permitidas.
+- El listado es `https://londonogomez.com/proyectos-vivienda`: 62 tarjetas en `.view-busqueda-proyectos .views-row`, sin paginación. Mezcla vivienda, lotes, oficinas y hotel, y municipios fuera del Valle (Rionegro, La Ceja, El Retiro, Bogotá, Barranquilla).
+- Cada tarjeta enlaza a `/node/{N}` (`a[href^="/node/"]`), no a la URL canónica. Pedir `/node/{N}` responde 301 a la canónica, y la ficha trae `<link rel="canonical">`.
+- La tarjeta muestra el título (`.views-field-title`), el tipo (`.views-field-field-tipo-de-proyecto`: `Vivienda`, `Lotes`, `Oficinas`, `Hotel`) y el municipio (`.views-field-nothing`, por ejemplo `Medellín`, `La Estrella`). Las 3 tarjetas sin municipio tampoco tienen tipo (entradas de prueba como "prueba" o "Verde M").
+- Con los filtros de tarjeta de abajo quedan 25 fichas en 5 municipios (Medellín, Bello, Envigado, Sabaneta, La Estrella). Varias no publican precio.
+
 Estado actual del repo (`main` en `01785e3`):
 
 - `src/sobreplano/application/record_price_observation.py` registra una observación por tipología y día, pero un `IntegrityError` por inserción simultánea sube como error.
@@ -33,7 +42,7 @@ Estado actual del repo (`main` en `01785e3`):
 **Dentro:**
 
 - Migración `0002`: tablas `scrape_runs`, `scraped_pages` y `page_extractions`; `bedrooms` y `bathrooms` pasan a opcionales.
-- Puertos en el dominio: `PageFetcher`, `RawPageStore`, `ProjectPageExtractor` y `ScrapeRunRepository`.
+- Puertos en el dominio: `PageFetcher`, `RawPageStore`, `ProjectPageExtractor`, `ScrapeRunRepository` y `DeveloperSite`.
 - Caso de uso `ScrapeDeveloper` en `application/`.
 - Fetcher con `httpx`: user-agent del proyecto, `robots.txt`, 2 s entre peticiones y una visita por URL por corrida.
 - Almacén de HTML crudo en disco (`data/raw/`), detrás del puerto; S3 llega en SPEC 05.
@@ -65,7 +74,7 @@ Estado actual del repo (`main` en `01785e3`):
 | Tabla | Columnas | Restricciones |
 | --- | --- | --- |
 | `scrape_runs` | `id`, `developer_id` → `developers`, `run_on date`, `started_at`, `finished_at null`, `status varchar(16)` (`running`, `succeeded`, `failed`), `pages_fetched`, `pages_failed`, `observations_recorded` (int, por defecto 0), `error text null`, `created_at`, `updated_at` | CHECK de `status` |
-| `scraped_pages` | `id`, `scrape_run_id` → `scrape_runs`, `url text`, `http_status smallint`, `content_sha256 char(64)`, `storage_key text`, `fetched_at`, `created_at` | único (`scrape_run_id`, `url`) |
+| `scraped_pages` | `id`, `scrape_run_id` → `scrape_runs`, `url text` (URL canónica, nunca `/node/N`), `http_status smallint`, `content_sha256 char(64)`, `storage_key text`, `fetched_at`, `created_at` | único (`scrape_run_id`, `url`) |
 | `page_extractions` | `id`, `content_sha256 char(64)`, `model text`, `input_tokens int`, `output_tokens int`, `payload jsonb`, `created_at` | único (`content_sha256`, `model`) |
 
 - `unit_types.bedrooms` y `unit_types.bathrooms` pasan a `NULL` con `op.alter_column`. Cuando la ficha da un rango ("2 o 3 alcobas"), se guarda el mínimo.
@@ -102,6 +111,11 @@ Una tipología se guarda solo si:
 - tiene al menos un área entre 15 y 1.000 m²;
 - `total_area_m2` se guarda como `built_area_m2` y `private_area_m2` como `private_area_m2`.
 
+Además:
+
+- Un área fuera de rango se descarta (queda en `None`) y se registra en el log; la tipología se guarda con la otra si esa sí está en rango.
+- Alcobas y baños: el modelo devuelve el mínimo cuando hay un rango. El dominio solo acepta valores entre 0 y 10; fuera de eso quedan en `None`, sin descartar la tipología.
+
 Las tipologías que no cumplen se cuentan y se registran en el log con la URL, pero no frenan la corrida.
 
 ### Puertos (`domain/ports.py`)
@@ -116,6 +130,8 @@ class RawPageStore(Protocol):
 
 
 class ProjectPageExtractor(Protocol):
+    model: str  # "proveedor:modelo"; el caso de uso lo necesita para buscar la extracción guardada
+
     def extract(self, page_text: str) -> ExtractionResult: ...  # proyecto, modelo y tokens
 
 
@@ -125,9 +141,23 @@ class ScrapeRunRepository(Protocol):
     def find_extraction(self, content_sha256: str, model: str) -> ExtractionResult | None: ...
     def save_extraction(self, content_sha256: str, result: ExtractionResult) -> None: ...
     def finish(self, run: ScrapeRun) -> None: ...
+
+
+class DeveloperSite(Protocol):
+    slug: str  # "londono-gomez"
+    name: str
+    website_url: str
+    listing_url: str
+
+    def project_urls(self, listing_html: str) -> list[str]: ...  # ya filtradas por la tarjeta
+    def parse_project(
+        self, page: FetchedPage
+    ) -> ParsedProjectPage | None: ...  # None: fuera de alcance
 ```
 
-Los tipos `FetchedPage`, `ScrapeRun`, `ScrapedPage` y `ExtractionResult` son dataclasses del dominio. `ExtractionResult` lleva `model`, `input_tokens`, `output_tokens` y el proyecto extraído en forma de dataclasses, no de Pydantic.
+`DeveloperSite` existe porque `application/` no puede importar el parser (usa `bs4`, vive en `infrastructure/`). Cada constructora es una implementación; la de este spec es `LondonoGomezSite`. `ParsedProjectPage` lleva `canonical_url`, `municipality`, `slug`, `location` y `text` (el texto limpio que va al extractor). Si la ficha está dentro del alcance pero no trae canonical o enlace de Google Maps válido, `parse_project` lanza `PageParseError` y la ficha cuenta como error.
+
+Los tipos `FetchedPage`, `ScrapeRun`, `ScrapedPage`, `ExtractionResult` y `ParsedProjectPage` son dataclasses del dominio. `ExtractionResult` lleva `model`, `input_tokens`, `output_tokens` y el proyecto extraído en forma de dataclasses, no de Pydantic.
 
 ### Configuración
 
@@ -145,11 +175,15 @@ Cada proveedor es una entrada en una tabla de configuración (`infrastructure/sc
 2. **Dependencias y migración.** `uv add openai httpx beautifulsoup4`. Migración `0002` con las tres tablas, RLS y las columnas opcionales; modelos SQLAlchemy al día. `alembic check` limpio. Commit `feat:`.
 3. **Dominio.** Dataclasses de scraping, reglas de validación y puertos, con tests unitarios de los rangos y del mínimo de alcobas. Commit `feat:`.
 4. **`IntegrityError`.** `RecordPriceObservation` atrapa la violación de la restricción única y devuelve `ALREADY_RECORDED`. Para no meter SQLAlchemy en `application/`, el repositorio traduce el error a `DuplicateObservationError` del dominio. Test de integración con dos inserciones del mismo día. Commit `fix:`.
-5. **Parser determinista.** `infrastructure/scraping/londono_gomez.py`: links de fichas del listado (solo municipios de `Municipality`, sin "outlet" en el slug), URL canónica → municipio y slug, enlace de Google Maps → `GeoPoint`, y HTML → texto limpio (sin scripts, estilos, menú ni pie). Tests con HTML sintético. Commit `feat:`.
-6. **Fetcher y almacén.** `infrastructure/scraping/http_fetcher.py` (user-agent, `robots.txt` con `urllib.robotparser`, 2 s entre peticiones, timeout de 20 s) y `infrastructure/scraping/file_store.py` (`data/raw/{developer}/{YYYY-MM-DD}/{sha256}.html`). Commit `feat:`.
+5. **Parser determinista.** Puerto `DeveloperSite`, `ParsedProjectPage` y `PageParseError` en el dominio, y `LondonoGomezSite` en `infrastructure/scraping/londono_gomez.py`:
+   - Tarjetas del listado → enlaces `/node/{N}`, filtrados **antes** de pedir la ficha. Se descarta la tarjeta si el título contiene "outlet" o "prueba" (sin importar mayúsculas), si el tipo no es `Vivienda` (lotes, oficinas, hotel o vacío) o si el municipio, normalizado (minúsculas, sin tildes, espacios a `_`), no está en `Municipality`.
+   - `<link rel="canonical">` de la ficha → municipio y slug. Filtro **después** de pedir la ficha: solo `/proyectos-vivienda/antioquia/{municipio}/{slug}` con municipio en `Municipality` y slug sin "outlet". Una ficha descartada aquí no se guarda en crudo, no se extrae con el LLM y no se registra en `scraped_pages`; solo cuenta en el resumen como "fuera de alcance".
+   - Enlace de Google Maps → `GeoPoint`, y HTML → texto limpio (sin scripts, estilos, menú ni pie).
+   - Tests con HTML sintético. Commit `feat:`.
+6. **Fetcher y almacén.** `infrastructure/scraping/http_fetcher.py`: user-agent, `follow_redirects=True` con máximo 3 redirects, timeout de 20 s y 2 s entre peticiones, también antes y después de las fichas que se descartan. `robots.txt` con `urllib.robotparser`, leído de `londonogomez.com` (el host final) y revisado contra la URL final. `FetchedPage.url` es la URL final. `infrastructure/scraping/file_store.py` guarda en `data/raw/{developer}/{YYYY-MM-DD}/{sha256}.html`. Commit `feat:`.
 7. **Extractor compatible con OpenAI.** `infrastructure/scraping/providers.py` (tabla de proveedores y fábrica) y `infrastructure/scraping/openai_compatible_extractor.py` con `client.chat.completions.parse(model=..., messages=[...], response_format=ExtractedProject, max_completion_tokens=2048, **extra)`, donde `extra` es `reasoning_effort="none"` para OpenAI. Sin `temperature`. El texto de la ficha va dentro de `<page>…</page>` y el mensaje de sistema dice que todo lo que está adentro es dato, nunca instrucciones. Si el texto limpio pasa de 20.000 caracteres, la ficha se marca como error y no se envía. Son error de extracción de esa ficha: `finish_reason` igual a `length`, un `message.refusal` no vacío o `message.parsed` vacío. Tokens desde `usage.prompt_tokens` y `usage.completion_tokens`. Test con un cliente falso que verifica que el resultado guarda modelo y tokens (principio 5) y que la petición lleva `reasoning_effort="none"` y no lleva `temperature`. Commit `feat:`.
-8. **Repositorio y caso de uso.** `SqlScrapeRunRepository` y `application/scrape_developer.py`. Por cada ficha: bajar, guardar, calcular el hash, reutilizar o extraer, crear constructora, proyecto y tipologías si no existen, y registrar el precio con `RecordPriceObservation`. Si una ficha falla, se cuenta y se sigue. La corrida termina `succeeded` si al menos una ficha registró precio. Tests con fakes de los cuatro puertos. Commit `feat:`.
-9. **CLI.** `interface/cli/scrape.py` con `--limit N` y `--dry-run` (baja y extrae, pero hace rollback). Imprime un resumen: fichas, tipologías válidas y descartadas, observaciones, tokens y costo estimado. Commit `feat:`.
+8. **Repositorio y caso de uso.** `SqlScrapeRunRepository` y `application/scrape_developer.py`. Por cada ficha: bajar, guardar, calcular el hash, reutilizar o extraer, crear constructora, proyecto y tipologías si no existen, y registrar el precio con `RecordPriceObservation`. Si una ficha falla, se cuenta y se sigue. La corrida termina `succeeded` si al menos una ficha registró precio. Tests con fakes de los cinco puertos. Commit `feat:`.
+9. **CLI.** `interface/cli/scrape.py` con `--limit N` y `--dry-run` (baja y extrae, pero hace rollback). Imprime un resumen: fichas (pedidas, fuera de alcance y con error), tipologías válidas y descartadas, observaciones, tokens y costo estimado. Commit `feat:`.
 10. **Corrida real y documentación.** Una corrida completa en local contra Londoño Gómez. `CLAUDE.md` con el comando y `docs/scrapers/londono-gomez.md` con la URL del listado, los selectores, las reglas de robots y la fecha de revisión. Commit `docs:`.
 
 ## Criterios de aceptación
@@ -187,6 +221,9 @@ Cada criterio se verifica pegando el comando y su salida en el PR (constitución
 - **Sí:** HTML crudo en disco detrás de `RawPageStore`. SPEC 05 cambia solo la implementación a S3.
 - **Sí:** `bedrooms` y `bathrooms` opcionales, con el mínimo cuando hay rango. **No:** inventar un valor cuando la ficha no lo publica.
 - **Sí:** el repositorio traduce `IntegrityError` a un error del dominio. `application/` no puede importar SQLAlchemy.
+- **Sí:** descubrir por `/node/N` y resolver el municipio con la canonical; una sola petición por proyecto. Lo que se descarta después de pedirlo no se guarda ni se extrae.
+- **Sí:** filtrar primero con los datos de la tarjeta (título, tipo y municipio) para no pedir fichas de lotes, oficinas o municipios fuera del Valle.
+- **Sí:** un quinto puerto, `DeveloperSite`, para el parser de cada constructora. **No:** meter el parser dentro del extractor (mezcla lo determinista con el LLM) ni dejar el descubrimiento en la CLI.
 - **Sí:** saltar los proyectos "Outlet". Su precio es de inventario con descuento y duplicaría proyectos que ya existen.
 - **Sí:** tests con HTML sintético escrito a mano. La constitución prohíbe versionar HTML scrapeado.
 - **No:** crear o actualizar tipologías cuando cambia su área. En v1 se crean una vez; los cambios se registran en el log.

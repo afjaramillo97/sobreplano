@@ -83,8 +83,8 @@ class UnitType:
     name: str
     private_area_m2: Decimal | None
     built_area_m2: Decimal | None  # at least one of the two areas must be present
-    bedrooms: int
-    bathrooms: int
+    bedrooms: int | None  # None when the listing does not publish it
+    bathrooms: int | None
 
     def __post_init__(self) -> None:
         if self.private_area_m2 is None and self.built_area_m2 is None:

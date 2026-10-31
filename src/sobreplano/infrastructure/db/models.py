@@ -1,4 +1,4 @@
-"""SQLAlchemy models for schema v1; Alembic is the only owner of the schema."""
+"""SQLAlchemy models for catalog, prices and scraping; Alembic is the only owner of the schema."""
 
 import enum
 from datetime import date, datetime
@@ -7,12 +7,14 @@ from uuid import UUID
 
 from geoalchemy2 import Geography, WKBElement, WKTElement
 from sqlalchemy import (
+    CHAR,
     BigInteger,
     CheckConstraint,
     Date,
     DateTime,
     Enum,
     ForeignKey,
+    Integer,
     MetaData,
     Numeric,
     SmallInteger,
@@ -20,10 +22,12 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from sobreplano.domain.catalog import Municipality
 from sobreplano.domain.pricing import ObservationSource
+from sobreplano.domain.scraping import ScrapeRunStatus
 
 # Explicit names so migrations and `alembic check` agree on constraint names.
 NAMING_CONVENTION = {
@@ -127,8 +131,9 @@ class UnitTypeRow(IdMixin, TimestampsMixin, Base):
     name: Mapped[str] = mapped_column(Text)
     private_area_m2: Mapped[Decimal | None] = mapped_column(Numeric(7, 2))
     built_area_m2: Mapped[Decimal | None] = mapped_column(Numeric(7, 2))
-    bedrooms: Mapped[int] = mapped_column(SmallInteger)
-    bathrooms: Mapped[int] = mapped_column(SmallInteger)
+    # Optional since migration 0002: some listings do not publish them.
+    bedrooms: Mapped[int | None] = mapped_column(SmallInteger)
+    bathrooms: Mapped[int | None] = mapped_column(SmallInteger)
 
 
 class PriceObservationRow(IdMixin, CreatedAtMixin, Base):
@@ -146,3 +151,47 @@ class PriceObservationRow(IdMixin, CreatedAtMixin, Base):
     observed_on: Mapped[date] = mapped_column(Date)
     source: Mapped[ObservationSource] = mapped_column(_str_enum(ObservationSource, "source"))
     source_url: Mapped[str] = mapped_column(Text)
+
+
+class ScrapeRunRow(IdMixin, TimestampsMixin, Base):
+    """Row of `scrape_runs`: one pass over one developer's site on one day."""
+
+    __tablename__ = "scrape_runs"
+
+    developer_id: Mapped[UUID] = mapped_column(ForeignKey("developers.id"))
+    run_on: Mapped[date] = mapped_column(Date)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    status: Mapped[ScrapeRunStatus] = mapped_column(_str_enum(ScrapeRunStatus, "scrape_run_status"))
+    pages_fetched: Mapped[int] = mapped_column(Integer, server_default="0")
+    pages_failed: Mapped[int] = mapped_column(Integer, server_default="0")
+    observations_recorded: Mapped[int] = mapped_column(Integer, server_default="0")
+    error: Mapped[str | None] = mapped_column(Text)
+
+
+class ScrapedPageRow(IdMixin, CreatedAtMixin, Base):
+    """Row of `scraped_pages`: one fetched page; `url` is the canonical URL, never /node/N."""
+
+    __tablename__ = "scraped_pages"
+    __table_args__ = (UniqueConstraint("scrape_run_id", "url"),)
+
+    scrape_run_id: Mapped[UUID] = mapped_column(ForeignKey("scrape_runs.id"))
+    url: Mapped[str] = mapped_column(Text)
+    http_status: Mapped[int] = mapped_column(SmallInteger)
+    content_sha256: Mapped[str] = mapped_column(CHAR(64))
+    storage_key: Mapped[str] = mapped_column(Text)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class PageExtractionRow(IdMixin, CreatedAtMixin, Base):
+    """Row of `page_extractions`: a validated LLM extraction, reused while the HTML hash holds."""
+
+    __tablename__ = "page_extractions"
+    # The model is part of the key so switching models re-extracts instead of mixing results.
+    __table_args__ = (UniqueConstraint("content_sha256", "model"),)
+
+    content_sha256: Mapped[str] = mapped_column(CHAR(64))
+    model: Mapped[str] = mapped_column(Text)
+    input_tokens: Mapped[int] = mapped_column(Integer)
+    output_tokens: Mapped[int] = mapped_column(Integer)
+    payload: Mapped[dict[str, object]] = mapped_column(JSONB)

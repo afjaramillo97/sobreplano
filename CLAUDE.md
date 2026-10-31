@@ -4,11 +4,11 @@
 
 Sobreplano is a portfolio project (AI Engineer): a search engine for new off-plan housing in the Aburrá Valley, Colombia, with a daily price history and an AI advisor. Its differentiator versus portals (Fincaraíz, Metrocuadrado, La Haus) is showing how much each project has risen since its first observed price.
 
-Status: week 2 of 8. Schema v1 and the append-only price repository are in place (SPEC 02); no scrapers, API or advisor yet. Budget: at most ~20 USD/month, so check cost before proposing any new service.
+Status: week 3 of 8. Schema, read API and the first scraper (Londoño Gómez, local) are in place (SPECs 01–04); not yet in AWS, no advisor yet. Budget: at most ~20 USD/month, so check cost before proposing any new service.
 
 ## Stack
 
-- Scrapers: Python, Playwright, one per developer. EventBridge → SQS → Lambda (container images). Raw HTML in S3. Claude extracts into Pydantic models.
+- Scrapers: Python, httpx, one per developer (Playwright only when a site needs a browser). EventBridge → SQS → Lambda (container images). Raw HTML in S3. An LLM extracts into Pydantic models (see EXTRACTION_MODEL).
 - Data: Supabase (Postgres, pgvector, PostGIS, Auth). Alembic migrations.
 - API: FastAPI + SQLAlchemy.
 - Advisor: LangGraph, tools (search, compare, mortgage and return simulation), hybrid search, subsidies RAG, own MCP server.
@@ -16,7 +16,7 @@ Status: week 2 of 8. Schema v1 and the append-only price repository are in place
 - Frontend: React + Vite, tRPC BFF.
 - Infra: Terraform, LocalStack, Infracost on PRs, GitHub Actions.
 - Tooling: Python with uv and ruff.
-- Extraction: cheapest Claude model that passes the golden set; re-extract only when the raw HTML hash changes.
+- Extraction: cheapest model that passes the golden set; re-extract only when the raw HTML hash changes.
 
 ## Roadmap
 
@@ -28,7 +28,7 @@ W2 monorepo and schema · W3 scrapers and first daily snapshot · W4 history, pr
 
 ```
 specs/       one spec per week, written before implementing
-scrapers/    Playwright scrapers and extraction
+scrapers/    scrapers and extraction
 api/         FastAPI service
 advisor/     LangGraph agent, tools, MCP server
 web/         React + Vite frontend and tRPC BFF
@@ -56,7 +56,7 @@ Single package in `src/sobreplano/` (src layout), installed in editable mode by 
 src/sobreplano/
   domain/          entities and ports (typing.Protocol)
   application/     use cases
-  infrastructure/  SQLAlchemy, Playwright, Anthropic, S3
+  infrastructure/  SQLAlchemy, httpx, OpenAI-compatible LLM clients, S3
   interface/       FastAPI (api/), Lambda handler, MCP server
 tests/             outside src/, not packaged
 ```
@@ -100,7 +100,7 @@ uv run --env-file .env python -m sobreplano.interface.cli.scrape londono-gomez
 RUN_LLM_TESTS=1 uv run --env-file .env pytest tests/llm   # optional paid test against the real API
 ```
 
-All five checks run in CI (`.github/workflows/ci.yml`) on every PR to `main`; CI also starts Postgres, runs the migrations and the integration tests. Tools to install: `jq` for the Claude Code hook (`.claude/hooks/ruff-edited.sh`, runs ruff on edited `.py` files) and the Supabase CLI (`brew install supabase/tap/supabase`); `psql` is optional (`brew install libpq`, keg-only, so add it to PATH).
+All five checks run in CI (`.github/workflows/ci.yml`) on every PR to `main`; CI also starts Postgres, runs the migrations and the integration tests. Tools to install: `jq` for the Claude Code hook (`.claude/hooks/ruff-edited.sh`, runs ruff on edited `.py` and `.md` files) and the Supabase CLI (`brew install supabase/tap/supabase`); `psql` is optional (`brew install libpq`, keg-only, so add it to PATH).
 
 ## FastAPI conventions
 

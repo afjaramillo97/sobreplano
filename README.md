@@ -6,19 +6,19 @@ Search for new off-plan housing projects in the Aburrá Valley (Medellín area),
 
 Colombian listing portals (Fincaraíz, Metrocuadrado, La Haus) show a project's current price. Sobreplano shows how much each project has risen since its first observed price, so buyers can see the real cost of waiting and compare projects on price per m² by zone.
 
-**Status:** Under construction · week 2 of 8
+**Status:** Under construction · week 3 of 8
 
 ## What this demonstrates
 
 - LLM agents with tools (LangGraph): search, compare, mortgage and return simulation
-- Structured extraction from messy HTML with Claude into validated Pydantic models
+- Structured extraction from messy HTML with an LLM (provider-agnostic; GPT-6 Luna today) into validated Pydantic models
 - Evals in CI: golden set and LLM-as-judge, plus prompt-injection guardrails
 - Infrastructure as code with cost control: Terraform, LocalStack, Infracost on every PR
 - Responsible scraping at small scale, on a budget of about 20 USD/month
 
 ## Architecture
 
-- **Scrapers:** Python + Playwright, one per developer. EventBridge → SQS → Lambda (container images). Raw HTML in S3. Extraction with Claude into Pydantic models.
+- **Scrapers:** Python + httpx, one per developer (Playwright only when a site needs a browser). EventBridge → SQS → Lambda (container images). Raw HTML in S3. LLM extraction into Pydantic models.
 - **Data:** Supabase (Postgres with pgvector and PostGIS, Supabase Auth). Migrations with Alembic.
 - **API:** FastAPI + SQLAlchemy.
 - **Advisor:** LangGraph with tools to search, compare, and simulate mortgage and investment return. Hybrid search, RAG over housing subsidies, and a custom MCP server.

@@ -111,6 +111,11 @@ Una tipología se guarda solo si:
 - tiene al menos un área entre 15 y 1.000 m²;
 - `total_area_m2` se guarda como `built_area_m2` y `private_area_m2` como `private_area_m2`.
 
+Además:
+
+- Un área fuera de rango se descarta (queda en `None`) y se registra en el log; la tipología se guarda con la otra si esa sí está en rango.
+- Alcobas y baños: el modelo devuelve el mínimo cuando hay un rango. El dominio solo acepta valores entre 0 y 10; fuera de eso quedan en `None`, sin descartar la tipología.
+
 Las tipologías que no cumplen se cuentan y se registran en el log con la URL, pero no frenan la corrida.
 
 ### Puertos (`domain/ports.py`)

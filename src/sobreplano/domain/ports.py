@@ -7,6 +7,7 @@ from uuid import UUID
 from sobreplano.domain.catalog import Developer, Municipality, Project, UnitType
 from sobreplano.domain.listings import ProjectPage
 from sobreplano.domain.pricing import PriceObservation
+from sobreplano.domain.scraping import ExtractionResult, FetchedPage, ScrapedPage, ScrapeRun
 
 
 class CatalogRepository(Protocol):
@@ -34,3 +35,31 @@ class ProjectListingQuery(Protocol):
     def list_projects(
         self, *, municipality: Municipality | None, limit: int, offset: int
     ) -> ProjectPage: ...
+
+
+class PageFetcher(Protocol):
+    """Fetches one URL politely: project user-agent, robots.txt and a pause between requests."""
+
+    def fetch(self, url: str) -> FetchedPage: ...
+
+
+class RawPageStore(Protocol):
+    """Keeps raw HTML so a page can be re-extracted without visiting the site again."""
+
+    def save(self, developer_slug: str, page: FetchedPage) -> str: ...  # returns the storage key
+
+
+class ProjectPageExtractor(Protocol):
+    """Reads a project and its unit types from the clean text of a page."""
+
+    def extract(self, page_text: str) -> ExtractionResult: ...
+
+
+class ScrapeRunRepository(Protocol):
+    """Storage for scrape runs, their pages and reusable extractions. Does not commit."""
+
+    def start(self, developer_id: UUID, run_on: date) -> ScrapeRun: ...
+    def record_page(self, run_id: UUID, page: ScrapedPage) -> None: ...
+    def find_extraction(self, content_sha256: str, model: str) -> ExtractionResult | None: ...
+    def save_extraction(self, content_sha256: str, result: ExtractionResult) -> None: ...
+    def finish(self, run: ScrapeRun) -> None: ...

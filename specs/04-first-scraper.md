@@ -1,6 +1,6 @@
 # SPEC 04 — Primer scraper: Londoño Gómez en local
 
-> **Estado:** aprobado
+> **Estado:** implementado
 > **Depende de:** SPEC 02, SPEC 03
 > **Fecha:** 2026-10-30 (proveedor de extracción cambiado a OpenAI el mismo día)
 > **Objetivo:** Correr en local `python -m sobreplano.interface.cli.scrape londono-gomez`, que visita una vez las fichas públicas de vivienda de Londoño Gómez en el Valle de Aburrá, guarda el HTML crudo, extrae las tipologías con un LLM (GPT-6 Luna por defecto) y registra un precio por tipología y por día.

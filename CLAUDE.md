@@ -92,6 +92,14 @@ API (docs at `/docs`):
 uv run --env-file .env uvicorn sobreplano.interface.api.main:app --reload   # http://localhost:8000
 ```
 
+Scraper (one pass per site per day; paid LLM calls, see `docs/scrapers/`):
+
+```
+uv run --env-file .env python -m sobreplano.interface.cli.scrape londono-gomez --limit 2 --dry-run
+uv run --env-file .env python -m sobreplano.interface.cli.scrape londono-gomez
+RUN_LLM_TESTS=1 uv run --env-file .env pytest tests/llm   # optional paid test against the real API
+```
+
 All five checks run in CI (`.github/workflows/ci.yml`) on every PR to `main`; CI also starts Postgres, runs the migrations and the integration tests. Tools to install: `jq` for the Claude Code hook (`.claude/hooks/ruff-edited.sh`, runs ruff on edited `.py` files) and the Supabase CLI (`brew install supabase/tap/supabase`); `psql` is optional (`brew install libpq`, keg-only, so add it to PATH).
 
 ## FastAPI conventions
@@ -135,6 +143,7 @@ For any change to the schema (Alembic is its only owner):
 This file is an index, not a manual. When a topic needs depth (scrapers, schema, advisor, evals, infra), put it in its own sub-document and link it here with one line. Sub-documents live in `docs/`.
 
 - Schema: `docs/schema.md`.
+- Scrapers: `docs/scrapers/` (one file per developer).
 
 ## Specs
 

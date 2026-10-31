@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 import pytest
 
 from sobreplano.application.record_price_observation import RecordPriceObservation, RecordResult
-from sobreplano.domain.errors import DomainValidationError
+from sobreplano.domain.errors import DomainValidationError, DuplicateObservationError
 from sobreplano.domain.pricing import ObservationSource, PriceObservation
 
 
@@ -111,3 +111,19 @@ def test_invalid_price_is_rejected_and_nothing_is_added(
     with pytest.raises(DomainValidationError):
         record(use_case, uuid4(), datetime(2026, 10, 28, 15, 0, tzinfo=UTC), price_cop=0)
     assert repo.items == []
+
+
+class RacingRepository(InMemoryPriceObservationRepository):
+    """Another run inserts between our check and our insert."""
+
+    def exists_for_day(self, unit_type_id: UUID, observed_on: date) -> bool:
+        return False
+
+    def add(self, observation: PriceObservation) -> None:
+        raise DuplicateObservationError("inserted by a concurrent run")
+
+
+def test_duplicate_from_a_race_is_already_recorded() -> None:
+    use_case = RecordPriceObservation(RacingRepository())
+    result = record(use_case, uuid4(), datetime(2026, 10, 28, 15, 0, tzinfo=UTC))
+    assert result is RecordResult.ALREADY_RECORDED

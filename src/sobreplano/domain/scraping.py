@@ -1,5 +1,6 @@
 """Scraping entities: runs, fetched pages, extraction results and the rules to accept them."""
 
+import hashlib
 import re
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -155,6 +156,11 @@ def validate_unit_type(unit_type: ExtractedUnitType) -> ValidUnitType | Rejected
         bathrooms=_rooms_in_range("bathrooms", unit_type.bathrooms, warnings),
         warnings=tuple(warnings),
     )
+
+
+def content_sha256(html: str) -> str:
+    """Hex SHA-256 of the page's UTF-8 bytes: the raw file name and the extraction reuse key."""
+    return hashlib.sha256(html.encode("utf-8")).hexdigest()
 
 
 def normalize_unit_type_name(name: str) -> str:

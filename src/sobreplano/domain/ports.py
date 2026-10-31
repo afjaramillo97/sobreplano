@@ -46,7 +46,7 @@ class ProjectListingQuery(Protocol):
 class PageFetcher(Protocol):
     """Fetches one URL politely: project user-agent, robots.txt and a pause between requests."""
 
-    def fetch(self, url: str) -> FetchedPage: ...
+    def fetch(self, url: str) -> FetchedPage: ...  # FetchError
 
 
 class RawPageStore(Protocol):

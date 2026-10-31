@@ -7,7 +7,13 @@ from uuid import UUID
 from sobreplano.domain.catalog import Developer, Municipality, Project, UnitType
 from sobreplano.domain.listings import ProjectPage
 from sobreplano.domain.pricing import PriceObservation
-from sobreplano.domain.scraping import ExtractionResult, FetchedPage, ScrapedPage, ScrapeRun
+from sobreplano.domain.scraping import (
+    ExtractionResult,
+    FetchedPage,
+    ParsedProjectPage,
+    ScrapedPage,
+    ScrapeRun,
+)
 
 
 class CatalogRepository(Protocol):
@@ -63,3 +69,24 @@ class ScrapeRunRepository(Protocol):
     def find_extraction(self, content_sha256: str, model: str) -> ExtractionResult | None: ...
     def save_extraction(self, content_sha256: str, result: ExtractionResult) -> None: ...
     def finish(self, run: ScrapeRun) -> None: ...
+
+
+class DeveloperSite(Protocol):
+    """One developer's website: where its listing is and how to read its project pages."""
+
+    slug: str
+    name: str
+    website_url: str
+    listing_url: str
+
+    def project_urls(self, listing_html: str) -> list[str]:
+        """Project page URLs from the listing, already filtered by what the cards show."""
+        ...
+
+    def parse_project(self, page: FetchedPage) -> ParsedProjectPage | None:
+        """Structured fields of a project page, or None if it is out of scope.
+
+        Raises:
+            PageParseError: if an in-scope page lacks its canonical URL or map link.
+        """
+        ...

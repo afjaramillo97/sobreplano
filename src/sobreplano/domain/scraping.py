@@ -7,6 +7,8 @@ from decimal import Decimal
 from enum import StrEnum
 from uuid import UUID
 
+from sobreplano.domain.catalog import GeoPoint, Municipality
+
 MIN_PRICE_COP = 50_000_000
 MAX_PRICE_COP = 20_000_000_000
 MIN_AREA_M2 = Decimal(15)
@@ -30,6 +32,20 @@ class FetchedPage:
     status: int
     html: str
     fetched_at: datetime
+
+
+@dataclass(frozen=True)
+class ParsedProjectPage:
+    """What the deterministic parser reads from an in-scope project page.
+
+    Municipality, slug and location never come from the model, so lat and lon cannot be swapped.
+    """
+
+    canonical_url: str
+    municipality: Municipality
+    slug: str
+    location: GeoPoint
+    text: str  # clean text sent to the extractor
 
 
 @dataclass(frozen=True)

@@ -38,6 +38,22 @@ PROVIDERS: dict[str, Provider] = {
 }
 
 
+# USD per million tokens (input, output), for the cost estimate in the run summary.
+# Prices as stated in SPEC 04 (2026-10-30); update when a price or the default model changes.
+MODEL_PRICES_USD_PER_MILLION: dict[str, tuple[float, float]] = {
+    "openai:gpt-6-luna": (0.10, 0.50),
+}
+
+
+def estimate_cost_usd(model: str, input_tokens: int, output_tokens: int) -> float | None:
+    """Cost of the given tokens with the model's list price, or None if the price is unknown."""
+    prices = MODEL_PRICES_USD_PER_MILLION.get(model)
+    if prices is None:
+        return None
+    input_price, output_price = prices
+    return (input_tokens * input_price + output_tokens * output_price) / 1_000_000
+
+
 def build_extractor(settings: Settings) -> OpenAICompatibleExtractor | UnavailableExtractor:
     """The extractor for settings.extraction_model.
 

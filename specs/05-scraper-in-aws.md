@@ -108,7 +108,7 @@ La respuesta es el `ScrapeReport` en JSON (`succeeded` o `skipped`). El mismo re
 | `versions.tf` | Terraform y proveedor AWS fijados; backend S3 con `use_lockfile = true` |
 | `storage.tf` | Bucket del HTML crudo y su regla de ciclo de vida |
 | `ecr.tf` | Repositorio `sobreplano-scraper` que conserva las últimas 5 imágenes |
-| `lambda.tf` | Lambda `sobreplano-scraper` (arm64, 1024 MB, timeout de 10 min, sin concurrencia reservada), rol y grupo de logs |
+| `lambda.tf` | Lambda `sobreplano-scraper` (arm64, 512 MB, timeout de 10 min, sin concurrencia reservada), rol y grupo de logs |
 | `schedule.tf` | Schedule `cron(0 6 * * ? *)` en `America/Bogota`, 2 reintentos |
 | `alerts.tf` | Tópico SNS por correo, alarma sobre `Errors >= 1` de la Lambda y presupuesto de 5 USD al mes |
 | `github_oidc.tf` | Proveedor OIDC de GitHub y rol que solo puede subir a ese ECR y actualizar esa Lambda, limitado a `repo:afjaramillo97/sobreplano:ref:refs/heads/main` |
@@ -155,7 +155,7 @@ Cada criterio se verifica pegando el comando y su salida en el PR (constitución
 - **Sí:** EventBridge Scheduler directo a la Lambda. **No:** SQS en este spec; con una sola constructora no reparte nada. Entra en SPEC 06, una Lambda por constructora.
 - **Sí:** arm64. Es más barato por segundo en Lambda y el Mac M1 construye arm64 de forma nativa.
 - **Sí:** una corrida por constructora y día garantizada en la base: candado `pg_try_advisory_xact_lock` por constructora y salto si ya hubo una corrida `succeeded` hoy, con estado `skipped`. La cuenta es nueva y tiene un límite de 5 ejecuciones concurrentes de Lambda; AWS exige dejar 10 sin reservar, así que la concurrencia reservada no se puede usar. La regla en la base no depende de la cuota, cubre también el CLI y se puede probar. **No:** concurrencia reservada en 1, ni siquiera cuando se apruebe el aumento de cuota pedido el 1 de noviembre.
-- **Sí:** timeout de 10 minutos y 1024 MB. Una corrida en local toma unos 2 minutos (25 fichas con 2 s de pausa más la extracción); el margen cubre sitios lentos.
+- **Sí:** timeout de 10 minutos y 512 MB. Una corrida en local toma unos 2 minutos (25 fichas con 2 s de pausa más la extracción); el margen cubre sitios lentos. La cuenta nueva limita la memoria a 512 MB (`CreateFunction` rechazó 1024 el 1 de noviembre), y la corrida pasa casi todo el tiempo esperando la red y el LLM. La primera corrida en AWS mide `Max Memory Used`. **No:** 1024 MB, el valor original.
 - **Sí:** reintentos en el Scheduler. Una corrida `failed` se puede reintentar sin duplicar (`ALREADY_RECORDED` y extracciones reutilizadas), y una vez hay una `succeeded` en el día, los reintentos terminan `skipped` sin visitar el sitio.
 - **Sí:** secretos en SSM Parameter Store, creados a mano. El nivel estándar es gratis y los valores nunca pasan por el estado de Terraform. **No:** Secrets Manager, que cobra por secreto.
 - **Sí:** el handler lee SSM al arrancar con boto3. **No:** la extensión de Lambda para parámetros; para dos valores por día no hace falta.

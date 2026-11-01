@@ -12,6 +12,7 @@ from sobreplano.domain.ports import (
     ProjectPageExtractor,
     RawPageStore,
 )
+from sobreplano.domain.scraping import ScrapeRunStatus
 from sobreplano.infrastructure.db.catalog_repository import SqlCatalogRepository
 from sobreplano.infrastructure.db.engine import create_db_engine, create_session_factory
 from sobreplano.infrastructure.db.price_observation_repository import (
@@ -42,10 +43,12 @@ def scrape(
     extractor: ProjectPageExtractor,
     limit: int | None,
     dry_run: bool,
+    force: bool = False,
 ) -> ScrapeReport:
     """Run ScrapeDeveloper in one transaction: committed, or rolled back on a dry run.
 
-    The raw HTML files are written either way; only the database is rolled back.
+    The raw HTML files are written either way; only the database is rolled back. The
+    transaction also holds the developer's advisory lock until it ends.
     """
     with session_factory() as session:
         use_case = ScrapeDeveloper(
@@ -57,7 +60,7 @@ def scrape(
             catalog=SqlCatalogRepository(session),
             record=RecordPriceObservation(SqlPriceObservationRepository(session)),
         )
-        report = use_case.execute(limit=limit)
+        report = use_case.execute(limit=limit, force=force)
         if dry_run:
             session.rollback()
         else:
@@ -71,6 +74,7 @@ def run_scrape(
     *,
     limit: int | None,
     dry_run: bool,
+    force: bool = False,
     null_pool: bool = False,
 ) -> ScrapeReport:
     """Build the real adapters from settings and scrape developer once.
@@ -101,6 +105,7 @@ def run_scrape(
                 extractor=extractor,
                 limit=limit,
                 dry_run=dry_run,
+                force=force,
             )
     finally:
         engine.dispose()
@@ -108,6 +113,8 @@ def run_scrape(
 
 def format_summary(report: ScrapeReport, model: str, *, dry_run: bool) -> str:
     """Human summary of a run, with tokens and the estimated cost of new extractions."""
+    if report.status is ScrapeRunStatus.SKIPPED:
+        return f"status: {report.status}\nreason: {report.error}"
     cost = estimate_cost_usd(model, report.input_tokens, report.output_tokens)
     lines = [
         f"status: {report.status}" + (" (dry run, rolled back)" if dry_run else ""),

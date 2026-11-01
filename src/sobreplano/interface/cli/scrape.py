@@ -17,12 +17,18 @@ from sobreplano.interface.composition import (
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Entry point; exits 0 when the run succeeds, 1 when it fails, 2 on bad configuration."""
+    """Entry point; exits 0 when the run succeeds or is skipped, 1 when it fails, 2 on bad
+    configuration."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("developer", choices=sorted(SITES))
     parser.add_argument("--limit", type=int, default=None, help="at most N project pages")
     parser.add_argument(
         "--dry-run", action="store_true", help="fetch and extract, then roll the database back"
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="run even if a run already succeeded today (development only)",
     )
     args = parser.parse_args(argv)
     if args.limit is not None and args.limit < 1:
@@ -35,13 +41,15 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     try:
         settings = load_settings()
-        report = run_scrape(settings, args.developer, limit=args.limit, dry_run=args.dry_run)
+        report = run_scrape(
+            settings, args.developer, limit=args.limit, dry_run=args.dry_run, force=args.force
+        )
     except (ValidationError, ConfigurationError) as error:
         print(f"bad configuration: {error}")
         return 2
 
     print(format_summary(report, settings.extraction_model, dry_run=args.dry_run))
-    return 0 if report.status is ScrapeRunStatus.SUCCEEDED else 1
+    return 1 if report.status is ScrapeRunStatus.FAILED else 0
 
 
 if __name__ == "__main__":

@@ -79,7 +79,7 @@ def handle(
 
     Raises:
         pydantic.ValidationError: if the event is malformed.
-        ScrapeFailedError: if the run did not succeed.
+        ScrapeFailedError: if the run failed (a skipped run is not an error).
     """
     event = ScrapeEvent.model_validate(raw_event)
     settings = load()
@@ -87,7 +87,7 @@ def handle(
     logger.info(
         "%s\n%s", event.developer, format_summary(report, settings.extraction_model, dry_run=False)
     )
-    if report.status is not ScrapeRunStatus.SUCCEEDED:
+    if report.status is ScrapeRunStatus.FAILED:
         raise ScrapeFailedError(f"{event.developer}: run {report.status}: {report.error}")
     return _REPORT.dump_python(report, mode="json")
 

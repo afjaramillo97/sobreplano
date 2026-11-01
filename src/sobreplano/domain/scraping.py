@@ -24,6 +24,8 @@ class ScrapeRunStatus(StrEnum):
     RUNNING = "running"
     SUCCEEDED = "succeeded"
     FAILED = "failed"
+    # Nothing done: another run held the lock, or one already succeeded today.
+    SKIPPED = "skipped"
 
 
 @dataclass(frozen=True)

@@ -38,6 +38,7 @@ Datos verificados el 31 oct en la documentación oficial:
 - Composición compartida entre el CLI y la Lambda en `interface/composition.py`.
 - Handler `interface/lambda_handler.py`.
 - Conexión por el pooler en modo transacción, con prepared statements apagados.
+- Una sola corrida por constructora y día, garantizada en la base de datos: candado `pg_try_advisory_xact_lock` por constructora y salto si ya hay una corrida `succeeded` hoy. Estado nuevo `skipped` (migración `0003`) y `--force` en el CLI.
 - `Dockerfile` en la raíz, con solo las dependencias de runtime.
 - Supabase en la nube con las migraciones aplicadas y el histórico local copiado.
 - Workflow `.github/workflows/deploy-scraper.yml`: en cada push a `main` que toque `src/`, el `Dockerfile` o `uv.lock`, construye la imagen, la sube a ECR y actualiza la Lambda.
@@ -54,7 +55,16 @@ Datos verificados el 31 oct en la documentación oficial:
 
 ## Modelo de datos
 
-Este spec no cambia el esquema. Agrega configuración e infraestructura.
+El único cambio de esquema es el estado `skipped` en el CHECK de `scrape_runs.status` (migración `0003`). El resto es configuración e infraestructura.
+
+### Una corrida por constructora y día
+
+`ScrapeDeveloper`, al iniciar y antes de cualquier petición HTTP:
+
+1. Toma `pg_try_advisory_xact_lock` con una llave derivada del `developer_id`, a través de un método de `ScrapeRunRepository` (`application` no importa SQLAlchemy). Si no lo obtiene, otra corrida está en curso: termina `skipped`.
+2. Si ya hay una `scrape_run` `succeeded` de esa constructora con `run_on` de hoy (Bogotá), termina `skipped`. El CLI tiene `--force` para saltarse esta regla en desarrollo; el candado no se salta nunca.
+
+Se usa la versión `xact` porque el pooler en modo transacción no conserva candados de sesión; la corrida entera es una transacción. Una corrida `skipped` deja su fila en `scrape_runs` con la razón en `error`.
 
 ### Configuración (`infrastructure/settings.py`)
 
@@ -89,7 +99,7 @@ Las mismas que en disco: `s3://{bucket}/{developer}/{YYYY-MM-DD}/{sha256}.html`,
 {"developer": "londono-gomez", "limit": null}
 ```
 
-La respuesta es el `ScrapeReport` en JSON. El mismo resumen sale en los logs.
+La respuesta es el `ScrapeReport` en JSON (`succeeded` o `skipped`). El mismo resumen sale en los logs. Si la corrida termina `failed`, el handler lanza una excepción para que la Lambda cuente un error, la alarma avise y haya reintentos.
 
 ### Infraestructura (`infra/`)
 
@@ -98,7 +108,7 @@ La respuesta es el `ScrapeReport` en JSON. El mismo resumen sale en los logs.
 | `versions.tf` | Terraform y proveedor AWS fijados; backend S3 con `use_lockfile = true` |
 | `storage.tf` | Bucket del HTML crudo y su regla de ciclo de vida |
 | `ecr.tf` | Repositorio `sobreplano-scraper` que conserva las últimas 5 imágenes |
-| `lambda.tf` | Lambda `sobreplano-scraper` (arm64, 1024 MB, timeout de 10 min, concurrencia reservada 1), rol y grupo de logs |
+| `lambda.tf` | Lambda `sobreplano-scraper` (arm64, 1024 MB, timeout de 10 min, sin concurrencia reservada), rol y grupo de logs |
 | `schedule.tf` | Schedule `cron(0 6 * * ? *)` en `America/Bogota`, 2 reintentos |
 | `alerts.tf` | Tópico SNS por correo, alarma sobre `Errors >= 1` de la Lambda y presupuesto de 5 USD al mes |
 | `github_oidc.tf` | Proveedor OIDC de GitHub y rol que solo puede subir a ese ECR y actualizar esa Lambda, limitado a `repo:afjaramillo97/sobreplano:ref:refs/heads/main` |
@@ -112,6 +122,7 @@ La respuesta es el `ScrapeReport` en JSON. El mismo resumen sale en los logs.
 4. **Almacén en S3.** `uv add boto3` y `S3RawPageStore` con la misma llave que el de disco. `Settings.raw_store` y una fábrica que elige disco o S3. Test con un cliente de S3 falso, sin red. `boto3` y `botocore` entran a `forbidden_modules`. Commit `feat:`.
 5. **Composición y handler.** Mover el armado de `scrape()` a `interface/composition.py`, sin cambiar el comportamiento del CLI. `interface/lambda_handler.py` lee SSM, arma `Settings`, corre la composición y devuelve el reporte. Test del handler con un SSM falso y fakes de los puertos. Commit `refactor:` y luego `feat:`.
 6. **Imagen.** `Dockerfile` sobre `public.ecr.aws/lambda/python:3.13`: `uv export --no-dev` a requirements, instalación y copia de `src/`. `.dockerignore` excluye `data/`, `.venv/`, `tests/` y `.env`. Build local con `--platform linux/arm64 --provenance=false` y prueba con el emulador incluido en la imagen. Commit `feat:`.
+6b. **Una corrida por constructora y día.** `ScrapeRunStatus.SKIPPED` y migración `0003` con el CHECK nuevo, escrita a mano. `ScrapeRunRepository.try_lock` y `has_succeeded`. `ScrapeDeveloper` termina `skipped` sin peticiones si no obtiene el candado o si ya hubo una corrida `succeeded` hoy; `--force` en el CLI. El handler solo lanza excepción con `failed`. Tests de integración: dos sesiones simultáneas (la segunda queda `skipped`) y segunda corrida del día (`skipped` sin llamar al fetcher). Commit `feat:`.
 7. **Terraform.** Los archivos de `infra/`. `terraform fmt -check` y `terraform validate`. Mostrar `terraform plan` y **esperar el OK de Andrés antes de `terraform apply`**. Commit `feat:`.
 8. **Primera imagen y corrida manual.** Subir la imagen a ECR, actualizar la Lambda y correr `aws lambda invoke` con `{"developer": "londono-gomez"}`. Revisar el reporte, los logs, los objetos en S3 y la fila nueva en `scrape_runs` de la nube. Commit `docs:` con la evidencia en `docs/deploy.md`.
 9. **Despliegue con OIDC y CI de Terraform.** `deploy-scraper.yml` asume el rol por OIDC (sin llaves de AWS en GitHub), construye, sube y actualiza la Lambda. En `ci.yml`, un job con `terraform fmt -check` y `terraform validate`, sin backend ni credenciales (`terraform init -backend=false`). Commit `chore:`.
@@ -126,7 +137,7 @@ Cada criterio se verifica pegando el comando y su salida en el PR (constitución
 - [ ] `grep -rn "openai_api_key\|database_url" infra/*.tf` solo muestra nombres de parámetros SSM, nunca valores; `terraform -chdir=infra state pull | grep -c "sk-"` imprime `0`.
 - [ ] Los conteos de `developers`, `projects`, `unit_types` y `price_observations` en la nube son iguales a los locales después de la copia.
 - [ ] `aws lambda invoke --function-name sobreplano-scraper --payload '{"developer":"londono-gomez"}' --cli-binary-format raw-in-base64-out out.json` termina con `"status": "succeeded"` en `out.json`.
-- [ ] Una segunda invocación el mismo día registra 0 observaciones nuevas y 0 tokens.
+- [ ] Una segunda invocación el mismo día termina `skipped` y no hace peticiones HTTP.
 - [ ] `aws s3 ls s3://{bucket}/londono-gomez/ --recursive | wc -l` es mayor que 0 después de la corrida.
 - [ ] `aws scheduler get-schedule --name sobreplano-scraper-daily` muestra `cron(0 6 * * ? *)` y `America/Bogota`.
 - [ ] Al día siguiente, sin intervención, `scrape_runs` en la nube tiene una fila con `run_on` de ese día y `status = 'succeeded'`.
@@ -143,9 +154,9 @@ Cada criterio se verifica pegando el comando y su salida en el PR (constitución
 - **Sí:** `us-east-1` para AWS y Supabase. Es la región más barata, las dos plataformas la tienen y quedan en la misma región, con menos latencia entre la Lambda y la base de datos.
 - **Sí:** EventBridge Scheduler directo a la Lambda. **No:** SQS en este spec; con una sola constructora no reparte nada. Entra en SPEC 06, una Lambda por constructora.
 - **Sí:** arm64. Es más barato por segundo en Lambda y el Mac M1 construye arm64 de forma nativa.
-- **Sí:** concurrencia reservada en 1. Dos corridas al mismo tiempo romperían la regla de una pasada por sitio al día.
+- **Sí:** una corrida por constructora y día garantizada en la base: candado `pg_try_advisory_xact_lock` por constructora y salto si ya hubo una corrida `succeeded` hoy, con estado `skipped`. La cuenta es nueva y tiene un límite de 5 ejecuciones concurrentes de Lambda; AWS exige dejar 10 sin reservar, así que la concurrencia reservada no se puede usar. La regla en la base no depende de la cuota, cubre también el CLI y se puede probar. **No:** concurrencia reservada en 1, ni siquiera cuando se apruebe el aumento de cuota pedido el 1 de noviembre.
 - **Sí:** timeout de 10 minutos y 1024 MB. Una corrida en local toma unos 2 minutos (25 fichas con 2 s de pausa más la extracción); el margen cubre sitios lentos.
-- **Sí:** reintentos en el Scheduler. El caso de uso es idempotente en el día (`ALREADY_RECORDED` y extracciones reutilizadas), así que reintentar no duplica ni gasta de más.
+- **Sí:** reintentos en el Scheduler. Una corrida `failed` se puede reintentar sin duplicar (`ALREADY_RECORDED` y extracciones reutilizadas), y una vez hay una `succeeded` en el día, los reintentos terminan `skipped` sin visitar el sitio.
 - **Sí:** secretos en SSM Parameter Store, creados a mano. El nivel estándar es gratis y los valores nunca pasan por el estado de Terraform. **No:** Secrets Manager, que cobra por secreto.
 - **Sí:** el handler lee SSM al arrancar con boto3. **No:** la extensión de Lambda para parámetros; para dos valores por día no hace falta.
 - **Sí:** `NullPool` en la Lambda. El pooler de Supabase ya reutiliza conexiones; un pool dentro de una Lambda congelada solo deja conexiones colgadas.

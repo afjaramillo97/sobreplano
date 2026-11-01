@@ -3,7 +3,7 @@
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from uuid import UUID, uuid4
 
 from sobreplano.application.record_price_observation import (
@@ -51,7 +51,7 @@ class ScrapeReport:
     """Counters of one run, for the CLI summary; tokens only count new extractions."""
 
     status: ScrapeRunStatus = ScrapeRunStatus.RUNNING
-    error: str | None = None
+    error: str | None = None  # why the run failed, or why it was skipped
     pages_listed: int = 0
     pages_fetched: int = 0
     pages_out_of_scope: int = 0
@@ -86,40 +86,26 @@ class ScrapeDeveloper:
     record: RecordPriceObservation
     now: Callable[[], datetime] = lambda: datetime.now(UTC)
 
-    def execute(self, limit: int | None = None) -> ScrapeReport:
+    def execute(self, limit: int | None = None, *, force: bool = False) -> ScrapeReport:
         """Run the scrape over at most `limit` project pages (all of them when None).
 
-        A page that fails is counted and logged, and the run goes on. The run ends SUCCEEDED
-        if at least one page has a price for today, recorded now or earlier the same day;
-        otherwise FAILED, with the reason in scrape_runs.error.
+        Before any request the run ends SKIPPED if another run of this developer holds
+        the lock, or if one already succeeded today (Bogotá); force skips only the
+        second check. A page that fails is counted and logged, and the run goes on. The
+        run ends SUCCEEDED if at least one page has a price for today, recorded now or
+        earlier the same day; otherwise FAILED, with the reason in scrape_runs.error.
         """
         report = ScrapeReport()
         developer = self._developer()
-        run = self.runs.start(developer.id, self.now().astimezone(BOGOTA).date())
+        today = self.now().astimezone(BOGOTA).date()
+        skip_reason = self._skip_reason(developer.id, today, force=force)
+        run = self.runs.start(developer.id, today)
 
-        try:
-            listing = self.fetcher.fetch(self.site.listing_url)
-            if listing.status != 200:
-                raise FetchError(f"listing {self.site.listing_url} answered {listing.status}")
-        except FetchError as error:
-            report.status, report.error = ScrapeRunStatus.FAILED, str(error)
+        if skip_reason is not None:
+            report.status, report.error = ScrapeRunStatus.SKIPPED, skip_reason
+            logger.info("run skipped: %s", skip_reason)
         else:
-            urls = self.site.project_urls(listing.html)
-            urls = urls if limit is None else urls[:limit]
-            report.pages_listed = len(urls)
-            seen: set[str] = set()
-            for url in urls:
-                try:
-                    self._scrape_page(url, developer, run.id, seen, report)
-                except PAGE_ERRORS as error:
-                    report.pages_failed += 1
-                    report.failures.append(f"{url}: {error}")
-                    logger.warning("page failed: %s: %s", url, error)
-            if report.pages_with_price > 0:
-                report.status = ScrapeRunStatus.SUCCEEDED
-            else:
-                report.status = ScrapeRunStatus.FAILED
-                report.error = f"no page recorded a price ({report.pages_failed} failed)"
+            self._scrape(developer, run.id, limit, report)
 
         self.runs.finish(
             replace(
@@ -133,6 +119,41 @@ class ScrapeDeveloper:
             )
         )
         return report
+
+    def _skip_reason(self, developer_id: UUID, today: date, *, force: bool) -> str | None:
+        # The lock comes first, so the "succeeded today" check cannot race another run.
+        if not self.runs.try_lock(developer_id):
+            return "another run of this developer is in progress"
+        if not force and self.runs.has_succeeded(developer_id, today):
+            return f"a run already succeeded on {today.isoformat()}"
+        return None
+
+    def _scrape(
+        self, developer: Developer, run_id: UUID, limit: int | None, report: ScrapeReport
+    ) -> None:
+        try:
+            listing = self.fetcher.fetch(self.site.listing_url)
+            if listing.status != 200:
+                raise FetchError(f"listing {self.site.listing_url} answered {listing.status}")
+        except FetchError as error:
+            report.status, report.error = ScrapeRunStatus.FAILED, str(error)
+        else:
+            urls = self.site.project_urls(listing.html)
+            urls = urls if limit is None else urls[:limit]
+            report.pages_listed = len(urls)
+            seen: set[str] = set()
+            for url in urls:
+                try:
+                    self._scrape_page(url, developer, run_id, seen, report)
+                except PAGE_ERRORS as error:
+                    report.pages_failed += 1
+                    report.failures.append(f"{url}: {error}")
+                    logger.warning("page failed: %s: %s", url, error)
+            if report.pages_with_price > 0:
+                report.status = ScrapeRunStatus.SUCCEEDED
+            else:
+                report.status = ScrapeRunStatus.FAILED
+                report.error = f"no page recorded a price ({report.pages_failed} failed)"
 
     def _developer(self) -> Developer:
         developer = self.catalog.get_developer_by_slug(self.site.slug)

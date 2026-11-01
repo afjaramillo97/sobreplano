@@ -95,3 +95,9 @@ def test_malformed_event_is_rejected_before_running(event: dict[str, Any]) -> No
     with pytest.raises(ValidationError):
         handle(event, load, runner)
     assert runner.events == []
+
+
+def test_skipped_run_is_not_an_error() -> None:
+    runner = FakeRunner(ScrapeReport(status=ScrapeRunStatus.SKIPPED, error="already succeeded"))
+    result = handle({"developer": "londono-gomez"}, lambda: SETTINGS, runner)
+    assert result["status"] == "skipped"

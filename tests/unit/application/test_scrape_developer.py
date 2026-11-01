@@ -130,6 +130,18 @@ class FakeRuns:
         default_factory=dict[tuple[str, str], ExtractionResult]
     )
     finished: list[ScrapeRun] = field(default_factory=list[ScrapeRun])
+    locked_by_another_run: bool = False
+
+    def try_lock(self, developer_id: UUID) -> bool:
+        return not self.locked_by_another_run
+
+    def has_succeeded(self, developer_id: UUID, run_on: date) -> bool:
+        return any(
+            run.developer_id == developer_id
+            and run.run_on == run_on
+            and run.status is ScrapeRunStatus.SUCCEEDED
+            for run in self.finished
+        )
 
     def start(self, developer_id: UUID, run_on: date) -> ScrapeRun:
         run = ScrapeRun(
@@ -204,6 +216,7 @@ class World:
     runs: FakeRuns = field(default_factory=FakeRuns)
     catalog: InMemoryCatalog = field(default_factory=InMemoryCatalog)
     observations: InMemoryObservations = field(default_factory=InMemoryObservations)
+    now: datetime = NOW
 
     def __post_init__(self) -> None:
         self.fetcher = FakeFetcher(self.site)
@@ -222,7 +235,7 @@ class World:
             runs=self.runs,
             catalog=self.catalog,
             record=RecordPriceObservation(self.observations),
-            now=lambda: NOW,
+            now=lambda: self.now,
         )
 
 
@@ -280,11 +293,45 @@ def test_run_is_finished_with_its_counters(world: World) -> None:
     assert finished.run_on == date(2026, 10, 30)
 
 
-def test_second_run_same_day_reuses_extractions_and_records_nothing(world: World) -> None:
+def test_second_run_same_day_is_skipped_without_requests(world: World) -> None:
+    world.use_case().execute()
+    world.fetcher.requested.clear()
+
+    report = world.use_case().execute()
+
+    assert report.status is ScrapeRunStatus.SKIPPED
+    assert report.error == "a run already succeeded on 2026-10-30"
+    assert world.fetcher.requested == []
+    assert [run.status for run in world.runs.finished] == [
+        ScrapeRunStatus.SUCCEEDED,
+        ScrapeRunStatus.SKIPPED,
+    ]
+
+
+def test_run_is_skipped_without_requests_when_another_run_holds_the_lock(world: World) -> None:
+    world.runs.locked_by_another_run = True
+
+    report = world.use_case().execute(force=True)
+
+    assert report.status is ScrapeRunStatus.SKIPPED
+    assert report.error == "another run of this developer is in progress"
+    assert world.fetcher.requested == []
+    assert world.runs.finished[0].error == report.error
+
+
+def test_a_failed_run_does_not_block_a_retry(world: World) -> None:
+    world.fetcher.errors[LISTING] = FetchError("timeout")
+    assert world.use_case().execute().status is ScrapeRunStatus.FAILED
+    del world.fetcher.errors[LISTING]
+
+    assert world.use_case().execute().status is ScrapeRunStatus.SUCCEEDED
+
+
+def test_forced_second_run_reuses_extractions_and_records_nothing(world: World) -> None:
     world.use_case().execute()
     world.extractor.calls.clear()
 
-    report = world.use_case().execute()
+    report = world.use_case().execute(force=True)
 
     assert world.extractor.calls == []
     assert (report.input_tokens, report.output_tokens) == (0, 0)
@@ -385,7 +432,7 @@ def test_unit_type_name_matches_across_case_and_spaces(world: World) -> None:
     # The next day the page writes "Tipo  b" for "TIPO B" (and new HTML, so a new extraction).
     world.extractor.projects["texto de primavela"] = project("Primavela", unit("Tipo  b"))
     world.runs.extractions.clear()
-    world.fetcher.fetched_at = datetime(2026, 10, 31, 15, 0, tzinfo=UTC)
+    world.fetcher.fetched_at = world.now = datetime(2026, 10, 31, 15, 0, tzinfo=UTC)
 
     report = world.use_case().execute()
 

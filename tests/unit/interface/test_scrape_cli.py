@@ -47,3 +47,10 @@ def test_bad_arguments_exit_before_touching_anything(argv: list[str]) -> None:
     with pytest.raises(SystemExit) as raised:
         main(argv)
     assert raised.value.code == 2
+
+
+def test_summary_of_a_skipped_run_is_its_reason() -> None:
+    report = ScrapeReport(status=ScrapeRunStatus.SKIPPED, error="a run already succeeded")
+    assert format_summary(report, "openai:gpt-6-luna", dry_run=False) == (
+        "status: skipped\nreason: a run already succeeded"
+    )

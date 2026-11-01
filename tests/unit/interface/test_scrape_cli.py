@@ -5,7 +5,8 @@ import pytest
 from sobreplano.application.scrape_developer import ScrapeReport
 from sobreplano.domain.scraping import ScrapeRunStatus
 from sobreplano.infrastructure.scraping.providers import estimate_cost_usd
-from sobreplano.interface.cli.scrape import format_summary, main
+from sobreplano.interface.cli.scrape import main
+from sobreplano.interface.composition import format_summary
 
 
 def test_cost_uses_the_model_price_per_million_tokens() -> None:

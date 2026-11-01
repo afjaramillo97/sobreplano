@@ -25,7 +25,7 @@ from sobreplano.infrastructure.db.models import (
 )
 from sobreplano.infrastructure.scraping.file_store import FileRawPageStore
 from sobreplano.infrastructure.scraping.londono_gomez import BASE_URL, LondonoGomezSite
-from sobreplano.interface.cli.scrape import scrape
+from sobreplano.interface.composition import scrape
 
 pytestmark = pytest.mark.integration
 

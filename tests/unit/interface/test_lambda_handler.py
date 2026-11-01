@@ -65,7 +65,7 @@ def test_unknown_parameter_fails_loudly() -> None:
 
 def test_success_returns_the_report_as_json() -> None:
     runner = FakeRunner(ScrapeReport(status=ScrapeRunStatus.SUCCEEDED, observations_recorded=60))
-    result = handle({"developer": "londono-gomez", "limit": None}, SETTINGS, runner)
+    result = handle({"developer": "londono-gomez", "limit": None}, lambda: SETTINGS, runner)
     assert runner.events == [ScrapeEvent(developer="londono-gomez")]
     assert result["status"] == "succeeded"
     assert result["observations_recorded"] == 60
@@ -74,7 +74,7 @@ def test_success_returns_the_report_as_json() -> None:
 def test_failed_run_raises_so_lambda_counts_an_error() -> None:
     runner = FakeRunner(ScrapeReport(status=ScrapeRunStatus.FAILED, error="listing: 403"))
     with pytest.raises(ScrapeFailedError, match="listing: 403"):
-        handle({"developer": "londono-gomez"}, SETTINGS, runner)
+        handle({"developer": "londono-gomez"}, lambda: SETTINGS, runner)
 
 
 @pytest.mark.parametrize(
@@ -88,6 +88,10 @@ def test_failed_run_raises_so_lambda_counts_an_error() -> None:
 )
 def test_malformed_event_is_rejected_before_running(event: dict[str, Any]) -> None:
     runner = FakeRunner(ScrapeReport(status=ScrapeRunStatus.SUCCEEDED))
+
+    def load() -> Settings:
+        raise AssertionError("SSM must not be read for a malformed event")
+
     with pytest.raises(ValidationError):
-        handle(event, SETTINGS, runner)
+        handle(event, load, runner)
     assert runner.events == []

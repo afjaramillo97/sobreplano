@@ -71,15 +71,18 @@ def settings_from_ssm(client: SsmClient, environ: Mapping[str, str]) -> Settings
 
 
 def handle(
-    raw_event: Mapping[str, Any], settings: Settings, runner: ScrapeRunner
+    raw_event: Mapping[str, Any], load: Callable[[], Settings], runner: ScrapeRunner
 ) -> dict[str, Any]:
-    """Validate the event, run the scrape, log the summary and return the report as JSON.
+    """Validate the event, load the settings, run the scrape and return the report as JSON.
+
+    The event is validated first, so a malformed one never reaches SSM.
 
     Raises:
         pydantic.ValidationError: if the event is malformed.
         ScrapeFailedError: if the run did not succeed.
     """
     event = ScrapeEvent.model_validate(raw_event)
+    settings = load()
     report = runner(settings, event)
     logger.info(
         "%s\n%s", event.developer, format_summary(report, settings.extraction_model, dry_run=False)
@@ -103,7 +106,7 @@ def _cold_start_settings() -> Settings:
 
 def handler(event: Mapping[str, Any], context: object) -> dict[str, Any]:
     """Lambda entry point (sobreplano.interface.lambda_handler.handler)."""
-    return handle(event, _cold_start_settings(), _run)
+    return handle(event, _cold_start_settings, _run)
 
 
 # The Lambda runtime installs its own handler on the root logger; only the levels change.

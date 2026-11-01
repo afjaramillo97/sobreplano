@@ -53,32 +53,23 @@ Deliberately **not** enabled because they cost money: GuardDuty, Security Hub, A
 
 ## CLI setup
 
-One-time, on each machine:
+Use `scripts/aws-sso.sh` (needs AWS CLI v2 and `jq`). It is idempotent: the same command does the first-time setup and the daily sign-in.
 
 ```bash
-aws configure sso
-# SSO session name: sobreplano
-# SSO start URL: the access portal URL (ask the owner)
-# SSO region: us-east-1
-# Account: sobreplano-prod · role: AdministratorAccess or SobreplanoDeveloper
-# Default region: us-east-1 · profile name: sobreplano-prod
+eval "$(scripts/aws-sso.sh)"    # sign in (MFA) and export AWS_PROFILE=sobreplano-prod in this shell
+scripts/aws-sso.sh status       # session, profile and signed-in identity
+scripts/aws-sso.sh help         # all commands: login, status, logout, reset
 ```
 
-Every working session:
+The first run asks for the access portal URL (ask the owner), adds an `[sso-session sobreplano]` section to `~/.aws/config`, opens the browser to sign in, discovers the `sobreplano-prod` account ID from the session and writes the `sobreplano-prod` profile (`us-east-1`). If your user has more than one permission set, it asks which one; pass `--role SobreplanoDeveloper` to skip the question. Every change to `~/.aws/config` is backed up first, and other profiles are never touched.
 
-```bash
-aws sso login --profile sobreplano-prod
-export AWS_PROFILE=sobreplano-prod      # Terraform, Docker/ECR and boto3 pick it up
-aws sts get-caller-identity             # must show the sobreplano-prod account
-```
-
-Credentials are temporary and expire with the 8 h session; run `aws sso login` again when they do.
+Credentials are temporary and expire with the 8 h session; run the same command again when they do. Terraform, Docker/ECR and boto3 read `AWS_PROFILE`.
 
 ## Onboarding a developer
 
 1. Identity Center → Users → add the user with their email and the option to email them password setup instructions.
 2. Add them to `sobreplano-developers`. Nothing else in AWS.
 3. Add them as a collaborator on the GitHub repo.
-4. They accept the invitation, register MFA and follow the CLI setup with the `SobreplanoDeveloper` role.
+4. They accept the invitation, register MFA and run `scripts/aws-sso.sh` (they only have the `SobreplanoDeveloper` role, so it is picked automatically).
 
 Offboarding: disable or delete the user in Identity Center (active sessions end when they expire, at most 8 h) and remove them from the GitHub repo.

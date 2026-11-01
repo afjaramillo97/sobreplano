@@ -34,6 +34,7 @@ advisor/     LangGraph agent, tools, MCP server
 web/         React + Vite frontend and tRPC BFF
 infra/       Terraform
 migrations/  Alembic
+scripts/     developer helper scripts (aws-sso.sh)
 evals/       golden set and judge
 ```
 
@@ -144,7 +145,7 @@ This file is an index, not a manual. When a topic needs depth (scrapers, schema,
 
 - Schema: `docs/schema.md`.
 - Scrapers: `docs/scrapers/` (one file per developer).
-- AWS accounts, access and guardrails: `docs/aws-accounts.md`.
+- AWS accounts, access and guardrails: `docs/aws-accounts.md`. Sign in with `eval "$(scripts/aws-sso.sh)"`.
 
 ## Specs
 

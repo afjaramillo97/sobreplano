@@ -144,6 +144,7 @@ This file is an index, not a manual. When a topic needs depth (scrapers, schema,
 
 - Schema: `docs/schema.md`.
 - Scrapers: `docs/scrapers/` (one file per developer).
+- AWS accounts, access and guardrails: `docs/aws-accounts.md`.
 
 ## Specs
 

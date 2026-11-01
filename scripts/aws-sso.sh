@@ -30,35 +30,8 @@ readonly ENVIRONMENTS="prod"
 readonly CALLER_PROFILE="${AWS_PROFILE:-}"
 unset AWS_PROFILE AWS_DEFAULT_PROFILE
 
-if [[ -t 2 && -z "${NO_COLOR:-}" ]]; then
-  BLUE=$'\033[34m' CYAN=$'\033[36m' GREEN=$'\033[32m' YELLOW=$'\033[33m' RED=$'\033[31m'
-  BOLD=$'\033[1m' DIM=$'\033[2m' RESET=$'\033[0m'
-else
-  BLUE='' CYAN='' GREEN='' YELLOW='' RED='' BOLD='' DIM='' RESET=''
-fi
-
-info() { printf '  %s›%s %s\n' "$BLUE" "$RESET" "$*" >&2; }
-ok() { printf '  %s✓%s %s\n' "$GREEN" "$RESET" "$*" >&2; }
-warn() { printf '  %s!%s %s\n' "$YELLOW" "$RESET" "$*" >&2; }
-hint() { printf '  %s→ %s%s\n' "$DIM" "$*" "$RESET" >&2; }
-die() {
-  printf '\n  %s✗ Error:%s %s\n\n' "$RED$BOLD" "$RESET" "$*" >&2
-  exit 1
-}
-
-# Highlights a value (profile, role, URL) inside a message.
-hl() { printf '%s%s%s' "$CYAN" "$1" "$RESET"; }
-
-repeat() {
-  local i out=''
-  for ((i = 0; i < $2; i++)); do out+="$1"; done
-  printf '%s' "$out"
-}
-
-title() {
-  printf '\n  %sSobreplano · AWS SSO%s  %s%s%s\n' "$BOLD" "$RESET" "$DIM" "$1" "$RESET" >&2
-  printf '  %s%s%s\n\n' "$DIM" "$(repeat '─' 44)" "$RESET" >&2
-}
+# shellcheck source=lib/ui.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/ui.sh"
 
 human_minutes() {
   if (($1 >= 60)); then
@@ -68,48 +41,8 @@ human_minutes() {
   fi
 }
 
-# --- Key/value tables: collect rows with table_row, draw them with table_print. ---
-# Widths are measured on plain text, so labels and values must be ASCII without
-# colour codes; the state icon is drawn in its own fixed-width slot.
-
-TABLE_STATE=()
-TABLE_LABEL=()
-TABLE_VALUE=()
-
-table_row() { # state (ok | warn | info) label value
-  TABLE_STATE+=("$1")
-  TABLE_LABEL+=("$2")
-  TABLE_VALUE+=("$3")
-}
-
-table_print() {
-  local i n="${#TABLE_LABEL[@]}" lw=0 vw=0 icon color value_color
-  for ((i = 0; i < n; i++)); do
-    if ((${#TABLE_LABEL[i]} > lw)); then lw=${#TABLE_LABEL[i]}; fi
-    if ((${#TABLE_VALUE[i]} > vw)); then vw=${#TABLE_VALUE[i]}; fi
-  done
-  printf '  %s╭%s┬%s╮%s\n' "$DIM" "$(repeat '─' $((lw + 4)))" "$(repeat '─' $((vw + 2)))" "$RESET" >&2
-  for ((i = 0; i < n; i++)); do
-    value_color=''
-    case "${TABLE_STATE[i]}" in
-      ok) icon='✓' color="$GREEN" ;;
-      warn) icon='!' color="$YELLOW" value_color="$YELLOW" ;;
-      *) icon='·' color="$DIM" ;;
-    esac
-    printf '  %s│%s %s%s%s %s%s%s%*s %s│%s %s%s%s%*s %s│%s\n' \
-      "$DIM" "$RESET" "$color" "$icon" "$RESET" \
-      "$BOLD" "${TABLE_LABEL[i]}" "$RESET" $((lw - ${#TABLE_LABEL[i]})) '' \
-      "$DIM" "$RESET" "$value_color" "${TABLE_VALUE[i]}" "$RESET" $((vw - ${#TABLE_VALUE[i]})) '' \
-      "$DIM" "$RESET" >&2
-  done
-  printf '  %s╰%s┴%s╯%s\n' "$DIM" "$(repeat '─' $((lw + 4)))" "$(repeat '─' $((vw + 2)))" "$RESET" >&2
-  TABLE_STATE=()
-  TABLE_LABEL=()
-  TABLE_VALUE=()
-}
-
 usage() {
-  title "help"
+  title "AWS SSO" "help"
   cat >&2 <<EOF
   ${BOLD}Usage:${RESET} scripts/aws-sso.sh ${CYAN}[command]${RESET} ${CYAN}[environment]${RESET} ${CYAN}[options]${RESET}
 
@@ -384,7 +317,7 @@ cmd_login() {
   account_name="$(account_name_for "$env")"
   profile="$(profile_for "$env")"
   require_tools
-  title "login · $env"
+  title "AWS SSO" "login · $env"
 
   url="$(resolve_start_url)"
   ensure_sso_session "$url"
@@ -426,7 +359,7 @@ cmd_status() {
   local env="$1" profile url token_info identity healthy=1
   profile="$(profile_for "$env")"
   require_tools
-  title "status · $env"
+  title "AWS SSO" "status · $env"
 
   url="$(normalize_start_url "$(ini_get "sso-session $SSO_SESSION" sso_start_url)")"
   if [[ -z "$url" ]]; then
@@ -485,7 +418,7 @@ cmd_status() {
 
 cmd_logout() {
   require_tools
-  title "logout"
+  title "AWS SSO" "logout"
   warn "'aws sso logout' signs out of every AWS SSO session in this CLI, not only Sobreplano's."
   confirm "Sign out?" || {
     info "Cancelled."
@@ -498,7 +431,7 @@ cmd_logout() {
 
 cmd_reset() {
   local sections tmp
-  title "reset"
+  title "AWS SSO" "reset"
   if [[ ! -f "$AWS_CONFIG" ]]; then
     info "$AWS_CONFIG does not exist: nothing to reset."
     return 0

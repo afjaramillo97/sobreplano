@@ -34,7 +34,7 @@ advisor/     LangGraph agent, tools, MCP server
 web/         React + Vite frontend and tRPC BFF
 infra/       Terraform
 migrations/  Alembic
-scripts/     developer helper scripts (aws-sso.sh)
+scripts/     developer helper scripts (aws-sso.sh, sync-ssm-secrets.sh)
 evals/       golden set and judge
 ```
 

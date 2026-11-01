@@ -7,6 +7,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from sobreplano.domain.catalog import GeoPoint, Municipality
 
@@ -161,6 +162,16 @@ def validate_unit_type(unit_type: ExtractedUnitType) -> ValidUnitType | Rejected
 def content_sha256(html: str) -> str:
     """Hex SHA-256 of the page's UTF-8 bytes: the raw file name and the extraction reuse key."""
     return hashlib.sha256(html.encode("utf-8")).hexdigest()
+
+
+def raw_page_key(developer_slug: str, page: FetchedPage) -> str:
+    """Storage key of a page's raw HTML: {developer}/{YYYY-MM-DD}/{sha256}.html.
+
+    The day is the Bogotá date of fetched_at, the same day the price observation gets.
+    Every RawPageStore uses this key, so disk and S3 stay interchangeable.
+    """
+    day = page.fetched_at.astimezone(ZoneInfo("America/Bogota")).date().isoformat()
+    return f"{developer_slug}/{day}/{content_sha256(page.html)}.html"
 
 
 def normalize_unit_type_name(name: str) -> str:

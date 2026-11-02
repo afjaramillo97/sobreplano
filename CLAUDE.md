@@ -4,7 +4,7 @@
 
 Sobreplano is a portfolio project (AI Engineer): a search engine for new off-plan housing in the Aburrá Valley, Colombia, with a daily price history and an AI advisor. Its differentiator versus portals (Fincaraíz, Metrocuadrado, La Haus) is showing how much each project has risen since its first observed price.
 
-Status: week 3 of 8. Schema, read API and the first scraper (Londoño Gómez, local) are in place (SPECs 01–04); not yet in AWS, no advisor yet. Budget: at most ~20 USD/month, so check cost before proposing any new service.
+Status: week 3 of 8. Schema, read API and the first scraper (Londoño Gómez) are in place (SPECs 01–04); since SPEC 05 the scraper runs daily in AWS (Lambda + Supabase cloud). No advisor yet. Budget: at most ~20 USD/month, so check cost before proposing any new service.
 
 ## Stack
 
@@ -24,7 +24,7 @@ W2 monorepo and schema · W3 scrapers and first daily snapshot · W4 history, pr
 
 ## Monorepo structure (planned)
 
-`migrations/` (Alembic) and `seeds/` already exist; the other folder names are still a proposal.
+`migrations/` (Alembic), `seeds/` and `infra/` (Terraform) already exist; the other folder names are still a proposal.
 
 ```
 specs/       one spec per week, written before implementing
@@ -34,6 +34,7 @@ advisor/     LangGraph agent, tools, MCP server
 web/         React + Vite frontend and tRPC BFF
 infra/       Terraform
 migrations/  Alembic
+scripts/     developer helper scripts (aws-sso.sh, sync-ssm-secrets.sh)
 evals/       golden set and judge
 ```
 
@@ -97,10 +98,24 @@ Scraper (one pass per site per day; paid LLM calls, see `docs/scrapers/`):
 ```
 uv run --env-file .env python -m sobreplano.interface.cli.scrape londono-gomez --limit 2 --dry-run
 uv run --env-file .env python -m sobreplano.interface.cli.scrape londono-gomez
+uv run --env-file .env python -m sobreplano.interface.cli.scrape londono-gomez --force   # even if a run already succeeded today
 RUN_LLM_TESTS=1 uv run --env-file .env pytest tests/llm   # optional paid test against the real API
 ```
 
-All five checks run in CI (`.github/workflows/ci.yml`) on every PR to `main`; CI also starts Postgres, runs the migrations and the integration tests. Tools to install: `jq` for the Claude Code hook (`.claude/hooks/ruff-edited.sh`, runs ruff on edited `.py` and `.md` files) and the Supabase CLI (`brew install supabase/tap/supabase`); `psql` is optional (`brew install libpq`, keg-only, so add it to PATH).
+Production (AWS account `sobreplano-prod`, `us-east-1`; details and first-apply steps in `docs/deploy.md`):
+
+```
+eval "$(scripts/aws-sso.sh)"                                         # sign in
+eval "$(grep -E '^(TF_STATE_BUCKET|TF_VAR_alert_email)=' .env | sed 's/^/export /')"
+terraform -chdir=infra init -backend-config="bucket=$TF_STATE_BUCKET"
+terraform -chdir=infra plan -out=tfplan                              # show the plan; apply only with the owner's OK
+uv run --env-file .env.cloud alembic upgrade head                   # migrate Supabase cloud before merging code that needs it
+aws lambda invoke --function-name sobreplano-scraper --payload '{"developer":"londono-gomez"}' --cli-binary-format raw-in-base64-out out.json
+```
+
+Merging to `main` a change under `src/`, the `Dockerfile` or `uv.lock` deploys the image (`deploy-scraper.yml`, OIDC). Terraform is never applied from CI.
+
+All five checks run in CI (`.github/workflows/ci.yml`) on every PR to `main`; CI also starts Postgres, runs the migrations and the integration tests, and checks `infra/` with `terraform fmt -check` and `terraform validate`. Tools to install: `jq` for the Claude Code hook (`.claude/hooks/ruff-edited.sh`, runs ruff on edited `.py` and `.md` files) and the Supabase CLI (`brew install supabase/tap/supabase`); `psql` is optional (`brew install libpq`, keg-only, so add it to PATH).
 
 ## FastAPI conventions
 
@@ -144,6 +159,8 @@ This file is an index, not a manual. When a topic needs depth (scrapers, schema,
 
 - Schema: `docs/schema.md`.
 - Scrapers: `docs/scrapers/` (one file per developer).
+- Deploy, cloud database and production runs: `docs/deploy.md`.
+- AWS accounts, access and guardrails: `docs/aws-accounts.md`. Sign in with `eval "$(scripts/aws-sso.sh)"`.
 
 ## Specs
 
@@ -158,4 +175,4 @@ Los specs viven en `specs/NN-slug.md`, se escriben con `/spec` y se implementan 
 
 ## TBD
 
-To be settled in later specs: branching, folder names for the non-Python parts, AWS region, target developers (constructoras).
+To be settled in later specs: branching, folder names for the non-Python parts, target developers (constructoras).

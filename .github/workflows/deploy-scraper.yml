@@ -1,0 +1,69 @@
+name: deploy-scraper
+
+# Builds the scraper image, pushes it to ECR and points the Lambda at it (SPEC 05).
+# AWS access is through OIDC: the role only trusts main of this repository, and the only
+# secret is its ARN. Terraform is never applied from here.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "Dockerfile"
+      - "uv.lock"
+      - ".github/workflows/deploy-scraper.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # to request the OIDC token
+
+# One deploy at a time; a newer commit waits instead of racing the older one.
+concurrency:
+  group: deploy-scraper
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: sobreplano-scraper
+  FUNCTION_NAME: sobreplano-scraper
+
+jobs:
+  deploy:
+    # Native arm64 runner: the Lambda is arm64, so no QEMU emulation.
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push the image
+        id: image
+        env:
+          REPOSITORY: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}
+        run: |
+          # ECR tags are immutable: commit plus run ID, so a manual re-run of the same
+          # commit pushes a new tag instead of failing.
+          tag="$GITHUB_SHA-$GITHUB_RUN_ID"
+          docker build --platform linux/arm64 --provenance=false -t "$REPOSITORY:$tag" .
+          docker push "$REPOSITORY:$tag"
+          # Deploy by digest, so the Lambda runs exactly the image just pushed.
+          digest="$(docker inspect --format '{{index .RepoDigests 0}}' "$REPOSITORY:$tag")"
+          echo "uri=$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Update the Lambda
+        env:
+          IMAGE_URI: ${{ steps.image.outputs.uri }}
+        run: |
+          aws lambda update-function-code --function-name "$FUNCTION_NAME" \
+            --image-uri "$IMAGE_URI" --query 'CodeSha256' --output text
+          aws lambda wait function-updated-v2 --function-name "$FUNCTION_NAME"
+          aws lambda get-function --function-name "$FUNCTION_NAME" \
+            --query '{state:Configuration.State,status:Configuration.LastUpdateStatus,image:Code.ResolvedImageUri}'

@@ -3,9 +3,10 @@
 from dataclasses import replace
 from datetime import UTC, date, datetime
 from decimal import Decimal
+from uuid import uuid4
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import Engine, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -123,3 +124,42 @@ def test_saving_the_same_extraction_twice_keeps_the_first(runs: SqlScrapeRunRepo
     stored = runs.find_extraction(sha, RESULT.model)
     assert stored is not None
     assert stored.input_tokens == 1200
+
+
+def test_has_succeeded_only_counts_succeeded_runs_of_that_day(
+    runs: SqlScrapeRunRepository, developer: Developer
+) -> None:
+    day = date(2026, 10, 30)
+    failed = runs.start(developer.id, day)
+    runs.finish(replace(failed, status=ScrapeRunStatus.FAILED, finished_at=FETCHED_AT))
+    assert not runs.has_succeeded(developer.id, day)
+
+    succeeded = runs.start(developer.id, day)
+    runs.finish(replace(succeeded, status=ScrapeRunStatus.SUCCEEDED, finished_at=FETCHED_AT))
+    assert runs.has_succeeded(developer.id, day)
+    assert not runs.has_succeeded(developer.id, date(2026, 10, 31))
+
+
+def test_skipped_status_is_accepted_by_the_check(
+    runs: SqlScrapeRunRepository, session: Session, developer: Developer
+) -> None:
+    run = runs.start(developer.id, date(2026, 10, 30))
+    runs.finish(replace(run, status=ScrapeRunStatus.SKIPPED, error="already succeeded"))
+    session.flush()
+    row = session.get_one(ScrapeRunRow, run.id)
+    session.refresh(row)
+    assert row.status is ScrapeRunStatus.SKIPPED
+
+
+def test_lock_is_exclusive_across_transactions_and_released_at_the_end(engine: Engine) -> None:
+    developer_id = uuid4()  # the lock needs no row, only the key
+    with Session(engine) as first, Session(engine) as second:
+        assert SqlScrapeRunRepository(first).try_lock(developer_id)
+        # Same transaction again: Postgres advisory locks are reentrant.
+        assert SqlScrapeRunRepository(first).try_lock(developer_id)
+        assert not SqlScrapeRunRepository(second).try_lock(developer_id)
+        assert SqlScrapeRunRepository(second).try_lock(uuid4())
+        first.rollback()
+        second.rollback()
+        assert SqlScrapeRunRepository(second).try_lock(developer_id)
+        second.rollback()

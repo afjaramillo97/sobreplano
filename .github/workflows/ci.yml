@@ -41,3 +41,19 @@ jobs:
       # Includes the integration tests, which need the database above.
       - name: pytest
         run: uv run pytest
+
+  # infra/ is applied by hand (docs/deploy.md); CI only checks that it is formatted and
+  # valid, without a backend or AWS credentials.
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.17.1
+      - name: terraform fmt
+        run: terraform -chdir=infra fmt -check -recursive
+      - name: terraform init
+        run: terraform -chdir=infra init -backend=false -input=false
+      - name: terraform validate
+        run: terraform -chdir=infra validate

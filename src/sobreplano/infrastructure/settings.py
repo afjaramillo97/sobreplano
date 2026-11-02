@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     extraction_model: str = "openai:gpt-6-luna"
     # Optional: without it nothing new is extracted, but stored extractions are still reused.
     openai_api_key: SecretStr | None = None
+    # "data/raw" (default, local disk) or "s3://bucket-name".
+    raw_store: str = "data/raw"
 
 
 def load_settings() -> Settings:

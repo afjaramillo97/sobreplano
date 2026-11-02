@@ -1,19 +1,14 @@
-"""Raw HTML on local disk, under data/raw/ (git-ignored); SPEC 05 swaps it for S3."""
+"""Raw HTML on local disk, under data/raw/ (git-ignored); the Lambda uses s3_store instead."""
 
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
-from sobreplano.domain.scraping import FetchedPage, content_sha256
+from sobreplano.domain.scraping import FetchedPage, raw_page_key
 
 DEFAULT_ROOT = Path("data/raw")
-BOGOTA = ZoneInfo("America/Bogota")
 
 
 class FileRawPageStore:
-    """RawPageStore that writes {root}/{developer}/{YYYY-MM-DD}/{sha256}.html.
-
-    The day is the Bogotá date of fetched_at, the same day the price observation gets.
-    """
+    """RawPageStore that writes {root}/{developer}/{YYYY-MM-DD}/{sha256}.html."""
 
     def __init__(self, root: Path = DEFAULT_ROOT) -> None:
         self._root = root
@@ -23,8 +18,7 @@ class FileRawPageStore:
 
         Saving the same HTML twice the same day is a no-op: the content decides the name.
         """
-        day = page.fetched_at.astimezone(BOGOTA).date().isoformat()
-        key = f"{developer_slug}/{day}/{content_sha256(page.html)}.html"
+        key = raw_page_key(developer_slug, page)
         path = self._root / key
         if not path.exists():
             path.parent.mkdir(parents=True, exist_ok=True)

@@ -3,7 +3,7 @@
 from datetime import UTC, date, datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import select, update
+from sqlalchemy import exists, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -17,6 +17,30 @@ class SqlScrapeRunRepository:
 
     def __init__(self, session: Session) -> None:
         self._session = session
+
+    def try_lock(self, developer_id: UUID) -> bool:
+        """Try the developer's advisory lock; True if taken, False if another run holds it.
+
+        A transaction-level lock (released at commit or rollback), because the Supabase
+        pooler in transaction mode does not keep session state between transactions.
+        """
+        return bool(
+            self._session.scalar(select(func.pg_try_advisory_xact_lock(_lock_key(developer_id))))
+        )
+
+    def has_succeeded(self, developer_id: UUID, run_on: date) -> bool:
+        """True if a run of this developer on run_on ended SUCCEEDED (committed runs only)."""
+        return bool(
+            self._session.scalar(
+                select(
+                    exists().where(
+                        ScrapeRunRow.developer_id == developer_id,
+                        ScrapeRunRow.run_on == run_on,
+                        ScrapeRunRow.status == ScrapeRunStatus.SUCCEEDED,
+                    )
+                )
+            )
+        )
 
     def start(self, developer_id: UUID, run_on: date) -> ScrapeRun:
         """Insert a RUNNING run started now and return it."""
@@ -102,3 +126,8 @@ class SqlScrapeRunRepository:
                 error=run.error,
             )
         )
+
+
+def _lock_key(developer_id: UUID) -> int:
+    # Advisory locks take a bigint: the UUID's first 8 bytes, as a signed 64-bit integer.
+    return int.from_bytes(developer_id.bytes[:8], "big", signed=True)

@@ -1,0 +1,10 @@
+# Only pyproject.toml, uv.lock and src/ go into the image.
+data/
+.venv/
+tests/
+.env
+.env.*
+.git/
+.terraform/
+infra/
+**/__pycache__/

@@ -7,9 +7,10 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import Engine, func, select
+from sqlalchemy import Engine, delete, func, select
 from sqlalchemy.orm import Session, sessionmaker
 
+from sobreplano.domain.catalog import Developer
 from sobreplano.domain.scraping import (
     ExtractedProject,
     ExtractedUnitType,
@@ -17,15 +18,18 @@ from sobreplano.domain.scraping import (
     FetchedPage,
     ScrapeRunStatus,
 )
+from sobreplano.infrastructure.db.catalog_repository import SqlCatalogRepository
 from sobreplano.infrastructure.db.models import (
+    DeveloperRow,
     PageExtractionRow,
     PriceObservationRow,
     ProjectRow,
     ScrapeRunRow,
 )
+from sobreplano.infrastructure.db.scrape_run_repository import SqlScrapeRunRepository
 from sobreplano.infrastructure.scraping.file_store import FileRawPageStore
 from sobreplano.infrastructure.scraping.londono_gomez import BASE_URL, LondonoGomezSite
-from sobreplano.interface.cli.scrape import scrape
+from sobreplano.interface.composition import scrape
 
 pytestmark = pytest.mark.integration
 
@@ -44,8 +48,10 @@ class SyntheticFetcher:
 
     def __init__(self, project_slug: str) -> None:
         self.project_slug = project_slug
+        self.requested: list[str] = []
 
     def fetch(self, url: str) -> FetchedPage:
+        self.requested.append(url)
         if url.endswith("/proyectos-vivienda"):
             html = """
             <div class="view-busqueda-proyectos"><div class="views-row">
@@ -104,10 +110,16 @@ def count(session_factory: sessionmaker[Session], table: type[object], **where: 
 
 
 def run(
-    session_factory: sessionmaker[Session], tmp_path: Path, site: TestSite, *, dry_run: bool
+    session_factory: sessionmaker[Session],
+    tmp_path: Path,
+    site: TestSite,
+    *,
+    dry_run: bool,
+    force: bool = False,
+    fetcher: SyntheticFetcher | None = None,
 ) -> ScrapeRunStatus:
     # Each project needs a unique slug; real data may already hold "primavela".
-    fetcher = SyntheticFetcher(project_slug=site.slug)
+    fetcher = fetcher or SyntheticFetcher(project_slug=site.slug)
     report = scrape(
         session_factory,
         site=site,
@@ -116,6 +128,7 @@ def run(
         extractor=FixedExtractor(),
         limit=None,
         dry_run=dry_run,
+        force=force,
     )
     return report.status
 
@@ -146,13 +159,55 @@ def test_real_run_commits_project_price_run_and_extraction(
     assert count(session_factory, PageExtractionRow, model="openai:gpt-6-luna") >= 1
 
 
-def test_second_run_same_day_adds_no_observation(
+def test_forced_second_run_same_day_adds_no_observation(
     session_factory: sessionmaker[Session], tmp_path: Path
 ) -> None:
     site = TestSite()
     run(session_factory, tmp_path, site, dry_run=False)
     after_first = count(session_factory, PriceObservationRow)
 
-    assert run(session_factory, tmp_path, site, dry_run=False) is ScrapeRunStatus.SUCCEEDED
+    status = run(session_factory, tmp_path, site, dry_run=False, force=True)
 
+    assert status is ScrapeRunStatus.SUCCEEDED
     assert count(session_factory, PriceObservationRow) == after_first
+
+
+def test_second_run_same_day_is_skipped_without_requests(
+    session_factory: sessionmaker[Session], tmp_path: Path
+) -> None:
+    site = TestSite()
+    run(session_factory, tmp_path, site, dry_run=False)
+    fetcher = SyntheticFetcher(project_slug=site.slug)
+
+    status = run(session_factory, tmp_path, site, dry_run=False, fetcher=fetcher)
+
+    assert status is ScrapeRunStatus.SKIPPED
+    assert fetcher.requested == []
+    assert count(session_factory, ScrapeRunRow, status=ScrapeRunStatus.SKIPPED) >= 1
+
+
+def test_concurrent_run_is_skipped_without_requests(engine: Engine, tmp_path: Path) -> None:
+    """A second connection runs while the first holds the developer's lock, as two Lambdas would."""
+    site = TestSite()
+    developer = Developer(id=uuid4(), name=site.name, slug=site.slug, website_url=site.website_url)
+    # Both connections must see the developer, so it is committed and deleted at the end.
+    with Session(engine) as setup:
+        SqlCatalogRepository(setup).add_developer(developer)
+        setup.commit()
+    try:
+        with Session(engine) as first_run, engine.connect() as connection:
+            assert SqlScrapeRunRepository(first_run).try_lock(developer.id)
+            transaction = connection.begin()
+            fetcher = SyntheticFetcher(project_slug=site.slug)
+            second = sessionmaker(bind=connection, join_transaction_mode="create_savepoint")
+
+            status = run(second, tmp_path, site, dry_run=False, fetcher=fetcher)
+
+            assert status is ScrapeRunStatus.SKIPPED
+            assert fetcher.requested == []
+            transaction.rollback()
+            first_run.rollback()
+    finally:
+        with Session(engine) as cleanup:
+            cleanup.execute(delete(DeveloperRow).where(DeveloperRow.id == developer.id))
+            cleanup.commit()

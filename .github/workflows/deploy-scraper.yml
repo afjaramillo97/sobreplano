@@ -49,11 +49,13 @@ jobs:
         env:
           REPOSITORY: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}
         run: |
-          # Tags are immutable in ECR: one tag per commit.
-          docker build --platform linux/arm64 --provenance=false -t "$REPOSITORY:$GITHUB_SHA" .
-          docker push "$REPOSITORY:$GITHUB_SHA"
+          # ECR tags are immutable: commit plus run ID, so a manual re-run of the same
+          # commit pushes a new tag instead of failing.
+          tag="$GITHUB_SHA-$GITHUB_RUN_ID"
+          docker build --platform linux/arm64 --provenance=false -t "$REPOSITORY:$tag" .
+          docker push "$REPOSITORY:$tag"
           # Deploy by digest, so the Lambda runs exactly the image just pushed.
-          digest="$(docker inspect --format '{{index .RepoDigests 0}}' "$REPOSITORY:$GITHUB_SHA")"
+          digest="$(docker inspect --format '{{index .RepoDigests 0}}' "$REPOSITORY:$tag")"
           echo "uri=$digest" >> "$GITHUB_OUTPUT"
 
       - name: Update the Lambda

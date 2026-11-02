@@ -4,6 +4,26 @@ How the daily scraper reaches production (SPEC 05): the one-time prerequisites, 
 
 This repo is public: account IDs, project refs, passwords and keys are **not** written here. Where a name contains the account ID it appears as `<account-id>`.
 
+## How it runs
+
+```text
+EventBridge Scheduler (06:00 America/Bogota, var.scrape_schedule)
+  -> Lambda sobreplano-scraper (container image, arm64, 512 MB, 10 min)
+       reads DATABASE_URL and OPENAI_API_KEY from SSM at cold start
+       fetches the developer's site, writes raw HTML to S3
+       extracts with the LLM, writes to Supabase (transaction pooler, port 6543)
+  -> on error: CloudWatch alarm -> SNS -> email; Lambda retries twice
+
+push to main (src/, Dockerfile, uv.lock) -> GitHub Actions (OIDC) -> ECR -> update the Lambda
+```
+
+| Piece | Where |
+| --- | --- |
+| Infrastructure | `infra/` (Terraform, applied by hand) |
+| Image | `Dockerfile` |
+| Lambda entry point | `src/sobreplano/interface/lambda_handler.py` |
+| Image deploy | `.github/workflows/deploy-scraper.yml` |
+
 ## Prerequisites (done once, by hand)
 
 All AWS resources live in the `sobreplano-prod` account, region `us-east-1`. Sign in first with `eval "$(scripts/aws-sso.sh)"`.
@@ -15,7 +35,16 @@ All AWS resources live in the `sobreplano-prod` account, region `us-east-1`. Sig
 | SSM parameter | `/sobreplano/prod/database_url` | `SecureString`. Supabase shared pooler, transaction mode (port 6543) |
 | SSM parameter | `/sobreplano/prod/openai_api_key` | `SecureString` |
 
-Upload or rotate the SSM parameters with `scripts/sync-ssm-secrets.sh` (`--dry-run` to preview). Terraform only knows the parameter names, so the values never enter its state.
+| GitHub secret | `AWS_DEPLOY_ROLE_ARN` | The `github_deploy_role_arn` Terraform output. The only secret in the repository; there are no AWS keys in GitHub |
+| `.env` (local) | `TF_STATE_BUCKET`, `TF_VAR_alert_email` | Terraform's backend bucket and the alert email, kept out of the public repo |
+
+Upload or rotate the SSM parameters with `scripts/sync-ssm-secrets.sh` (`--dry-run` to preview). Terraform only knows the parameter names, so the values never enter its state. The Lambda reads them once per container, so a rotated value takes effect at the next cold start. To force one, run `deploy-scraper.yml` by hand (`workflow_dispatch`): a new deploy starts fresh containers. Do not edit the function's settings in the console or the CLI; Terraform would show the change as drift.
+
+Set the GitHub secret once, after the first `terraform apply`:
+
+```bash
+gh secret set AWS_DEPLOY_ROLE_ARN --body "$(terraform -chdir=infra output -raw github_deploy_role_arn)"
+```
 
 ## Database connections
 
@@ -29,7 +58,7 @@ The direct connection is IPv6-only on the Free plan, so everything goes through 
 
 ## Migrating the cloud database
 
-`.env.cloud` holds the session-pooler URL, so Alembic runs against the cloud exactly as it does locally:
+`.env.cloud` holds the session-pooler URL, so Alembic runs against the cloud exactly as it does locally. **Migrate before merging code that needs the new schema**: the merge deploys the image at once, and the next run would fail against the old schema.
 
 ```bash
 uv run --env-file .env.cloud alembic upgrade head
@@ -106,6 +135,28 @@ A new AWS account starts with low Lambda limits. On 2026-11-01 `sobreplano-prod`
 
 After the first apply, confirm the SNS subscription from the email AWS sends, or the error alarm reaches nobody.
 
+## Deploying code
+
+Merging to `main` a change under `src/`, the `Dockerfile` or `uv.lock` runs `deploy-scraper.yml`: it builds the image on a native arm64 runner, pushes it to ECR tagged with the commit SHA and the run ID, and points the Lambda at that image by digest. Run it again by hand from the Actions tab (`workflow_dispatch`). Check what is deployed:
+
+```bash
+aws lambda get-function --function-name sobreplano-scraper \
+  --query '{image:Code.ResolvedImageUri,state:Configuration.State,updated:Configuration.LastModified}'
+```
+
+Infrastructure changes (`infra/`) are never applied from CI: CI only runs `terraform fmt -check` and `terraform validate`. Apply them by hand as above, after reading the plan.
+
+## Changing the schedule
+
+The schedule is the `scrape_schedule` Terraform variable, in Bogotá time (default `cron(0 6 * * ? *)`, every day at 06:00). For example, Mondays and Thursdays:
+
+```bash
+terraform -chdir=infra plan -var 'scrape_schedule=cron(0 6 ? * MON,THU *)' -out=tfplan
+terraform -chdir=infra apply tfplan
+```
+
+Keep the value in `.env` as `TF_VAR_scrape_schedule` so later applies do not revert it.
+
 ## Running the scraper by hand
 
 ```bash
@@ -116,6 +167,14 @@ cat out.json
 ```
 
 `--log-type Tail` returns the last 4 KB of the log. `out.json` holds the `ScrapeReport`: `succeeded` or `skipped`. A `failed` run raises instead, so Lambda counts an error, the alarm emails and Lambda retries twice. A second run on the same day ends `skipped` without visiting the site.
+
+## When the alarm emails
+
+The alarm fires when the Lambda raises: a `failed` run (no page got a price, or the listing could not be fetched), a timeout, or a crash. Lambda retries twice within minutes; the retries are safe, and once one succeeds the rest end `skipped`.
+
+1. Read the run's summary in the logs (below) and `scrape_runs.error`.
+2. If the site blocked the request or changed its markup, fix the scraper and merge; run it by hand once deployed.
+3. If the database did not answer, check that the Supabase project is not paused (the Free plan pauses after 7 days without activity).
 
 ## Checking a run
 

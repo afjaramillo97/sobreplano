@@ -2,7 +2,7 @@
 
 resource "aws_ecr_repository" "scraper" {
   name = local.name
-  # Tags are git SHAs (plus "bootstrap" for the first image): never overwritten.
+  # Tags are "<git sha>-<run id>" (plus "bootstrap" for the first image): never overwritten.
   image_tag_mutability = "IMMUTABLE"
 
   image_scanning_configuration {

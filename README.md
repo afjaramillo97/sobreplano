@@ -18,6 +18,22 @@ Colombian listing portals (Fincaraíz, Metrocuadrado, La Haus) show a project's 
 
 ## Architecture
 
+Running today: a daily scraper in AWS writing the price history to Supabase.
+
+```text
+EventBridge Scheduler, 06:00 Bogotá
+  -> Lambda (container image, arm64)
+       -> developer's website (httpx, robots.txt, one visit a day)
+       -> raw HTML to S3
+       -> LLM extraction into Pydantic models
+       -> Supabase Postgres (one price per unit type per day, append-only)
+  -> errors: CloudWatch alarm -> email
+```
+
+All of it is Terraform (`infra/`). GitHub Actions deploys the image through OIDC, with no AWS keys stored in GitHub. The database allows one run per developer per day, so a retry or a manual run never visits a site twice. It costs well under 1 USD a month.
+
+The full picture, as planned:
+
 - **Scrapers:** Python + httpx, one per developer (Playwright only when a site needs a browser). EventBridge → SQS → Lambda (container images). Raw HTML in S3. LLM extraction into Pydantic models.
 - **Data:** Supabase (Postgres with pgvector and PostGIS, Supabase Auth). Migrations with Alembic.
 - **API:** FastAPI + SQLAlchemy.
@@ -60,6 +76,8 @@ curl -s "localhost:8000/projects?municipality=envigado" | jq '.items[0].unit_typ
 ```
 
 Tests: `uv run pytest -m "not integration"` needs no database; `uv run --env-file .env pytest` runs everything. Stop the database with `supabase stop`.
+
+Production (AWS, Terraform, deploys and how to check a run): [docs/deploy.md](docs/deploy.md).
 
 ## Scraping policy
 

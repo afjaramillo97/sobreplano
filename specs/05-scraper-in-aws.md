@@ -1,6 +1,6 @@
 # SPEC 05 — El scraper corre solo cada día en AWS
 
-> **Estado:** aprobado
+> **Estado:** implementado
 > **Depende de:** SPEC 02, SPEC 04
 > **Fecha:** 2026-10-31
 > **Objetivo:** Que el scraper de Londoño Gómez corra todos los días a las 6:00 a. m. (hora de Bogotá) en una Lambda de AWS creada con Terraform, guardando el HTML crudo en S3 y los datos en Supabase en la nube, sin que nadie lo ejecute a mano.

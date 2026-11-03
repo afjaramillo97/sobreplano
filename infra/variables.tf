@@ -40,8 +40,8 @@ variable "ssm_openai_api_key_name" {
   default     = "/sobreplano/prod/openai_api_key"
 }
 
-variable "github_repository" {
-  description = "owner/repo allowed to deploy through OIDC, from its main branch only."
+variable "github_repository_subject" {
+  description = "Repository as it appears in the GitHub OIDC sub claim (owner@owner_id/repo@repo_id); only its main branch may deploy."
   type        = string
-  default     = "afjaramillo97/sobreplano"
+  default     = "afjaramillo97@128142098/sobreplano@1431332064"
 }

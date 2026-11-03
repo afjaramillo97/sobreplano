@@ -112,7 +112,33 @@ def test_invalid_query_params_give_422(client: TestClient, params: dict[str, str
     assert client.get("/projects", params=params).status_code == 422
 
 
-def test_openapi_lists_both_routes(client: TestClient) -> None:
+def test_openapi_lists_every_route(client: TestClient) -> None:
     paths = client.get("/openapi.json").json()["paths"]
 
-    assert sorted(paths) == ["/health", "/projects"]
+    assert sorted(paths) == ["/developers", "/health", "/projects", "/projects/{slug}"]
+
+
+def test_detail_filters_and_developers_end_to_end(
+    client: TestClient,
+    catalog: SqlCatalogRepository,
+    observations: SqlPriceObservationRepository,
+    developer: Developer,
+) -> None:
+    project = add_project(catalog, developer, "AXIS - Ciudad Peldar")
+    unit_type = add_unit_type(catalog, project, "Tipo 02", private_area_m2="54.98")
+    add_price(observations, unit_type, 26, 700_000_000)
+    add_price(observations, unit_type, 28, 721_000_000)
+
+    detail = client.get(f"/projects/{project.slug}").json()
+    [unit] = detail["unit_types"]
+    assert [point["price_cop"] for point in unit["history"]] == [700_000_000, 721_000_000]
+    assert unit["first_price"]["observed_on"] == "2026-10-26"
+    assert unit["change_since_first_pct"] == 3.0
+
+    cheap = client.get("/projects", params={"developer": developer.slug, "max_price": 710_000_000})
+    assert cheap.json()["total"] == 0
+    found = client.get("/projects", params={"developer": developer.slug, "max_price": 800_000_000})
+    assert [item["slug"] for item in found.json()["items"]] == [project.slug]
+
+    summaries = {item["slug"]: item for item in client.get("/developers").json()}
+    assert summaries[developer.slug]["projects"] == 1

@@ -391,3 +391,85 @@ def test_developer_filter_excludes_other_developers(
 
     assert "De otra" not in names(search(query, developer))
     assert names(search(query, other)) == ["De otra"]
+
+
+def test_get_project_returns_history_oldest_first(
+    query: SqlProjectListingQuery,
+    catalog: SqlCatalogRepository,
+    observations: SqlPriceObservationRepository,
+    developer: Developer,
+) -> None:
+    project = add_project(catalog, developer, "Proyecto A")
+    tipo_2 = add_unit_type(catalog, project, "Tipo 02")
+    tipo_1 = add_unit_type(catalog, project, "Tipo 01")
+    add_price(observations, tipo_2, 28, 700_000_000, ObservationSource.SCRAPER)
+    add_price(observations, tipo_2, 26, 680_000_000)
+    add_price(observations, tipo_1, 27, 500_000_000)
+
+    detail = query.get_project(project.slug)
+
+    assert detail is not None
+    assert detail.project.slug == project.slug
+    assert detail.project.developer_slug == developer.slug
+    assert detail.project.location == GeoPoint(lat=6.1735, lon=-75.5925)
+    assert [u.listing.name for u in detail.unit_types] == ["Tipo 01", "Tipo 02"]
+    first, second = detail.unit_types
+    assert [(p.observed_on, p.price_cop, p.source) for p in second.history] == [
+        (date(2026, 10, 26), 680_000_000, ObservationSource.MANUAL),
+        (date(2026, 10, 28), 700_000_000, ObservationSource.SCRAPER),
+    ]
+    assert len(first.history) == 1
+    # The history of one unit type never leaks into another.
+    assert first.history[0].price_cop == 500_000_000
+    assert second.listing.latest_price is not None
+    assert second.listing.latest_price.price_cop == 700_000_000
+    assert second.listing.change_since_first_pct == 2.9
+
+
+def test_get_project_without_location_or_prices(
+    query: SqlProjectListingQuery, catalog: SqlCatalogRepository, developer: Developer
+) -> None:
+    project = add_project(catalog, developer, "Proyecto A", location=None)
+    add_unit_type(catalog, project, "Tipo 01")
+
+    detail = query.get_project(project.slug)
+
+    assert detail is not None
+    assert detail.project.location is None
+    [unit] = detail.unit_types
+    assert unit.history == []
+    assert unit.listing.first_price is None
+
+
+def test_get_project_without_unit_types(
+    query: SqlProjectListingQuery, catalog: SqlCatalogRepository, developer: Developer
+) -> None:
+    project = add_project(catalog, developer, "Proyecto A")
+
+    detail = query.get_project(project.slug)
+
+    assert detail is not None
+    assert detail.unit_types == []
+
+
+def test_get_project_unknown_slug_is_none(query: SqlProjectListingQuery) -> None:
+    assert query.get_project(f"no-existe-{uuid4().hex[:8]}") is None
+
+
+def test_list_developers_counts_projects_and_orders_by_name(
+    query: SqlProjectListingQuery, catalog: SqlCatalogRepository, developer: Developer
+) -> None:
+    empty = Developer(
+        id=uuid4(), name="Aaa sin proyectos", slug=f"dev-{uuid4().hex[:8]}", website_url="https://a"
+    )
+    catalog.add_developer(empty)
+    add_project(catalog, developer, "Proyecto A")
+    add_project(catalog, developer, "Proyecto B")
+
+    summaries = query.list_developers()
+
+    by_slug = {summary.slug: summary for summary in summaries}
+    assert by_slug[developer.slug].projects == 2
+    assert by_slug[developer.slug].name == developer.name
+    assert by_slug[empty.slug].projects == 0
+    assert [s.name for s in summaries] == sorted(s.name for s in summaries)

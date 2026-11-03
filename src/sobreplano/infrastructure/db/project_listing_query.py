@@ -18,12 +18,15 @@ from sqlalchemy import (
 from sqlalchemy.orm import InstrumentedAttribute, Session
 
 from sobreplano.domain.listings import (
+    DeveloperSummary,
     LatestPrice,
     PricePoint,
+    ProjectDetail,
     ProjectFilters,
     ProjectListing,
     ProjectPage,
     ProjectSort,
+    UnitTypeDetail,
     UnitTypeListing,
 )
 from sobreplano.infrastructure.db.geo import LAT, LON, to_geo_point
@@ -88,21 +91,64 @@ class SqlProjectListingQuery:
 
         unit_types = self._unit_types_by_project([row.id for row, *_ in page], filters)
         items = [
-            ProjectListing(
-                id=row.id,
-                slug=row.slug,
-                name=row.name,
-                developer_name=developer_name,
-                developer_slug=developer_slug,
-                municipality=row.municipality,
-                neighborhood=row.neighborhood,
-                location=to_geo_point(lat, lon),
-                source_url=row.source_url,
-                unit_types=unit_types[row.id],
-            )
+            _to_listing(row, developer_name, developer_slug, lat, lon, unit_types[row.id])
             for row, developer_name, developer_slug, lat, lon in page
         ]
         return ProjectPage(items=items, total=total)
+
+    def get_project(self, slug: str) -> ProjectDetail | None:
+        """Return a project with the whole price history of each unit type, or None.
+
+        Three statements: the project, its unit types with latest and first price, and all
+        their observations (the last is skipped when the project has no unit types).
+        """
+        found = self._session.execute(
+            select(ProjectRow, DeveloperRow.name, DeveloperRow.slug, LAT, LON)
+            .join(DeveloperRow)
+            .where(ProjectRow.slug == slug)
+        ).one_or_none()
+        if found is None:
+            return None
+        row, developer_name, developer_slug, lat, lon = found
+
+        unit_types = self._unit_types_by_project([row.id], ProjectFilters())[row.id]
+        history: dict[UUID, list[PricePoint]] = defaultdict(list)
+        if unit_types:
+            observations = self._session.execute(
+                select(
+                    PriceObservationRow.unit_type_id,
+                    PriceObservationRow.observed_on,
+                    PriceObservationRow.price_cop,
+                    PriceObservationRow.source,
+                )
+                .where(PriceObservationRow.unit_type_id.in_([unit.id for unit in unit_types]))
+                .order_by(PriceObservationRow.observed_on)
+            )
+            for unit_type_id, observed_on, price_cop, source in observations:
+                history[unit_type_id].append(PricePoint(observed_on, price_cop, source))
+
+        return ProjectDetail(
+            project=_to_listing(row, developer_name, developer_slug, lat, lon, unit_types),
+            unit_types=[UnitTypeDetail(unit, history[unit.id]) for unit in unit_types],
+        )
+
+    def list_developers(self) -> list[DeveloperSummary]:
+        """Return every developer with its number of projects, ordered by name, in one statement."""
+        rows = self._session.execute(
+            select(
+                DeveloperRow.slug,
+                DeveloperRow.name,
+                DeveloperRow.website_url,
+                func.count(ProjectRow.id),
+            )
+            .outerjoin(ProjectRow, ProjectRow.developer_id == DeveloperRow.id)
+            .group_by(DeveloperRow.id)
+            .order_by(DeveloperRow.name, DeveloperRow.id)
+        )
+        return [
+            DeveloperSummary(slug=slug, name=name, website_url=website_url, projects=projects)
+            for slug, name, website_url, projects in rows
+        ]
 
     @staticmethod
     def _latest_prices(project_ids: list[UUID] | None) -> Subquery:
@@ -219,6 +265,29 @@ class SqlProjectListingQuery:
                 )
             )
         return result
+
+
+def _to_listing(
+    row: ProjectRow,
+    developer_name: str,
+    developer_slug: str,
+    lat: float | None,
+    lon: float | None,
+    unit_types: list[UnitTypeListing],
+) -> ProjectListing:
+    """A ProjectListing from a project row, its developer and the point read with LAT and LON."""
+    return ProjectListing(
+        id=row.id,
+        slug=row.slug,
+        name=row.name,
+        developer_name=developer_name,
+        developer_slug=developer_slug,
+        municipality=row.municipality,
+        neighborhood=row.neighborhood,
+        location=to_geo_point(lat, lon),
+        source_url=row.source_url,
+        unit_types=unit_types,
+    )
 
 
 def _has_unit_type_filters(filters: ProjectFilters) -> bool:

@@ -2,11 +2,11 @@
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from sobreplano.domain.catalog import Developer, GeoPoint, Project, UnitType
-from sobreplano.infrastructure.db.geo import LAT, LON, to_wkt_point
+from sobreplano.infrastructure.db.geo import LAT, LON, to_geo_point, to_wkt_point
 from sobreplano.infrastructure.db.models import DeveloperRow, ProjectRow, UnitTypeRow
 
 
@@ -65,7 +65,7 @@ class SqlCatalogRepository:
                 slug=project.slug,
                 municipality=project.municipality,
                 neighborhood=project.neighborhood,
-                location=to_wkt_point(project.location),
+                location=None if project.location is None else to_wkt_point(project.location),
                 source_url=project.source_url,
             )
         )
@@ -86,8 +86,16 @@ class SqlCatalogRepository:
             slug=row.slug,
             municipality=row.municipality,
             neighborhood=row.neighborhood,
-            location=GeoPoint(lat=lat, lon=lon),
+            location=to_geo_point(lat, lon),
             source_url=row.source_url,
+        )
+
+    def update_project_location(self, project_id: UUID, location: GeoPoint) -> None:
+        """Set a project's location; used when a page publishes the map it lacked."""
+        self._session.execute(
+            update(ProjectRow)
+            .where(ProjectRow.id == project_id)
+            .values(location=to_wkt_point(location))
         )
 
     def add_unit_type(self, unit_type: UnitType) -> None:

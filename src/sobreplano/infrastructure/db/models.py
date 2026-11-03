@@ -105,7 +105,8 @@ class ProjectRow(IdMixin, TimestampsMixin, Base):
     municipality: Mapped[Municipality] = mapped_column(_str_enum(Municipality, "municipality"))
     neighborhood: Mapped[str | None] = mapped_column(Text)
     # Written as a WKT element and read back as WKB (see geo.py); geoalchemy2 adds the GIST index.
-    location: Mapped[WKBElement | WKTElement] = mapped_column(
+    # NULL while the developer publishes no map (SPEC 06); filled in when it appears.
+    location: Mapped[WKBElement | WKTElement | None] = mapped_column(
         Geography(geometry_type="POINT", srid=4326)
     )
     source_url: Mapped[str] = mapped_column(Text)

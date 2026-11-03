@@ -190,6 +190,11 @@ class InMemoryCatalog:
     def get_project_by_slug(self, slug: str) -> Project | None:
         return next((p for p in self.projects if p.slug == slug), None)
 
+    def update_project_location(self, project_id: UUID, location: GeoPoint) -> None:
+        self.projects = [
+            replace(p, location=location) if p.id == project_id else p for p in self.projects
+        ]
+
     def add_unit_type(self, unit_type: UnitType) -> None:
         self.unit_types.append(unit_type)
 
@@ -495,6 +500,33 @@ def test_same_name_with_different_areas_are_two_unit_types(world: World) -> None
     names = sorted(u.name for u in world.catalog.unit_types)
     assert names == ["Tipo 1", "Tipo A · 55.58 m²", "Tipo A · 60.1 m²"]
     assert report.observations_recorded == 3
+
+
+def test_project_without_location_is_created_and_located_later(world: World) -> None:
+    primavela = world.site.pages["/node/1"]
+    assert isinstance(primavela, ParsedProjectPage)
+    world.site.pages["/node/1"] = replace(primavela, location=None)
+    report = world.use_case().execute()
+    assert report.pages_failed == 0
+    assert world.catalog.projects[0].location is None
+
+    # Next day the developer publishes its map.
+    world.now = world.fetcher.fetched_at = datetime(2026, 10, 31, 15, 0, tzinfo=UTC)
+    world.site.pages["/node/1"] = primavela
+    world.use_case().execute()
+    assert world.catalog.projects[0].location == primavela.location
+    assert len(world.catalog.projects) == 2
+
+
+def test_a_stored_location_is_not_overwritten(world: World) -> None:
+    world.use_case().execute()
+    primavela = world.site.pages["/node/1"]
+    assert isinstance(primavela, ParsedProjectPage)
+    world.now = world.fetcher.fetched_at = datetime(2026, 10, 31, 15, 0, tzinfo=UTC)
+    moved = GeoPoint(lat=6.3, lon=-75.55)
+    world.site.pages["/node/1"] = replace(primavela, location=moved)
+    world.use_case().execute()
+    assert world.catalog.projects[0].location == primavela.location
 
 
 def test_missing_bedrooms_are_stored_as_none(world: World) -> None:

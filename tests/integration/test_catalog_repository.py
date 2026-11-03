@@ -1,11 +1,12 @@
 """Integration tests for SqlCatalogRepository."""
 
+from dataclasses import replace
 from decimal import Decimal
 from uuid import uuid4
 
 import pytest
 
-from sobreplano.domain.catalog import Developer, Project, UnitType
+from sobreplano.domain.catalog import Developer, GeoPoint, Municipality, Project, UnitType
 from sobreplano.infrastructure.db.catalog_repository import SqlCatalogRepository
 
 pytestmark = pytest.mark.integration
@@ -22,6 +23,27 @@ def test_unknown_slugs_return_none(catalog: SqlCatalogRepository) -> None:
 
 def test_project_round_trip(catalog: SqlCatalogRepository, project: Project) -> None:
     assert catalog.get_project_by_slug(project.slug) == project
+
+
+def test_project_without_location_round_trip_and_later_located(
+    catalog: SqlCatalogRepository, developer: Developer
+) -> None:
+    project = Project(
+        id=uuid4(),
+        developer_id=developer.id,
+        name="Ezzenti",
+        slug=f"proj-{uuid4().hex[:8]}",
+        municipality=Municipality.MEDELLIN,
+        neighborhood="Calasanz",
+        location=None,
+        source_url="https://example.com/ezzenti",
+    )
+    catalog.add_project(project)
+    assert catalog.get_project_by_slug(project.slug) == project
+
+    located = GeoPoint(lat=6.2731, lon=-75.5871)
+    catalog.update_project_location(project.id, located)
+    assert catalog.get_project_by_slug(project.slug) == replace(project, location=located)
 
 
 def test_unit_types_are_listed_by_name(

@@ -124,5 +124,6 @@ def test_saved_point_comes_back_with_the_same_coordinates(
     catalog.add_project(project)
     found = catalog.get_project_by_slug(project.slug)
     assert found is not None
+    assert found.location is not None
     assert found.location.lat == pytest.approx(lat)  # pyright: ignore[reportUnknownMemberType]
     assert found.location.lon == pytest.approx(lon)  # pyright: ignore[reportUnknownMemberType]

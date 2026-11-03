@@ -66,7 +66,7 @@ class Project:
     slug: str
     municipality: Municipality
     neighborhood: str | None
-    location: GeoPoint
+    location: GeoPoint | None  # None while the developer publishes no map
     source_url: str
 
 

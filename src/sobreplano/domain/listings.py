@@ -66,7 +66,7 @@ class ProjectListing:
     developer_slug: str
     municipality: Municipality
     neighborhood: str | None
-    location: GeoPoint
+    location: GeoPoint | None
     source_url: str
     unit_types: list[UnitTypeListing]
 

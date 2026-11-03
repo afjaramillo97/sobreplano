@@ -48,8 +48,9 @@ Sitio de Capital, revisado en Chrome el 1 nov descargando el HTML sin ejecutar J
 - Diagnóstico de las dos primeras fallas: hecho el 2 nov con consultas a la base en la nube (ver "Por qué existe este spec"). Queda por ver en el paso 1 qué parte del HTML cambia, para confirmar que el texto limpio no la incluye.
 - La llave de reutilización pasa a ser el hash del **texto limpio** que se envía al modelo. El hash del HTML se mantiene para el nombre del archivo crudo.
 - Migración `0004`: columna `text_sha256` en `scraped_pages`; `page_extractions.content_sha256` pasa a llamarse `text_sha256`.
+- Proyectos sin ubicación (decidido el 2 nov): si la ficha no publica coordenadas y no hay entrada manual, el proyecto se guarda sin ubicación en vez de fallar; cuando la constructora publique el mapa, el scraper la detecta y la guarda. Migración `0005`: `projects.location` admite NULL.
 - Tipologías con el mismo nombre dentro de una página: duplicados exactos se cuentan una vez; tipologías distintas con el mismo nombre se diferencian por área.
-- Coordenadas con respaldo: enlace de Google Maps, luego enlace de Waze, luego un archivo de ubicaciones manuales.
+- Coordenadas con respaldo: enlace de Google Maps, luego enlace de Waze, luego una tabla de ubicaciones manuales en código (`infrastructure/scraping/manual_locations.py`).
 - Scraper `ConstructoraCapitalSite` con `httpx`: tabla de zona a municipio, filtros de Rionegro y de proyectos que no son vivienda, coordenadas con parser determinista y la sección de avances de obra fuera del texto limpio.
 - Reutilizar los 3 proyectos de la semilla por su `source_url` y sus tipologías por área, porque en la semilla se llaman "Tipo 04" y en el sitio "Planta Apartamento 60.01 m2".
 - Un schedule por constructora con `for_each` en Terraform, escalonados 15 minutos.
@@ -72,6 +73,11 @@ Sitio de Capital, revisado en Chrome el 1 nov descargando el HTML sin ejecutar J
 - `scraped_pages`: nueva columna `text_sha256 char(64) null`. Las filas viejas quedan en `NULL`; las nuevas siempre la llenan.
 - `page_extractions`: `op.alter_column("page_extractions", "content_sha256", new_column_name="text_sha256")` y el único se renombra a `uq_page_extractions_text_sha256_model`. Es un renombre, no borrar y crear: Alembic no lo detecta solo ("Migration rules" de `CLAUDE.md`).
 - Las extracciones viejas quedan con el hash del HTML en una columna que ahora significa "hash del texto": nunca van a coincidir, así que la primera corrida después del cambio vuelve a extraer todo una vez (unos 0,005 USD por constructora). No se recalculan.
+
+### Migración `0005_optional_location` (escrita y revisada a mano)
+
+- `projects.location` pasa a `NULL`: `op.alter_column("projects", "location", nullable=True)`. El índice GIST no cambia.
+- `downgrade` vuelve a `NOT NULL` y falla si hay proyectos sin ubicación, igual que `0003` con los `skipped`.
 
 ### Llaves
 
@@ -100,9 +106,15 @@ def location_from_links(soup: BeautifulSoup) -> GeoPoint | None: ...
 
 1. `google.../maps/dir//{lat},{lon}`, como hoy.
 2. Waze: `waze.com/...?...to=ll.{lat}%2C{lon}`, que Londoño Gómez publica junto al de Google.
-3. `seeds/locations.json`: `{"ezzenti": {"lat": ..., "lon": ...}}`, cargado a mano por Andrés desde el mapa público del proyecto, con la fuente anotada.
+3. `infrastructure/scraping/manual_locations.py`: `MANUAL_LOCATIONS: dict[str, GeoPoint]` por slug del proyecto (por ejemplo `"ezzenti": GeoPoint(lat=..., lon=...)`), cargada a mano por Andrés desde el mapa público del proyecto, con un comentario por entrada con la URL de la fuente y la fecha de revisión.
 
-Si ninguno da coordenadas, sigue siendo un error de esa ficha, como hoy. Las dos constructoras usan esta función.
+Si ninguno da coordenadas, la ficha **no falla**: el proyecto se guarda sin ubicación (`Project.location: GeoPoint | None`) y el log lo registra con aviso. No se infiere un punto desde el barrio o la dirección: es preferible no tener ubicación a tener una inventada. Las dos constructoras usan esta función.
+
+Cuando la ubicación aparece después:
+
+- `ScrapeDeveloper._project`: si el proyecto guardado no tiene ubicación y la ficha ya trae una, se guarda con `CatalogRepository.update_project_location(project_id, location)`. Es el caso de Ezzenti el día que Londoño Gómez publique su mapa.
+- Si el proyecto ya tenía ubicación y la ficha trae otra distinta, no se cambia: solo se registra en el log, como los cambios de área de las tipologías (SPEC 04).
+- La API devuelve `location: null` para esos proyectos (`LocationOut | None` en `ProjectOut`).
 
 ### Constructora Capital (`infrastructure/scraping/constructora_capital.py`)
 
@@ -148,7 +160,7 @@ variable "scrape_schedules" {
    - Resultados en `docs/scrapers/constructora-capital.md` y en el PR.
 2. **Hash del texto.** `text_sha256`, migración `0004`, `ScrapeDeveloper` y `SqlScrapeRunRepository` usan la llave nueva. Test: dos páginas con HTML distinto y el mismo texto limpio reutilizan la extracción. Commit `fix:`.
 3. **Tipologías.** `normalize_unit_type_name` con NFKC y `casefold`; `dedupe_unit_types` y su uso en `_record_prices`. Tests de los tres casos. Commit `fix:`.
-4. **Ubicación con respaldo.** `geo_links.py` (Google, el patrón `lat,lon` suelto y Waze), `seeds/locations.json` con Ezzenti y el uso desde `LondonoGomezSite`. Tests con HTML sintético para cada caso. Commit `fix:`.
+4. **Ubicación con respaldo.** `geo_links.py` (Google, el patrón `lat,lon` suelto y Waze), `manual_locations.py` (vacía por ahora: Ezzenti queda sin ubicación) y el uso desde `LondonoGomezSite`. Migración `0005`, `Project.location` opcional, `update_project_location` y `location: null` en la API. Tests con HTML sintético para cada caso, uno que comprueba que cada entrada de `MANUAL_LOCATIONS` es un `GeoPoint` válido (rango del Valle de Aburrá), uno de un proyecto que se crea sin ubicación y la recibe en una corrida posterior, y uno de la API con `location: null`. Commit `fix:`.
 5. **Semilla reutilizada.** `get_project_by_source_url` en el puerto y el repositorio, `ScrapeDeveloper._project` y la búsqueda de tipologías por área. Tests de integración: una ficha con la URL de un proyecto de la semilla no crea un proyecto nuevo, y una tipología con el área de la semilla reutiliza su fila. Commit `feat:`.
 6. **Scraper de Capital.** `ConstructoraCapitalSite` con la tabla de zonas, los filtros y la limpieza de avances de obra; registro en `SITES`; tests con HTML sintético. Corrida local con `--dry-run` y luego real. Commit `feat:`.
 7. **Terraform.** `scrape_schedules` con `for_each`, bloque `moved` y concurrencia reservada de 2. `terraform plan` debe mostrar 1 schedule nuevo, 1 movido y la Lambda modificada, sin destrucciones. **Esperar el OK de Andrés antes de `terraform apply`.** Commit `feat:`.
@@ -163,7 +175,7 @@ Cada criterio se verifica pegando el comando y su salida en el PR (constitución
 - [ ] `alembic upgrade head`, `downgrade -1` y `upgrade head` funcionan en local; `alembic check` limpio; `alembic heads` da una sola cabeza.
 - [ ] La primera corrida de Londoño Gómez de un día reporta `0 already recorded today`.
 - [ ] La segunda corrida de Londoño Gómez con la llave nueva (al día siguiente, en AWS) reporta `extractions: N reused` con N mayor que la mitad de las fichas, y gasta menos tokens que la del día anterior.
-- [ ] Ezzenti queda en `projects` con coordenadas y deja de aparecer como fallida.
+- [ ] Ezzenti queda en `projects` sin coordenadas (`location is null`) y deja de aparecer como fallida; un test demuestra que la ubicación se guarda cuando la ficha la publica.
 - [ ] La corrida de Capital registra precios en al menos los 3 proyectos de la semilla y `select count(*) from projects where slug like '%ciudad-peldar%'` sigue en 3: no hay proyectos duplicados.
 - [ ] Al menos una tipología de cada proyecto de la semilla que tenga precio en el sitio recibe una observación `scraper`: `select ut.name, count(*) from price_observations po join unit_types ut on ut.id = po.unit_type_id join projects p on p.id = ut.project_id where p.slug = 'axis-ciudad-peldar' group by ut.name` muestra filas con más de una observación.
 - [ ] Ningún proyecto de Rionegro ni de Urbanity: `select count(*) from projects where slug ilike '%rosa%' or slug ilike '%urbanity%'` devuelve 0.
@@ -182,6 +194,8 @@ Cada criterio se verifica pegando el comando y su salida en el PR (constitución
 - **Sí:** diferenciar tipologías homónimas agregando el área al nombre. Cumple el único (`project_id`, `name`) sin migración. **No:** cambiar el único a nombre más áreas: si el sitio corrige un área, se crearía otra tipología y se partiría su histórico.
 - **Sí:** el menor precio cuando la misma tipología aparece con dos precios. Los precios publicados son "desde".
 - **Sí:** Waze como segundo respaldo y un archivo manual como último. **No:** un servicio de geocodificación, que cuesta, puede equivocarse de barrio y agrega una dependencia por un solo proyecto.
+- **Sí:** guardar sin ubicación el proyecto cuya ficha no publica coordenadas, y completarla cuando la constructora la publique (decidido el 2 nov, caso Ezzenti). **No:** inferir un punto desde el barrio ("Calasanz, Medellín"): una ubicación inventada es peor que ninguna, y el scraper revisa la ficha todos los días.
+- **Sí:** ubicaciones manuales como tabla en código, igual que `CAPITAL_ZONES`: se despliega con `src/`, no depende del directorio de trabajo y `GeoPoint` las valida al importar. **No:** `seeds/locations.json`, que exigía copiarlo en la imagen y agregarlo al workflow de despliegue. Si la tabla crece a decenas de entradas, pasar a un JSON del paquete con `importlib.resources`.
 - **Sí:** buscar el proyecto por `source_url` para reutilizar la semilla. **No:** cambiar el slug de los proyectos de la semilla con una migración de datos; la URL de la ficha ya los identifica.
 - **Sí:** un schedule por constructora con `for_each` y un bloque `moved`. Es una línea por constructora nueva y no recrea el schedule que ya funciona. **No:** SQS todavía; con dos constructoras, dos schedules escalonados son más simples.
 - **Sí:** escalonar 15 minutos. Una corrida dura menos de 2 minutos, así nunca se cruzan y la alarma dice cuál falló por la hora.

@@ -50,7 +50,7 @@ class ParsedProjectPage:
     canonical_url: str
     municipality: Municipality
     slug: str
-    location: GeoPoint
+    location: GeoPoint | None  # None when the page has no map link nor manual entry
     text: str  # clean text sent to the extractor
 
 

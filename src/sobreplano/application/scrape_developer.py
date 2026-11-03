@@ -11,7 +11,7 @@ from sobreplano.application.record_price_observation import (
     RecordPriceObservation,
     RecordResult,
 )
-from sobreplano.domain.catalog import Developer, Project, UnitType
+from sobreplano.domain.catalog import Developer, GeoPoint, Project, UnitType
 from sobreplano.domain.errors import (
     DomainValidationError,
     ExtractionError,
@@ -244,6 +244,22 @@ class ScrapeDeveloper:
         elif project.developer_id != developer.id:
             # Project slugs are global; another developer's project must not get these prices.
             raise DomainValidationError(f"slug {parsed.slug} belongs to another developer")
+        else:
+            project = self._refresh_location(project, parsed.location, parsed.canonical_url)
+        if project.location is None:
+            logger.warning("no location for %s: no map link nor manual entry", parsed.canonical_url)
+        return project
+
+    def _refresh_location(self, project: Project, found: GeoPoint | None, url: str) -> Project:
+        """Store a location the page now publishes; a changed one is only logged."""
+        if found is None or found == project.location:
+            return project
+        if project.location is None:
+            self.catalog.update_project_location(project.id, found)
+            logger.info("location published for %s: %s", url, found)
+            return replace(project, location=found)
+        # Like unit type areas (SPEC 04): a stored location is never overwritten.
+        logger.info("location of %s changed: stored %s, page %s", url, project.location, found)
         return project
 
     def _record_prices(

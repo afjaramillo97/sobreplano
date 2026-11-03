@@ -60,10 +60,10 @@ All of them live inside `<form>` or in attributes, which `clean_text` already dr
 
 The same check on the HTML the Lambda stored in S3 on 2026-11-01 and 2026-11-02 gives the same result: 21 of 21 pages with identical clean text, the same 14 token lines changed in Primavela, and the same clean-text hashes as on 2026-10-30 and 2026-10-31, so the text was stable over four days.
 
-Ezzenti (`/node/203631` → `/proyectos-vivienda/antioquia/medellin/ezzenti`, downloaded once on 2026-11-02): no Google Maps link, no Waze link, and its map script has empty coordinates (`parseFloat(parseFloat().toFixed(7))`). Its coordinates have to come from `seeds/locations.json`.
+Ezzenti (`/node/203631` → `/proyectos-vivienda/antioquia/medellin/ezzenti`, downloaded once on 2026-11-02): no Google Maps link, no Waze link, and its map script has empty coordinates (`parseFloat(parseFloat().toFixed(7))`). The page does say it is in Calasanz, Medellín. No point is inferred from that: since SPEC 06 the project is stored without coordinates (`location` NULL, a warning in the log) instead of failing, and the scraper stores the point the day the developer publishes its map. A point can also be added by hand to `MANUAL_LOCATIONS` (`src/sobreplano/infrastructure/scraping/manual_locations.py`).
 
 ## Known gaps
 
 - **MAZZI, Ventto del Río and River Park** are housing cards in Medellín, but their canonical URL does not match the expected pattern. Their HTML is not stored (out of scope), so the reason is still unknown; check their canonical by hand on the next visit.
-- **Ezzenti** has no Google Maps directions link, so it has no coordinates and fails every run.
+- **Ezzenti** publishes no map, so it is stored without coordinates (since SPEC 06; before, it failed every run).
 - **9 projects have no price** on the site ("Desde" with no amount). They are created in the catalog but have no observations.

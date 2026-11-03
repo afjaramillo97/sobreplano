@@ -5,6 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 
 from sobreplano.domain.catalog import Municipality
+from sobreplano.domain.listings import ProjectFilters, ProjectSort
 from sobreplano.interface.api.dependencies import ListingQueryDep
 from sobreplano.interface.api.schemas import ProjectListResponse
 
@@ -19,5 +20,10 @@ def list_projects(
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> ProjectListResponse:
     """List projects ordered by name; an unknown municipality or a bad limit gives 422."""
-    page = listing_query.list_projects(municipality=municipality, limit=limit, offset=offset)
+    page = listing_query.list_projects(
+        filters=ProjectFilters(municipality=municipality),
+        sort=ProjectSort.NAME,
+        limit=limit,
+        offset=offset,
+    )
     return ProjectListResponse.from_domain(page, limit=limit, offset=offset)

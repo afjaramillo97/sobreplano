@@ -44,6 +44,7 @@ def add_unit_type(
     name: str,
     private_area_m2: str | None = "50.00",
     built_area_m2: str | None = None,
+    bedrooms: int | None = 2,
 ) -> UnitType:
     unit_type = UnitType(
         id=uuid4(),
@@ -51,7 +52,7 @@ def add_unit_type(
         name=name,
         private_area_m2=Decimal(private_area_m2) if private_area_m2 else None,
         built_area_m2=Decimal(built_area_m2) if built_area_m2 else None,
-        bedrooms=2,
+        bedrooms=bedrooms,
         bathrooms=2,
     )
     catalog.add_unit_type(unit_type)

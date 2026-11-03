@@ -4,8 +4,8 @@ from datetime import date
 from typing import Protocol
 from uuid import UUID
 
-from sobreplano.domain.catalog import Developer, GeoPoint, Municipality, Project, UnitType
-from sobreplano.domain.listings import ProjectPage
+from sobreplano.domain.catalog import Developer, GeoPoint, Project, UnitType
+from sobreplano.domain.listings import ProjectFilters, ProjectPage, ProjectSort
 from sobreplano.domain.pricing import PriceObservation
 from sobreplano.domain.scraping import (
     ExtractionResult,
@@ -38,10 +38,10 @@ class PriceObservationRepository(Protocol):
 
 
 class ProjectListingQuery(Protocol):
-    """Read-only listing of projects with the latest price of each unit type."""
+    """Read-only listing of projects with the latest and first price of each unit type."""
 
     def list_projects(
-        self, *, municipality: Municipality | None, limit: int, offset: int
+        self, *, filters: ProjectFilters, sort: ProjectSort, limit: int, offset: int
     ) -> ProjectPage: ...
 
 

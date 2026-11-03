@@ -75,6 +75,22 @@ curl -s localhost:8000/health
 curl -s "localhost:8000/projects?municipality=envigado" | jq '.items[0].unit_types'
 ```
 
+The read API (SPEC 07) answers what exists with given conditions, what it costs today and how much it has risen since its first observed price:
+
+```bash
+# Search: one unit type must meet every price, bedroom and area filter at once.
+# sort is "name" (default) or "price"; a project lists only the unit types that match.
+curl -s "localhost:8000/projects?developer=constructora-capital&max_price=500000000&min_bedrooms=2&sort=price&limit=20" \
+  | jq '.items[] | {name, unit_types: [.unit_types[] | {name, latest_price, change_since_first_pct}]}'
+
+# One project with the whole price history of each unit type (404 if the slug does not exist)
+curl -s localhost:8000/projects/axis-ciudad-peldar \
+  | jq '.unit_types[] | {name, first_price, change_since_first_pct, history}'
+
+# Developers with their number of projects; the slug is what ?developer= takes
+curl -s localhost:8000/developers
+```
+
 Tests: `uv run pytest -m "not integration"` needs no database; `uv run --env-file .env pytest` runs everything. Stop the database with `supabase stop`.
 
 Production (AWS, Terraform, deploys and how to check a run): [docs/deploy.md](docs/deploy.md).

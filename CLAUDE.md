@@ -93,6 +93,8 @@ API (docs at `/docs`):
 uv run --env-file .env uvicorn sobreplano.interface.api.main:app --reload   # http://localhost:8000
 ```
 
+Routes (SPEC 03, 07): `GET /health`; `GET /projects` (filters `municipality`, `developer`, `min_price`, `max_price`, `min_bedrooms`, `min_area`, `max_area`; `sort=name|price`; `limit`, `offset`); `GET /projects/{slug}` (unit types with price history, 404 if unknown); `GET /developers`. Queries live behind the `ProjectListingQuery` port, so the advisor can reuse them without HTTP.
+
 Scraper (one pass per site per day; paid LLM calls, see `docs/scrapers/`):
 
 ```

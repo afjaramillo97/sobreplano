@@ -26,7 +26,7 @@ uv run --env-file .env python -m sobreplano.interface.cli.scrape londono-gomez
 | Card type | `.views-field-field-tipo-de-proyecto` (`Vivienda`, `Lotes`, `Oficinas`, `Hotel`) |
 | Card municipality | `.views-field-nothing` (`Medellín`, `La Estrella`, …) |
 | Canonical URL | `link[rel="canonical"]` |
-| Coordinates | `a[href*="/maps/dir/"]`, `google.com/maps/dir//{lat},{lon}/@…`, latitude first |
+| Coordinates | `location_from_links` (`geo_links.py`): `google.com/maps/dir//{lat},{lon}/@…`, latitude first; else the Waze link `to=ll.{lat}%2C{lon}`; else `MANUAL_LOCATIONS`; else no location |
 | Unit types | `.detail-apartment` with `h4` (name) and `span.price-apartament-types` (price); read by the LLM from the clean text, not by selector |
 
 ## Filters
@@ -47,6 +47,14 @@ After fetching, from the canonical URL: keep only `/proyectos-vivienda/antioquia
 | Unit types | 45 valid, 32 rejected (almost all "no price": "PLANTA TÍPICA" blocks and projects that publish no prices) |
 | Observations | 44, in 12 projects |
 | Tokens (`openai:gpt-6-luna`) | 31,687 input, 3,821 output, about 0.005 USD |
+
+## Extraction reuse (SPEC 06)
+
+An extraction is reused when the **clean text** sent to the model and the model are the same as a stored one: `page_extractions` is keyed by (`text_sha256`, `model`). The raw HTML hash (`content_sha256`) only names the raw file in S3 and on disk. Both hashes are stored per page in `scraped_pages`.
+
+Until SPEC 06 the key was the raw HTML hash, which never repeats on this site (see below), so every run paid for every extraction. Old extractions keep the HTML hash in the renamed column and never match again: the first run after migration `0004` re-extracts every page once (about 0.005 USD); from then on, a page is extracted again only when its visible text changes.
+
+Unit types the page lists twice with the same name, areas and price count once; same name with different areas are stored as two unit types with the area in the name (`Tipo A · 55.58 m²`); same name and areas with two prices keep the lowest (`dedupe_unit_types`). This fixed the `1 already recorded today` every run reported (Verdeventura listed "Tipo A" twice).
 
 ## What changes in the HTML from day to day (SPEC 06, step 1)
 

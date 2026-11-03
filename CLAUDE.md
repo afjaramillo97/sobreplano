@@ -4,7 +4,7 @@
 
 Sobreplano is a portfolio project (AI Engineer): a search engine for new off-plan housing in the Aburrá Valley, Colombia, with a daily price history and an AI advisor. Its differentiator versus portals (Fincaraíz, Metrocuadrado, La Haus) is showing how much each project has risen since its first observed price.
 
-Status: week 3 of 8. Schema, read API and the first scraper (Londoño Gómez) are in place (SPECs 01–04); since SPEC 05 the scraper runs daily in AWS (Lambda + Supabase cloud). No advisor yet. Budget: at most ~20 USD/month, so check cost before proposing any new service.
+Status: week 3 of 8. Schema, read API and the first scraper (Londoño Gómez) are in place (SPECs 01–04); since SPEC 05 the scraper runs daily in AWS (Lambda + Supabase cloud); SPEC 06 adds Constructora Capital and reuses extractions by clean-text hash. No advisor yet. Budget: at most ~20 USD/month, so check cost before proposing any new service.
 
 ## Stack
 
@@ -99,6 +99,7 @@ Scraper (one pass per site per day; paid LLM calls, see `docs/scrapers/`):
 uv run --env-file .env python -m sobreplano.interface.cli.scrape londono-gomez --limit 2 --dry-run
 uv run --env-file .env python -m sobreplano.interface.cli.scrape londono-gomez
 uv run --env-file .env python -m sobreplano.interface.cli.scrape londono-gomez --force   # even if a run already succeeded today
+uv run --env-file .env python -m sobreplano.interface.cli.scrape constructora-capital   # same flags; developer slugs are the keys of SITES
 RUN_LLM_TESTS=1 uv run --env-file .env pytest tests/llm   # optional paid test against the real API
 ```
 
@@ -110,7 +111,7 @@ eval "$(grep -E '^(TF_STATE_BUCKET|TF_VAR_alert_email)=' .env | sed 's/^/export 
 terraform -chdir=infra init -backend-config="bucket=$TF_STATE_BUCKET"
 terraform -chdir=infra plan -out=tfplan                              # show the plan; apply only with the owner's OK
 uv run --env-file .env.cloud alembic upgrade head                   # migrate Supabase cloud before merging code that needs it
-aws lambda invoke --function-name sobreplano-scraper --payload '{"developer":"londono-gomez"}' --cli-binary-format raw-in-base64-out out.json
+aws lambda invoke --function-name sobreplano-scraper --payload '{"developer":"londono-gomez"}' --cli-binary-format raw-in-base64-out out.json   # or constructora-capital
 ```
 
 Merging to `main` a change under `src/`, the `Dockerfile` or `uv.lock` deploys the image (`deploy-scraper.yml`, OIDC). Terraform is never applied from CI.

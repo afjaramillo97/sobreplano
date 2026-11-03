@@ -66,6 +66,8 @@ uv run --env-file .env.cloud alembic upgrade head
 uv run --env-file .env.cloud alembic check
 ```
 
+When a migration renames something the running image writes (SPEC 06's `0004` renames `page_extractions.content_sha256`), the old image breaks as soon as the migration runs. Migrate and merge back to back, outside 05:45–06:45, so no scheduled run falls in between; then apply Terraform if the change needs it, and invoke the Lambda by hand.
+
 ## Copying the local history to the cloud
 
 Done once, on 2026-11-01, before the first cloud run, with the cloud database freshly migrated and empty. It preserves the price history recorded locally on 2026-10-30 and 2026-10-31. The `price_observations` triggers only block `UPDATE`, `DELETE` and `TRUNCATE`, so the `INSERT`s load fine.
@@ -171,6 +173,8 @@ aws lambda invoke --function-name sobreplano-scraper \
 cat out.json
 ```
 
+The same with `{"developer":"constructora-capital"}`. Reserved concurrency is 2: at most two runs at a time, so a third invocation waits (asynchronous) or is throttled (synchronous).
+
 `--log-type Tail` returns the last 4 KB of the log. `out.json` holds the `ScrapeReport`: `succeeded` or `skipped`. A `failed` run raises instead, so Lambda counts an error, the alarm emails and Lambda retries twice. A second run on the same day ends `skipped` without visiting the site.
 
 ## When the alarm emails
@@ -184,7 +188,7 @@ The alarm fires when the Lambda raises: a `failed` run (no page got a price, or 
 ## Checking a run
 
 - Logs: `aws logs tail /aws/lambda/sobreplano-scraper --since 1d`. Each run ends with the same summary the CLI prints, then a `REPORT` line with the duration and `Max Memory Used`.
-- Raw HTML: `aws s3 ls "s3://$(terraform -chdir=infra output -raw raw_html_bucket)/londono-gomez/" --recursive`.
+- Raw HTML: `aws s3 ls "s3://$(terraform -chdir=infra output -raw raw_html_bucket)/{developer}/" --recursive` (`londono-gomez/`, `constructora-capital/`).
 - Database: `select run_on, status, pages_fetched, observations_recorded, error from scrape_runs order by started_at desc limit 5;` with `psql` and `.env.cloud`.
 
 ## First run in AWS (2026-11-01)
@@ -224,4 +228,4 @@ The first two rows are the local history copied above.
 
 Raw HTML in S3 afterwards: `aws s3 ls "s3://<bucket>/londono-gomez/" --recursive | wc -l` gives `21`, all under `londono-gomez/2026-11-01/`, about 132 KB each (2.7 MB in total), with `ContentType: text/html; charset=utf-8` and SSE-S3 (`AES256`).
 
-No extraction was reused: the HTML of all 21 pages differed from 2026-10-31, so every raw-HTML hash was new. At 0.005 USD a run this is negligible for one developer; if the HTML keeps changing every day, a later spec should hash the cleaned page text instead.
+No extraction was reused: the HTML of all 21 pages differed from 2026-10-31, so every raw-HTML hash was new. At 0.005 USD a run this is negligible for one developer; if the HTML keeps changing every day, a later spec should hash the cleaned page text instead. SPEC 06 did: per-request Drupal form tokens change the HTML every day, the clean text does not (`docs/scrapers/londono-gomez.md`).

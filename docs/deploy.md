@@ -229,3 +229,75 @@ The first two rows are the local history copied above.
 Raw HTML in S3 afterwards: `aws s3 ls "s3://<bucket>/londono-gomez/" --recursive | wc -l` gives `21`, all under `londono-gomez/2026-11-01/`, about 132 KB each (2.7 MB in total), with `ContentType: text/html; charset=utf-8` and SSE-S3 (`AES256`).
 
 No extraction was reused: the HTML of all 21 pages differed from 2026-10-31, so every raw-HTML hash was new. At 0.005 USD a run this is negligible for one developer; if the HTML keeps changing every day, a later spec should hash the cleaned page text instead. SPEC 06 did: per-request Drupal form tokens change the HTML every day, the clean text does not (`docs/scrapers/londono-gomez.md`).
+
+## SPEC 06 rollout (2026-11-02 and 2026-11-03)
+
+Order, all on 2026-11-02 at about 22:20 Bogotá, outside the scheduled window: cloud migration, merge of PR #9 (`32300d7`), `deploy-scraper.yml` green, then `terraform apply`.
+
+```
+$ uv run --env-file .env.cloud alembic upgrade head
+Running upgrade 0003 -> 0004, Scraping: reuse extractions by the clean-text hash instead of the raw HTML hash.
+Running upgrade 0004 -> 0005, Projects: allow a NULL location while the developer publishes no map.
+$ uv run --env-file .env.cloud alembic check
+No new upgrade operations detected.
+
+$ aws lambda get-function --function-name sobreplano-scraper --query '...'
+image: ...sobreplano-scraper@sha256:fb4279f5…   (tag 32300d7d…-41571895014)   state: Active   update: Successful
+
+$ terraform -chdir=infra apply tfplan
+aws_scheduler_schedule.scraper["constructora-capital"]: Creation complete
+aws_scheduler_schedule.scraper["londono-gomez"]: Creation complete
+aws_scheduler_schedule.scraper["londono-gomez"] (deposed object): Destroying... [id=default/sobreplano-scraper-daily]
+Apply complete! Resources: 2 added, 1 changed, 1 destroyed.
+
+$ terraform -chdir=infra plan
+No changes. Your infrastructure matches the configuration.
+
+$ aws scheduler list-schedules --name-prefix sobreplano-scraper --query 'Schedules[].[Name,State]' --output text
+sobreplano-scraper-londono-gomez         ENABLED
+sobreplano-scraper-constructora-capital  ENABLED
+(londono-gomez: cron(0 6 * * ? *); constructora-capital: cron(15 6 * * ? *); both America/Bogota)
+
+$ aws lambda get-function-concurrency --function-name sobreplano-scraper
+2
+```
+
+The 2 IAM policy updates in the plan were "known after apply" only: the apply changed 1 resource (the Lambda), not 3.
+
+No manual invocation: both sites had already been visited on 2026-11-02, so the first runs were the scheduled ones of 2026-11-03.
+
+### Scheduled runs of 2026-11-03
+
+| | Londoño Gómez (06:00) | Constructora Capital (06:15) |
+| --- | --- | --- |
+| Pages | 25 listed, 22 fetched, 3 out of scope, **0 failed** | 27 listed, 27 fetched, 0 out of scope, 0 failed |
+| Projects added | 1 (Ezzenti, without location) | 24 (+ 3 seed projects found by `source_url`) |
+| Unit types | 46 valid, 38 rejected, 5 added | 60 valid, 32 rejected, 52 added |
+| Observations | 46 recorded, **0 already recorded today** | 60 recorded, 0 already recorded today |
+| Extractions | 22 new, 0 reused (the one-time re-extraction after `0004`) | 27 new, 0 reused |
+| Tokens (`openai:gpt-6-luna`) | 33,396 input, 4,145 output, 0.0054 USD | 74,904 input, 5,242 output, 0.0101 USD |
+| Lambda | 103.8 s, 239 MB of 512 | 78.6 s (+2.2 s init), 240 MB of 512 |
+
+From the logs: `no location for …/medellin/ezzenti: no map link nor manual entry` (warning, not a failure); `…/bello/verdeventura: 1 unit types listed twice, kept once`; 8 seed unit types matched by area (Axis Tipo 02/04/06/12/14, Murano Apto 02/09, Acento Tipo 2).
+
+Checks on the cloud database (`.env.cloud`):
+
+```
+select count(*) from projects where slug like '%ciudad-peldar%';                              -> 3
+select count(*) from projects where slug ilike '%rosa%' or slug ilike '%urbanity%';           -> 0
+select slug, municipality, location is null from projects where slug = 'ezzenti';            -> ezzenti | medellin | true
+select ut.name, count(*) from price_observations po join unit_types ut on ut.id = po.unit_type_id
+  join projects p on p.id = ut.project_id where p.slug = 'axis-ciudad-peldar' group by ut.name;
+  -> Tipo 02 | 2, Tipo 04 | 2, Tipo 06 | 2, Tipo 12 | 2, Tipo 14 | 2   (manual 2026-10-28 + scraper 2026-11-03, same prices)
+```
+
+API against the cloud database (`uv run --env-file .env.cloud uvicorn …`):
+
+```
+$ curl -s "localhost:8000/projects" | jq '[.items[].developer.slug] | unique'
+["constructora-capital","londono-gomez"]
+$ curl -s "localhost:8000/projects?limit=100" | jq '.total'
+49
+```
+
+Ezzenti comes back with `"location": null`.

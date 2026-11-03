@@ -99,7 +99,7 @@ class ProjectRow(IdMixin, TimestampsMixin, Base):
 
     __tablename__ = "projects"
 
-    developer_id: Mapped[UUID] = mapped_column(ForeignKey("developers.id"))
+    developer_id: Mapped[UUID] = mapped_column(ForeignKey("developers.id"), index=True)
     name: Mapped[str] = mapped_column(Text)
     slug: Mapped[str] = mapped_column(Text, unique=True)
     municipality: Mapped[Municipality] = mapped_column(_str_enum(Municipality, "municipality"))
@@ -128,7 +128,7 @@ class UnitTypeRow(IdMixin, TimestampsMixin, Base):
         ),
     )
 
-    project_id: Mapped[UUID] = mapped_column(ForeignKey("projects.id"))
+    project_id: Mapped[UUID] = mapped_column(ForeignKey("projects.id"), index=True)
     name: Mapped[str] = mapped_column(Text)
     private_area_m2: Mapped[Decimal | None] = mapped_column(Numeric(7, 2))
     built_area_m2: Mapped[Decimal | None] = mapped_column(Numeric(7, 2))

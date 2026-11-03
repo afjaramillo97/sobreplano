@@ -1,6 +1,6 @@
 # SPEC 07 — API de lectura: detalle, histórico y filtros
 
-> **Estado:** aprobado
+> **Estado:** implementado
 > **Depende de:** SPEC 03, SPEC 06
 > **Fecha:** 2026-11-03
 > **Objetivo:** Que la API responda "qué proyectos hay con estas condiciones, cuánto cuestan hoy y cuánto han subido desde el primer precio observado", con filtros en `GET /projects`, el detalle con histórico en `GET /projects/{slug}` y la lista de constructoras en `GET /developers`.

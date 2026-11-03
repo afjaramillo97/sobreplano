@@ -146,6 +146,8 @@ aws lambda get-function --function-name sobreplano-scraper \
 
 Infrastructure changes (`infra/`) are never applied from CI: CI only runs `terraform fmt -check` and `terraform validate`. Apply them by hand as above, after reading the plan.
 
+The deploy does not need anyone's SSO session: the workflow assumes the `sobreplano-github-deploy` role with the job's OIDC token. If it fails with `Not authorized to perform sts:AssumeRoleWithWebIdentity`, compare the `sub` the role trusts with the one GitHub sends. This repo uses GitHub's immutable subject (`repo:owner@id/repo@id:...`, see `gh api repos/afjaramillo97/sobreplano/actions/oidc/customization/sub`); CloudTrail shows the rejected `sub` as the `userName` of the `AssumeRoleWithWebIdentity` event.
+
 ## Changing the schedule
 
 The schedule is the `scrape_schedule` Terraform variable, in Bogotá time (default `cron(0 6 * * ? *)`, every day at 06:00). For example, Mondays and Thursdays:

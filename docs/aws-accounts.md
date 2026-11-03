@@ -35,7 +35,7 @@ Permissions are always assigned to groups, never to individual users.
 
 ## Machine access
 
-- GitHub Actions deploys with OIDC: an IAM role in `sobreplano-prod` that trusts only `repo:afjaramillo97/sobreplano:ref:refs/heads/main`. No AWS keys are stored in GitHub (SPEC 05).
+- GitHub Actions deploys with OIDC: an IAM role in `sobreplano-prod` that trusts only `repo:afjaramillo97@128142098/sobreplano@1431332064:ref:refs/heads/main` (GitHub immutable subject: owner and repo IDs, so a re-created repo with the same name is not trusted). No AWS keys are stored in GitHub (SPEC 05).
 - The Lambda reads its secrets from SSM Parameter Store at start-up; the values never enter Terraform state. Upload or rotate them with `scripts/sync-ssm-secrets.sh` (`--dry-run` to preview): it reads `DATABASE_URL` from `.env.cloud` (converted to the transaction pooler, port 6543) and `OPENAI_API_KEY` from `.env`, and only writes values that changed.
 
 ## Cost and security guardrails

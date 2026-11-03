@@ -111,7 +111,7 @@ La respuesta es el `ScrapeReport` en JSON (`succeeded` o `skipped`). El mismo re
 | `lambda.tf` | Lambda `sobreplano-scraper` (arm64, 512 MB, timeout de 10 min, sin concurrencia reservada), rol y grupo de logs |
 | `schedule.tf` | Schedule `cron(0 6 * * ? *)` en `America/Bogota`, 2 reintentos |
 | `alerts.tf` | Tópico SNS por correo, alarma sobre `Errors >= 1` de la Lambda y presupuesto de 5 USD al mes |
-| `github_oidc.tf` | Proveedor OIDC de GitHub y rol que solo puede subir a ese ECR y actualizar esa Lambda, limitado a `repo:afjaramillo97/sobreplano:ref:refs/heads/main` |
+| `github_oidc.tf` | Proveedor OIDC de GitHub y rol que solo puede subir a ese ECR y actualizar esa Lambda, limitado a `repo:afjaramillo97@128142098/sobreplano@1431332064:ref:refs/heads/main` (formato de subject inmutable de GitHub, con los IDs del dueño y del repo) |
 | `variables.tf`, `outputs.tf` | Correo de alertas, región, nombres de los parámetros SSM |
 
 ## Plan de implementación

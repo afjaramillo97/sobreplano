@@ -18,10 +18,13 @@ data "aws_iam_policy_document" "github_assume" {
       variable = "token.actions.githubusercontent.com:aud"
       values   = ["sts.amazonaws.com"]
     }
+    # The repo uses GitHub's immutable subject claims: the sub carries the numeric owner
+    # and repo IDs, so a deleted and re-created repo with the same name cannot deploy.
+    # Check the format with: gh api repos/<owner>/<repo>/actions/oidc/customization/sub
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repository}:ref:refs/heads/main"]
+      values   = ["repo:${var.github_repository_subject}:ref:refs/heads/main"]
     }
   }
 }

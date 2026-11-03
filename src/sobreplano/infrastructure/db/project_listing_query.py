@@ -1,14 +1,16 @@
 """SQLAlchemy implementation of ProjectListingQuery."""
 
 from collections import defaultdict
+from typing import Any
 from uuid import UUID
 
-from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy import Label, func, select
+from sqlalchemy.orm import InstrumentedAttribute, Session
 
 from sobreplano.domain.catalog import Municipality
 from sobreplano.domain.listings import (
     LatestPrice,
+    PricePoint,
     ProjectListing,
     ProjectPage,
     UnitTypeListing,
@@ -23,7 +25,7 @@ from sobreplano.infrastructure.db.models import (
 
 
 class SqlProjectListingQuery:
-    """Lists projects with the latest price of each unit type in at most three statements."""
+    """Lists projects with the latest and first price of each unit type, in at most 3 statements."""
 
     def __init__(self, session: Session) -> None:
         self._session = session
@@ -71,8 +73,19 @@ class SqlProjectListingQuery:
         return ProjectPage(items=items, total=total)
 
     def _unit_types_by_project(self, project_ids: list[UUID]) -> dict[UUID, list[UnitTypeListing]]:
-        """Unit types of the given projects, each with its newest observation (window row 1)."""
+        """Unit types of the given projects, each with its newest and its first observation."""
         # Only the page's unit types enter the window, so the scan does not grow with the catalog.
+        unit_type_id = PriceObservationRow.unit_type_id
+
+        def first_of(column: InstrumentedAttribute[Any], label: str) -> Label[Any]:
+            # Without a frame, the default one starts at the partition's first row, so this is
+            # always the oldest observation. type_ keeps the enum conversion of `source`.
+            return (
+                func.first_value(column, type_=column.type)
+                .over(partition_by=unit_type_id, order_by=PriceObservationRow.observed_on)
+                .label(label)
+            )
+
         ranked = (
             select(
                 PriceObservationRow.unit_type_id,
@@ -80,11 +93,11 @@ class SqlProjectListingQuery:
                 PriceObservationRow.observed_on,
                 PriceObservationRow.source,
                 func.row_number()
-                .over(
-                    partition_by=PriceObservationRow.unit_type_id,
-                    order_by=PriceObservationRow.observed_on.desc(),
-                )
+                .over(partition_by=unit_type_id, order_by=PriceObservationRow.observed_on.desc())
                 .label("rank"),
+                first_of(PriceObservationRow.price_cop, "first_price_cop"),
+                first_of(PriceObservationRow.observed_on, "first_on"),
+                first_of(PriceObservationRow.source, "first_source"),
             )
             .where(
                 PriceObservationRow.unit_type_id.in_(
@@ -94,18 +107,34 @@ class SqlProjectListingQuery:
             .subquery()
         )
         latest = (
-            select(ranked.c.unit_type_id, ranked.c.price_cop, ranked.c.observed_on, ranked.c.source)
+            select(
+                ranked.c.unit_type_id,
+                ranked.c.price_cop,
+                ranked.c.observed_on,
+                ranked.c.source,
+                ranked.c.first_price_cop,
+                ranked.c.first_on,
+                ranked.c.first_source,
+            )
             .where(ranked.c.rank == 1)
             .subquery()
         )
         rows = self._session.execute(
-            select(UnitTypeRow, latest.c.price_cop, latest.c.observed_on, latest.c.source)
+            select(
+                UnitTypeRow,
+                latest.c.price_cop,
+                latest.c.observed_on,
+                latest.c.source,
+                latest.c.first_price_cop,
+                latest.c.first_on,
+                latest.c.first_source,
+            )
             .outerjoin(latest, latest.c.unit_type_id == UnitTypeRow.id)
             .where(UnitTypeRow.project_id.in_(project_ids))
             .order_by(UnitTypeRow.name)
         )
         result: dict[UUID, list[UnitTypeListing]] = defaultdict(list)
-        for row, price_cop, observed_on, source in rows:
+        for row, price_cop, observed_on, source, first_cop, first_on, first_source in rows:
             result[row.project_id].append(
                 UnitTypeListing(
                     id=row.id,
@@ -121,8 +150,13 @@ class SqlProjectListingQuery:
                             price_cop=price_cop, observed_on=observed_on, source=source
                         )
                     ),
-                    # Read from the database in step 3 of SPEC 07.
-                    first_price=None,
+                    first_price=(
+                        None
+                        if first_cop is None
+                        else PricePoint(
+                            observed_on=first_on, price_cop=first_cop, source=first_source
+                        )
+                    ),
                 )
             )
         return result

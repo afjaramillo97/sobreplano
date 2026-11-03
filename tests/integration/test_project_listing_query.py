@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from sobreplano.domain.catalog import Developer, GeoPoint
 from sobreplano.domain.listings import AreaBasis
+from sobreplano.domain.pricing import ObservationSource
 from sobreplano.infrastructure.db.catalog_repository import SqlCatalogRepository
 from sobreplano.infrastructure.db.price_observation_repository import (
     SqlPriceObservationRepository,
@@ -118,3 +119,43 @@ def test_pagination_keeps_total_and_order(
     assert [item.name for item in second.items] == ["Proyecto C"]
     assert first.total == second.total == beyond.total == 3
     assert beyond.items == []
+
+
+def test_first_price_and_change_come_from_three_days(
+    query: SqlProjectListingQuery,
+    catalog: SqlCatalogRepository,
+    observations: SqlPriceObservationRepository,
+    developer: Developer,
+) -> None:
+    project = add_project(catalog, developer, "Proyecto A")
+    unit_type = add_unit_type(catalog, project, "Tipo 01", private_area_m2="50.00")
+    # Inserted out of order: the first price is the oldest day, not the first row written.
+    add_price(observations, unit_type, 28, 440_000_000, ObservationSource.SCRAPER)
+    add_price(observations, unit_type, 26, 400_000_000)
+    add_price(observations, unit_type, 27, 420_000_000)
+
+    [listing] = query.list_projects(municipality=MUNICIPALITY, limit=50, offset=0).items
+
+    [unit] = listing.unit_types
+    assert unit.first_price is not None
+    assert unit.first_price.price_cop == 400_000_000
+    assert unit.first_price.observed_on == date(2026, 10, 26)
+    assert unit.first_price.source == ObservationSource.MANUAL
+    assert unit.latest_price is not None
+    assert unit.latest_price.source == ObservationSource.SCRAPER
+    assert unit.latest_price is not None
+    assert unit.latest_price.price_cop == 440_000_000
+    assert unit.change_since_first_pct == 10.0
+
+
+def test_first_price_is_none_without_observations(
+    query: SqlProjectListingQuery, catalog: SqlCatalogRepository, developer: Developer
+) -> None:
+    project = add_project(catalog, developer, "Proyecto A")
+    add_unit_type(catalog, project, "Tipo 01")
+
+    [listing] = query.list_projects(municipality=MUNICIPALITY, limit=50, offset=0).items
+
+    [unit] = listing.unit_types
+    assert unit.first_price is None
+    assert unit.change_since_first_pct is None

@@ -59,7 +59,11 @@ def add_unit_type(
 
 
 def add_price(
-    observations: SqlPriceObservationRepository, unit_type: UnitType, day: int, price_cop: int
+    observations: SqlPriceObservationRepository,
+    unit_type: UnitType,
+    day: int,
+    price_cop: int,
+    source: ObservationSource = ObservationSource.MANUAL,
 ) -> None:
     observations.add(
         PriceObservation(
@@ -68,7 +72,7 @@ def add_price(
             price_cop=price_cop,
             observed_at=datetime(2026, 10, day, 15, 0, tzinfo=UTC),
             observed_on=date(2026, 10, day),
-            source=ObservationSource.MANUAL,
+            source=source,
             source_url="https://example.com/proyecto",
         )
     )

@@ -14,6 +14,19 @@ def _to_developer(row: DeveloperRow) -> Developer:
     return Developer(id=row.id, name=row.name, slug=row.slug, website_url=row.website_url)
 
 
+def _to_project(row: ProjectRow, lat: float | None, lon: float | None) -> Project:
+    return Project(
+        id=row.id,
+        developer_id=row.developer_id,
+        name=row.name,
+        slug=row.slug,
+        municipality=row.municipality,
+        neighborhood=row.neighborhood,
+        location=to_geo_point(lat, lon),
+        source_url=row.source_url,
+    )
+
+
 def _to_unit_type(row: UnitTypeRow) -> UnitType:
     return UnitType(
         id=row.id,
@@ -76,19 +89,17 @@ class SqlCatalogRepository:
         result = self._session.execute(
             select(ProjectRow, LAT, LON).where(ProjectRow.slug == slug)
         ).one_or_none()
-        if result is None:
-            return None
-        row, lat, lon = result
-        return Project(
-            id=row.id,
-            developer_id=row.developer_id,
-            name=row.name,
-            slug=row.slug,
-            municipality=row.municipality,
-            neighborhood=row.neighborhood,
-            location=to_geo_point(lat, lon),
-            source_url=row.source_url,
-        )
+        return None if result is None else _to_project(*result)
+
+    def get_project_by_source_url(self, url: str) -> Project | None:
+        """Return the oldest project whose source_url is this URL, or None."""
+        result = self._session.execute(
+            select(ProjectRow, LAT, LON)
+            .where(ProjectRow.source_url == url)
+            .order_by(ProjectRow.created_at, ProjectRow.id)
+            .limit(1)
+        ).one_or_none()
+        return None if result is None else _to_project(*result)
 
     def update_project_location(self, project_id: UUID, location: GeoPoint) -> None:
         """Set a project's location; used when a page publishes the map it lacked."""

@@ -39,6 +39,7 @@ from sobreplano.domain.scraping import (
     dedupe_unit_types,
     normalize_unit_type_name,
     text_sha256,
+    unit_types_with_same_area,
     validate_unit_type,
 )
 
@@ -229,6 +230,9 @@ class ScrapeDeveloper:
     ) -> Project:
         project = self.catalog.get_project_by_slug(parsed.slug)
         if project is None:
+            # A hand-loaded seed project has its own slug but the page's URL.
+            project = self.catalog.get_project_by_source_url(parsed.canonical_url)
+        if project is None:
             project = Project(
                 id=uuid4(),
                 developer_id=developer.id,
@@ -271,10 +275,6 @@ class ScrapeDeveloper:
         report: ScrapeReport,
     ) -> bool:
         """Record one price per valid unit type; True if the page has any price for today."""
-        existing = {
-            normalize_unit_type_name(unit_type.name): unit_type
-            for unit_type in self.catalog.list_unit_types(project.id)
-        }
         accepted: list[ValidUnitType] = []
         for extracted in extraction.project.unit_types:
             checked = validate_unit_type(extracted)
@@ -297,13 +297,13 @@ class ScrapeDeveloper:
                 len(accepted) - len(deduped),
             )
 
+        unit_types = self._unit_types(project, deduped, parsed.canonical_url, report)
         priced = False
-        for valid in deduped:
+        for valid, unit_type in zip(deduped, unit_types, strict=True):
             report.unit_types_valid += 1
             for warning in valid.warnings:
                 logger.info("unit type %r at %s: %s", valid.name, parsed.canonical_url, warning)
 
-            unit_type = self._unit_type(project, valid, existing, parsed.canonical_url, report)
             result = self.record.execute(
                 unit_type_id=unit_type.id,
                 price_cop=valid.price_cop,
@@ -318,41 +318,88 @@ class ScrapeDeveloper:
             priced = True
         return priced
 
-    def _unit_type(
+    def _unit_types(
+        self, project: Project, page: list[ValidUnitType], url: str, report: ScrapeReport
+    ) -> list[UnitType]:
+        """The stored unit type of each page unit type: by name, else by area, else new.
+
+        Names are matched for the whole page first, so an area match never takes a row
+        that another unit type of the same page matches by name.
+        """
+        stored = self.catalog.list_unit_types(project.id)
+        by_name = {normalize_unit_type_name(unit_type.name): unit_type for unit_type in stored}
+        named = [by_name.get(normalize_unit_type_name(valid.name)) for valid in page]
+        claimed = {unit_type.id for unit_type in named if unit_type is not None}
+
+        result: list[UnitType] = []
+        for valid, unit_type in zip(page, named, strict=True):
+            if unit_type is not None:
+                _log_area_change(unit_type, valid, url)
+            else:
+                free = [u for u in stored if u.id not in claimed]
+                unit_type = self._by_area(valid, free, url) or self._new_unit_type(
+                    project, valid, has_others=bool(stored), url=url, report=report
+                )
+                claimed.add(unit_type.id)
+            result.append(unit_type)
+        return result
+
+    def _by_area(self, valid: ValidUnitType, free: list[UnitType], url: str) -> UnitType | None:
+        candidates = unit_types_with_same_area(valid, free)
+        if len(candidates) == 1:
+            # Every match by area is logged so a wrong one can be found and undone.
+            logger.info(
+                "unit type %r at %s matched %r by area", valid.name, url, candidates[0].name
+            )
+            return candidates[0]
+        if candidates:
+            logger.warning(
+                "unit type %r at %s has the area of %d unit types (%s): created a new one",
+                valid.name,
+                url,
+                len(candidates),
+                ", ".join(repr(u.name) for u in candidates),
+            )
+        return None
+
+    def _new_unit_type(
         self,
         project: Project,
         valid: ValidUnitType,
-        existing: dict[str, UnitType],
+        *,
+        has_others: bool,
         url: str,
         report: ScrapeReport,
     ) -> UnitType:
-        key = normalize_unit_type_name(valid.name)
-        unit_type = existing.get(key)
-        if unit_type is None:
-            unit_type = UnitType(
-                id=uuid4(),
-                project_id=project.id,
-                name=valid.name,
-                private_area_m2=valid.private_area_m2,
-                built_area_m2=valid.built_area_m2,
-                bedrooms=valid.bedrooms,
-                bathrooms=valid.bathrooms,
-            )
-            self.catalog.add_unit_type(unit_type)
-            existing[key] = unit_type
-            report.unit_types_added += 1
-        elif (unit_type.built_area_m2, unit_type.private_area_m2) != (
+        unit_type = UnitType(
+            id=uuid4(),
+            project_id=project.id,
+            name=valid.name,
+            private_area_m2=valid.private_area_m2,
+            built_area_m2=valid.built_area_m2,
+            bedrooms=valid.bedrooms,
+            bathrooms=valid.bathrooms,
+        )
+        self.catalog.add_unit_type(unit_type)
+        report.unit_types_added += 1
+        if has_others:
+            # A renamed unit type ("Tipo 4" for "Tipo 04") lands here; the log lets it be found.
+            logger.info("new unit type %r at %s, in a project that had others", valid.name, url)
+        return unit_type
+
+
+def _log_area_change(unit_type: UnitType, valid: ValidUnitType, url: str) -> None:
+    if (unit_type.built_area_m2, unit_type.private_area_m2) != (
+        valid.built_area_m2,
+        valid.private_area_m2,
+    ):
+        # v1 creates unit types once; changes are only logged (SPEC 04).
+        logger.info(
+            "unit type %r at %s changed area: stored %s/%s, page %s/%s",
+            valid.name,
+            url,
+            unit_type.built_area_m2,
+            unit_type.private_area_m2,
             valid.built_area_m2,
             valid.private_area_m2,
-        ):
-            # v1 creates unit types once; changes are only logged (SPEC 04).
-            logger.info(
-                "unit type %r at %s changed area: stored %s/%s, page %s/%s",
-                valid.name,
-                url,
-                unit_type.built_area_m2,
-                unit_type.private_area_m2,
-                valid.built_area_m2,
-                valid.private_area_m2,
-            )
-        return unit_type
+        )

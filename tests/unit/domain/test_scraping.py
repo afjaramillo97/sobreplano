@@ -1,15 +1,18 @@
 """Unit tests for the scraping range rules, unit type name matching and deduplication."""
 
 from decimal import Decimal
+from uuid import uuid4
 
 import pytest
 
+from sobreplano.domain.catalog import UnitType
 from sobreplano.domain.scraping import (
     ExtractedUnitType,
     RejectedUnitType,
     ValidUnitType,
     dedupe_unit_types,
     normalize_unit_type_name,
+    unit_types_with_same_area,
     validate_unit_type,
 )
 
@@ -180,3 +183,26 @@ def test_dedupe_keeps_the_lowest_price_of_the_same_unit_type_and_warns() -> None
     (kept,) = dedupe_unit_types([valid(price_cop=270_000_000), valid(price_cop=260_000_000)])
     assert kept.price_cop == 260_000_000
     assert kept.warnings == ("listed twice, at 260000000 and 270000000: kept the lowest",)
+
+
+def stored(name: str, built: str | None, private: str | None) -> UnitType:
+    return UnitType(
+        id=uuid4(),
+        project_id=uuid4(),
+        name=name,
+        private_area_m2=None if private is None else Decimal(private),
+        built_area_m2=None if built is None else Decimal(built),
+        bedrooms=1,
+        bathrooms=1,
+    )
+
+
+def test_same_area_matches_built_or_private_to_two_decimals() -> None:
+    tipo_04 = stored("Tipo 04", "60.01", "54.06")
+    tipo_12 = stored("Tipo 12", "60.1", "54.94")
+    tipo_02 = stored("Tipo 02", None, "54.98")
+    candidates = [tipo_04, tipo_12, tipo_02]
+    assert unit_types_with_same_area(valid(built="60.010", private="1"), candidates) == [tipo_04]
+    assert unit_types_with_same_area(valid(built="60.10", private=None), candidates) == [tipo_12]
+    assert unit_types_with_same_area(valid(built=None, private="54.98"), candidates) == [tipo_02]
+    assert unit_types_with_same_area(valid(built="99", private="99"), candidates) == []

@@ -190,6 +190,9 @@ class InMemoryCatalog:
     def get_project_by_slug(self, slug: str) -> Project | None:
         return next((p for p in self.projects if p.slug == slug), None)
 
+    def get_project_by_source_url(self, url: str) -> Project | None:
+        return next((p for p in self.projects if p.source_url == url), None)
+
     def update_project_location(self, project_id: UUID, location: GeoPoint) -> None:
         self.projects = [
             replace(p, location=location) if p.id == project_id else p for p in self.projects
@@ -527,6 +530,88 @@ def test_a_stored_location_is_not_overwritten(world: World) -> None:
     world.site.pages["/node/1"] = replace(primavela, location=moved)
     world.use_case().execute()
     assert world.catalog.projects[0].location == primavela.location
+
+
+def seed_project(world: World, unit_types: list[tuple[str, str, str]]) -> Project:
+    """A hand-loaded project with primavela's URL, another slug and (name, built, private)."""
+    developer = Developer(
+        id=uuid4(), name="Londoño Gómez", slug="londono-gomez", website_url="https://x"
+    )
+    world.catalog.add_developer(developer)
+    seeded = Project(
+        id=uuid4(),
+        developer_id=developer.id,
+        name="Primavela",
+        slug="primavela-bello",
+        municipality=Municipality.BELLO,
+        neighborhood=None,
+        location=GeoPoint(lat=6.33, lon=-75.56),
+        source_url="https://example.com/proyectos-vivienda/antioquia/x/primavela",
+    )
+    world.catalog.add_project(seeded)
+    for name, built, private in unit_types:
+        world.catalog.add_unit_type(
+            UnitType(
+                id=uuid4(),
+                project_id=seeded.id,
+                name=name,
+                private_area_m2=Decimal(private),
+                built_area_m2=Decimal(built),
+                bedrooms=2,
+                bathrooms=2,
+            )
+        )
+    return seeded
+
+
+def observed_names(world: World, project: Project) -> list[str]:
+    names = {u.id: u.name for u in world.catalog.unit_types if u.project_id == project.id}
+    return sorted(
+        names[o.unit_type_id] for o in world.observations.items if o.unit_type_id in names
+    )
+
+
+def test_page_with_the_url_of_a_seed_project_reuses_it(world: World) -> None:
+    seeded = seed_project(world, [("Tipo 04", "60.01", "54.06")])
+    world.extractor.projects["texto de primavela"] = project(
+        "Primavela", unit("Tipo 04", total="60.01", private="54.06")
+    )
+    report = world.use_case().execute()
+    assert [p.slug for p in world.catalog.projects] == ["primavela-bello", "reflex-living"]
+    assert report.projects_added == 1  # only Réflex Living
+    assert observed_names(world, seeded) == ["Tipo 04"]
+
+
+def test_renamed_unit_type_is_matched_by_area(world: World) -> None:
+    seeded = seed_project(world, [("Tipo 04", "60.01", "54.06"), ("Tipo 12", "60.1", "54.94")])
+    world.extractor.projects["texto de primavela"] = project(
+        "Primavela",
+        unit("Planta Apartamento 60.01 m2", total="60.01", private="54.06"),
+        unit("Planta Apartamento 60.10 m2", total="60.10", private="54.94"),
+    )
+    report = world.use_case().execute()
+    assert observed_names(world, seeded) == ["Tipo 04", "Tipo 12"]
+    assert report.unit_types_added == 1  # only Réflex Living's Tipo 1
+
+
+def test_area_shared_by_two_unit_types_creates_a_new_one(world: World) -> None:
+    seeded = seed_project(world, [("Tipo 04", "60.01", "54.06"), ("Tipo 05", "60.01", "54.50")])
+    world.extractor.projects["texto de primavela"] = project(
+        "Primavela", unit("Planta 60.01", total="60.01", private="53.00")
+    )
+    world.use_case().execute()
+    assert observed_names(world, seeded) == ["Planta 60.01"]
+
+
+def test_an_area_match_never_takes_a_row_matched_by_name(world: World) -> None:
+    seeded = seed_project(world, [("Tipo A", "55", "49.36")])
+    world.extractor.projects["texto de primavela"] = project(
+        "Primavela",
+        unit("Tipo B", total="55", private="49.36"),  # same area as Tipo A, comes first
+        unit("Tipo A", total="55", private="49.36"),
+    )
+    world.use_case().execute()
+    assert observed_names(world, seeded) == ["Tipo A", "Tipo B"]
 
 
 def test_missing_bedrooms_are_stored_as_none(world: World) -> None:

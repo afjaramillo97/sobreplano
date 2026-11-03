@@ -4,6 +4,7 @@ import hashlib
 import re
 import unicodedata
 from collections import Counter
+from collections.abc import Iterable
 from dataclasses import dataclass, replace
 from datetime import date, datetime
 from decimal import Decimal
@@ -11,13 +12,14 @@ from enum import StrEnum
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from sobreplano.domain.catalog import GeoPoint, Municipality
+from sobreplano.domain.catalog import GeoPoint, Municipality, UnitType
 
 MIN_PRICE_COP = 50_000_000
 MAX_PRICE_COP = 20_000_000_000
 MIN_AREA_M2 = Decimal(15)
 MAX_AREA_M2 = Decimal(1000)
 MAX_ROOMS = 10
+CENT = Decimal("0.01")
 
 
 class ScrapeRunStatus(StrEnum):
@@ -222,6 +224,25 @@ def dedupe_unit_types(valid: list[ValidUnitType]) -> list[ValidUnitType]:
         if count > 1:
             _append_areas(deduped, name)
     return deduped
+
+
+def unit_types_with_same_area(valid: ValidUnitType, stored: Iterable[UnitType]) -> list[UnitType]:
+    """Stored unit types with the same built or the same private area, to two decimals.
+
+    Lets a page that renames a unit type ("Planta Apartamento 60.01 m2" for the seed's
+    "Tipo 04") keep its history. The caller only uses the result when it has exactly one
+    unit type: two candidates sharing an area are ambiguous.
+    """
+    return [
+        unit_type
+        for unit_type in stored
+        if _same_area(unit_type.built_area_m2, valid.built_area_m2)
+        or _same_area(unit_type.private_area_m2, valid.private_area_m2)
+    ]
+
+
+def _same_area(a: Decimal | None, b: Decimal | None) -> bool:
+    return a is not None and b is not None and a.quantize(CENT) == b.quantize(CENT)
 
 
 def _append_areas(units: list[ValidUnitType], name: str) -> None:

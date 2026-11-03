@@ -1,6 +1,6 @@
 # SPEC 06 — Datos confiables y segunda constructora: Constructora Capital
 
-> **Estado:** aprobado
+> **Estado:** implementado (2026-11-03; queda por validar el criterio de reutilización con la corrida del 4 nov)
 > **Depende de:** SPEC 04, SPEC 05
 > **Fecha:** 2026-11-02
 > **Objetivo:** Que el scraper diario no pierda precios, no vuelva a extraer páginas que no cambiaron y cubra también a Constructora Capital, con un horario propio por constructora en AWS.
@@ -172,18 +172,18 @@ variable "scrape_schedules" {
 
 Cada criterio se verifica pegando el comando y su salida en el PR (constitución, principio 6).
 
-- [ ] El paso 1 está documentado: qué cambia en el HTML entre días, que el texto limpio de dos días es idéntico, los selectores de Capital y la tabla de zonas completa.
-- [ ] `alembic upgrade head`, `downgrade -1` y `upgrade head` funcionan en local; `alembic check` limpio; `alembic heads` da una sola cabeza.
-- [ ] La primera corrida de Londoño Gómez de un día reporta `0 already recorded today`.
-- [ ] La segunda corrida de Londoño Gómez con la llave nueva (al día siguiente, en AWS) reporta `extractions: N reused` con N mayor que la mitad de las fichas, y gasta menos tokens que la del día anterior.
-- [ ] Ezzenti queda en `projects` sin coordenadas (`location is null`) y deja de aparecer como fallida; un test demuestra que la ubicación se guarda cuando la ficha la publica.
-- [ ] La corrida de Capital registra precios en al menos los 3 proyectos de la semilla y `select count(*) from projects where slug like '%ciudad-peldar%'` sigue en 3: no hay proyectos duplicados.
-- [ ] Al menos una tipología de cada proyecto de la semilla que tenga precio en el sitio recibe una observación `scraper`: `select ut.name, count(*) from price_observations po join unit_types ut on ut.id = po.unit_type_id join projects p on p.id = ut.project_id where p.slug = 'axis-ciudad-peldar' group by ut.name` muestra filas con más de una observación.
-- [ ] Ningún proyecto de Rionegro ni de Urbanity: `select count(*) from projects where slug ilike '%rosa%' or slug ilike '%urbanity%'` devuelve 0.
-- [ ] `aws scheduler list-schedules --name-prefix sobreplano-scraper` muestra exactamente `sobreplano-scraper-londono-gomez` y `sobreplano-scraper-constructora-capital`, a las 6:00 y 6:15 (el viejo `-daily` ya no existe).
-- [ ] `terraform plan` después del `apply` dice `No changes`.
-- [ ] `curl -s "localhost:8000/projects" | jq '[.items[].developer.slug] | unique'` muestra las dos constructoras, con la API apuntando a la base en la nube.
-- [ ] `uv run pytest -m "not integration"`, `uv run pyright` (0 errores) y `uv run lint-imports` (2 contratos) pasan; el CI del PR queda en verde.
+- [x] El paso 1 está documentado: qué cambia en el HTML entre días, que el texto limpio de dos días es idéntico, los selectores de Capital y la tabla de zonas completa.
+- [x] `alembic upgrade head`, `downgrade -1` y `upgrade head` funcionan en local; `alembic check` limpio; `alembic heads` da una sola cabeza.
+- [x] La primera corrida de Londoño Gómez de un día reporta `0 already recorded today`.
+- [ ] La segunda corrida de Londoño Gómez con la llave nueva (al día siguiente, en AWS) reporta `extractions: N reused` con N mayor que la mitad de las fichas, y gasta menos tokens que la del día anterior. **Pendiente:** se valida con la corrida programada del 2026-11-04 y la evidencia va a `docs/deploy.md`.
+- [x] Ezzenti queda en `projects` sin coordenadas (`location is null`) y deja de aparecer como fallida; un test demuestra que la ubicación se guarda cuando la ficha la publica.
+- [x] La corrida de Capital registra precios en al menos los 3 proyectos de la semilla y `select count(*) from projects where slug like '%ciudad-peldar%'` sigue en 3: no hay proyectos duplicados.
+- [x] Al menos una tipología de cada proyecto de la semilla que tenga precio en el sitio recibe una observación `scraper`: `select ut.name, count(*) from price_observations po join unit_types ut on ut.id = po.unit_type_id join projects p on p.id = ut.project_id where p.slug = 'axis-ciudad-peldar' group by ut.name` muestra filas con más de una observación.
+- [x] Ningún proyecto de Rionegro ni de Urbanity: `select count(*) from projects where slug ilike '%rosa%' or slug ilike '%urbanity%'` devuelve 0.
+- [x] `aws scheduler list-schedules --name-prefix sobreplano-scraper` muestra exactamente `sobreplano-scraper-londono-gomez` y `sobreplano-scraper-constructora-capital`, a las 6:00 y 6:15 (el viejo `-daily` ya no existe).
+- [x] `terraform plan` después del `apply` dice `No changes`.
+- [x] `curl -s "localhost:8000/projects" | jq '[.items[].developer.slug] | unique'` muestra las dos constructoras, con la API apuntando a la base en la nube.
+- [x] `uv run pytest -m "not integration"`, `uv run pyright` (0 errores) y `uv run lint-imports` (2 contratos) pasan; el CI del PR queda en verde.
 
 ## Decisiones tomadas y descartadas
 

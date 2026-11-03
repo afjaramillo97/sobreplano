@@ -36,6 +36,7 @@ from sobreplano.domain.scraping import (
     ScrapeRunStatus,
     ValidUnitType,
     content_sha256,
+    dedupe_unit_types,
     normalize_unit_type_name,
     text_sha256,
     validate_unit_type,
@@ -258,15 +259,30 @@ class ScrapeDeveloper:
             normalize_unit_type_name(unit_type.name): unit_type
             for unit_type in self.catalog.list_unit_types(project.id)
         }
-        priced = False
+        accepted: list[ValidUnitType] = []
         for extracted in extraction.project.unit_types:
-            valid = validate_unit_type(extracted)
-            if isinstance(valid, RejectedUnitType):
+            checked = validate_unit_type(extracted)
+            if isinstance(checked, RejectedUnitType):
                 report.unit_types_rejected += 1
                 logger.info(
-                    "unit type rejected: %s %r: %s", parsed.canonical_url, valid.name, valid.reason
+                    "unit type rejected: %s %r: %s",
+                    parsed.canonical_url,
+                    checked.name,
+                    checked.reason,
                 )
-                continue
+            else:
+                accepted.append(checked)
+        # Before counting: a unit type the page lists twice is one unit type, not two.
+        deduped = dedupe_unit_types(accepted)
+        if len(deduped) < len(accepted):
+            logger.info(
+                "%s: %d unit types listed twice, kept once",
+                parsed.canonical_url,
+                len(accepted) - len(deduped),
+            )
+
+        priced = False
+        for valid in deduped:
             report.unit_types_valid += 1
             for warning in valid.warnings:
                 logger.info("unit type %r at %s: %s", valid.name, parsed.canonical_url, warning)

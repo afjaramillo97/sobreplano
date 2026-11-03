@@ -1,4 +1,4 @@
-"""Unit tests for the scraping range rules and unit type name matching."""
+"""Unit tests for the scraping range rules, unit type name matching and deduplication."""
 
 from decimal import Decimal
 
@@ -8,6 +8,7 @@ from sobreplano.domain.scraping import (
     ExtractedUnitType,
     RejectedUnitType,
     ValidUnitType,
+    dedupe_unit_types,
     normalize_unit_type_name,
     validate_unit_type,
 )
@@ -107,7 +108,15 @@ def test_drops_out_of_range_rooms_without_rejecting(rooms: int) -> None:
 
 @pytest.mark.parametrize(
     ("a", "b"),
-    [("TIPO B", "Tipo B"), ("Tipo  1", "tipo 1"), (" Tipo A ", "tipo a")],
+    [
+        ("TIPO B", "Tipo B"),
+        ("Tipo  1", "tipo 1"),
+        (" Tipo A ", "tipo a"),
+        ("Tipo B ", "TIPO B"),
+        ("Tipo N\u0303", "TIPO \u00d1"),  # decomposed vs composed Ñ, joined by NFKC
+        ("Planta 60.01 m²", "planta 60.01 m2"),
+        ("Tipo Ñ", "tipo ñ"),
+    ],
 )
 def test_normalized_names_match(a: str, b: str) -> None:
     assert normalize_unit_type_name(a) == normalize_unit_type_name(b)
@@ -115,3 +124,59 @@ def test_normalized_names_match(a: str, b: str) -> None:
 
 def test_normalized_names_keep_distinct_types_apart() -> None:
     assert normalize_unit_type_name("Tipo 1") != normalize_unit_type_name("Tipo 11")
+
+
+def valid(
+    name: str = "Tipo A",
+    price_cop: int = 260_000_000,
+    built: str | None = "52",
+    private: str | None = "47.1",
+) -> ValidUnitType:
+    return ValidUnitType(
+        name=name,
+        price_cop=price_cop,
+        built_area_m2=None if built is None else Decimal(built),
+        private_area_m2=None if private is None else Decimal(private),
+        bedrooms=2,
+        bathrooms=1,
+        warnings=(),
+    )
+
+
+def test_dedupe_keeps_distinct_unit_types_as_they_are() -> None:
+    units = [valid("Tipo A"), valid("Tipo B", built="60")]
+    assert dedupe_unit_types(units) == units
+
+
+def test_dedupe_keeps_one_of_an_exact_duplicate() -> None:
+    # Seen on Verdeventura (2026-11-02): "Tipo A", same price and area, listed twice.
+    units = [valid("Tipo A"), valid("Tipo B", built="60"), valid("TIPO A ")]
+    assert dedupe_unit_types(units) == units[:2]
+
+
+def test_dedupe_appends_the_area_to_same_name_with_different_areas() -> None:
+    units = [valid("Tipo A", built="55.58"), valid("Tipo B"), valid("Tipo A", built="60.10")]
+    assert [u.name for u in dedupe_unit_types(units)] == [
+        "Tipo A · 55.58 m²",
+        "Tipo B",
+        "Tipo A · 60.1 m²",
+    ]
+
+
+def test_dedupe_uses_the_private_area_when_there_is_no_built_area() -> None:
+    units = [valid(built=None, private="49.36"), valid(built=None, private="52.00")]
+    assert [u.name for u in dedupe_unit_types(units)] == ["Tipo A · 49.36 m²", "Tipo A · 52 m²"]
+
+
+def test_dedupe_uses_both_areas_when_the_built_area_is_shared() -> None:
+    units = [valid(built="60", private="54.06"), valid(built="60", private="54.98")]
+    assert [u.name for u in dedupe_unit_types(units)] == [
+        "Tipo A · 60 m² / 54.06 m²",
+        "Tipo A · 60 m² / 54.98 m²",
+    ]
+
+
+def test_dedupe_keeps_the_lowest_price_of_the_same_unit_type_and_warns() -> None:
+    (kept,) = dedupe_unit_types([valid(price_cop=270_000_000), valid(price_cop=260_000_000)])
+    assert kept.price_cop == 260_000_000
+    assert kept.warnings == ("listed twice, at 260000000 and 270000000: kept the lowest",)

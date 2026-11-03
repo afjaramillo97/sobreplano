@@ -478,6 +478,25 @@ def test_unit_type_name_matches_across_case_and_spaces(world: World) -> None:
     assert report.observations_recorded == 2
 
 
+def test_unit_type_listed_twice_is_counted_and_recorded_once(world: World) -> None:
+    world.extractor.projects["texto de primavela"] = project(
+        "Verdeventura", unit("Tipo A"), unit("Tipo A"), unit("TIPO B")
+    )
+    report = world.use_case().execute()
+    assert report.unit_types_valid == 3  # Tipo A and TIPO B here, Tipo 1 on Réflex
+    assert (report.observations_recorded, report.observations_already_recorded) == (3, 0)
+
+
+def test_same_name_with_different_areas_are_two_unit_types(world: World) -> None:
+    world.extractor.projects["texto de primavela"] = project(
+        "Primavela", unit("Tipo A", total="55.58"), unit("Tipo A", total="60.10")
+    )
+    report = world.use_case().execute()
+    names = sorted(u.name for u in world.catalog.unit_types)
+    assert names == ["Tipo 1", "Tipo A · 55.58 m²", "Tipo A · 60.1 m²"]
+    assert report.observations_recorded == 3
+
+
 def test_missing_bedrooms_are_stored_as_none(world: World) -> None:
     world.extractor.projects["texto de reflex-living"] = project(
         "Réflex Living", unit("Tipo 1", bedrooms=None)

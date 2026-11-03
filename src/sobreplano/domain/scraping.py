@@ -2,7 +2,9 @@
 
 import hashlib
 import re
-from dataclasses import dataclass
+import unicodedata
+from collections import Counter
+from dataclasses import dataclass, replace
 from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
@@ -187,8 +189,61 @@ def raw_page_key(developer_slug: str, page: FetchedPage) -> str:
 
 
 def normalize_unit_type_name(name: str) -> str:
-    """Key to match a unit type across days: lowercase, single spaces ("TIPO  B" == "Tipo B")."""
-    return re.sub(r"\s+", " ", name).strip().lower()
+    """Key to match a unit type across days: NFKC, casefold, single spaces.
+
+    "TIPO  B", "Tipo B" and "Tipo B " give the same key; NFKC also folds "m²" into "m2".
+    """
+    return re.sub(r"\s+", " ", unicodedata.normalize("NFKC", name)).strip().casefold()
+
+
+def dedupe_unit_types(valid: list[ValidUnitType]) -> list[ValidUnitType]:
+    """Collapse unit types a page lists more than once, keeping the page order.
+
+    Same normalized name and same areas is one unit type read twice (a summary and a
+    card): it is kept once and, if the prices differ, with the lowest one, since sites
+    publish "from" prices; the kept unit type gets a warning naming both prices. Same
+    name with different areas are different unit types: each gets its area appended
+    ("Tipo A · 55.58 m²"), so the stored names stay unique within the project.
+    """
+    kept: dict[tuple[str, Decimal | None, Decimal | None], ValidUnitType] = {}
+    for unit in valid:
+        key = (normalize_unit_type_name(unit.name), unit.built_area_m2, unit.private_area_m2)
+        first = kept.get(key)
+        if first is None:
+            kept[key] = unit
+        elif unit.price_cop != first.price_cop:
+            low, high = sorted((first, unit), key=lambda u: u.price_cop)
+            warning = f"listed twice, at {low.price_cop} and {high.price_cop}: kept the lowest"
+            kept[key] = replace(low, warnings=(*low.warnings, warning))
+
+    same_name = Counter(name for name, _, _ in kept)
+    deduped = list(kept.values())
+    for name, count in same_name.items():
+        if count > 1:
+            _append_areas(deduped, name)
+    return deduped
+
+
+def _append_areas(units: list[ValidUnitType], name: str) -> None:
+    indexes = [i for i, u in enumerate(units) if normalize_unit_type_name(u.name) == name]
+    labels = [_area_label(_main_area(units[i])) for i in indexes]
+    # Same built area, different private area: one area is not enough to tell them apart.
+    if len(set(labels)) < len(labels):
+        labels = [
+            f"{_area_label(units[i].built_area_m2)} / {_area_label(units[i].private_area_m2)}"
+            for i in indexes
+        ]
+    for i, label in zip(indexes, labels, strict=True):
+        units[i] = replace(units[i], name=f"{units[i].name} · {label}")
+
+
+def _main_area(unit: ValidUnitType) -> Decimal | None:
+    return unit.built_area_m2 if unit.built_area_m2 is not None else unit.private_area_m2
+
+
+def _area_label(area: Decimal | None) -> str:
+    # normalize() drops trailing zeros ("52.00" -> "52"); "f" avoids "1E+2" for 100.
+    return "?" if area is None else f"{area.normalize():f} m²"
 
 
 def _area_in_range(label: str, area: Decimal | None, warnings: list[str]) -> Decimal | None:

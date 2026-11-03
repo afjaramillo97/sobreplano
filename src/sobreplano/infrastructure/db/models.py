@@ -179,18 +179,20 @@ class ScrapedPageRow(IdMixin, CreatedAtMixin, Base):
     url: Mapped[str] = mapped_column(Text)
     http_status: Mapped[int] = mapped_column(SmallInteger)
     content_sha256: Mapped[str] = mapped_column(CHAR(64))
+    # NULL only on rows from before migration 0004; every new row has it.
+    text_sha256: Mapped[str | None] = mapped_column(CHAR(64))
     storage_key: Mapped[str] = mapped_column(Text)
     fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
 class PageExtractionRow(IdMixin, CreatedAtMixin, Base):
-    """Row of `page_extractions`: a validated LLM extraction, reused while the HTML hash holds."""
+    """Row of `page_extractions`: a validated LLM extraction, reused while the clean text holds."""
 
     __tablename__ = "page_extractions"
     # The model is part of the key so switching models re-extracts instead of mixing results.
-    __table_args__ = (UniqueConstraint("content_sha256", "model"),)
+    __table_args__ = (UniqueConstraint("text_sha256", "model"),)
 
-    content_sha256: Mapped[str] = mapped_column(CHAR(64))
+    text_sha256: Mapped[str] = mapped_column(CHAR(64))
     model: Mapped[str] = mapped_column(Text)
     input_tokens: Mapped[int] = mapped_column(Integer)
     output_tokens: Mapped[int] = mapped_column(Integer)

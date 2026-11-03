@@ -18,12 +18,13 @@ from sobreplano.domain.scraping import (
     ScrapedPage,
     ScrapeRunStatus,
 )
-from sobreplano.infrastructure.db.models import ScrapedPageRow, ScrapeRunRow
+from sobreplano.infrastructure.db.models import PageExtractionRow, ScrapedPageRow, ScrapeRunRow
 from sobreplano.infrastructure.db.scrape_run_repository import SqlScrapeRunRepository
 
 pytestmark = pytest.mark.integration
 
 SHA = "a" * 64
+TEXT_SHA = "e" * 64
 FETCHED_AT = datetime(2026, 10, 30, 15, 0, tzinfo=UTC)
 RESULT = ExtractionResult(
     model="openai:gpt-6-luna",
@@ -56,6 +57,7 @@ def page(url: str = "https://londonogomez.com/proyectos-vivienda/antioquia/x/y")
         url=url,
         http_status=200,
         content_sha256=SHA,
+        text_sha256=TEXT_SHA,
         storage_key=f"londono-gomez/2026-10-30/{SHA}.html",
         fetched_at=FETCHED_AT,
     )
@@ -83,7 +85,7 @@ def test_start_and_finish_round_trip(
     assert row.error is None
 
 
-def test_record_page_stores_the_canonical_url(
+def test_record_page_stores_the_canonical_url_and_both_hashes(
     runs: SqlScrapeRunRepository, session: Session, developer: Developer
 ) -> None:
     run = runs.start(developer.id, date(2026, 10, 30))
@@ -92,7 +94,7 @@ def test_record_page_stores_the_canonical_url(
         select(ScrapedPageRow).where(ScrapedPageRow.scrape_run_id == run.id)
     ).one()
     assert row.url == page().url
-    assert row.content_sha256 == SHA
+    assert (row.content_sha256, row.text_sha256) == (SHA, TEXT_SHA)
 
 
 def test_same_url_twice_in_a_run_is_rejected(
@@ -115,6 +117,25 @@ def test_extraction_is_keyed_by_model_too(runs: SqlScrapeRunRepository) -> None:
     sha = "c" * 64
     runs.save_extraction(sha, RESULT)
     assert runs.find_extraction(sha, "qwen:qwen3.7-flash") is None
+
+
+def test_same_text_and_model_twice_hits_the_renamed_unique(session: Session) -> None:
+    # Checks the unique on the migrated schema, under its renamed name (migration 0004).
+    def row() -> PageExtractionRow:
+        return PageExtractionRow(
+            id=uuid4(),
+            text_sha256="f" * 64,
+            model=RESULT.model,
+            input_tokens=1,
+            output_tokens=1,
+            payload={},
+        )
+
+    session.add(row())
+    session.flush()
+    session.add(row())
+    with pytest.raises(IntegrityError, match="uq_page_extractions_text_sha256_model"):
+        session.flush()
 
 
 def test_saving_the_same_extraction_twice_keeps_the_first(runs: SqlScrapeRunRepository) -> None:

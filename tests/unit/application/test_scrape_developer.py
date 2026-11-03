@@ -1,6 +1,6 @@
 """Unit tests for ScrapeDeveloper, with in-memory fakes of every port."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
@@ -87,12 +87,17 @@ class FakeFetcher:
         self.status: dict[str, int] = {}
         self.requested: list[str] = []
         self.fetched_at = NOW
+        self.html_suffix = ""
 
     def fetch(self, url: str) -> FetchedPage:
         self.requested.append(url)
         if url in self.errors:
             raise self.errors[url]
-        html = "\n".join(self.site.pages) if url == LISTING else f"<html>{url}</html>"
+        html = (
+            "\n".join(self.site.pages)
+            if url == LISTING
+            else f"<html>{url}{self.html_suffix}</html>"
+        )
         return FetchedPage(
             url=url, status=self.status.get(url, 200), html=html, fetched_at=self.fetched_at
         )
@@ -157,11 +162,11 @@ class FakeRuns:
     def record_page(self, run_id: UUID, page: ScrapedPage) -> None:
         self.pages.append((run_id, page))
 
-    def find_extraction(self, content_sha256: str, model: str) -> ExtractionResult | None:
-        return self.extractions.get((content_sha256, model))
+    def find_extraction(self, text_sha256: str, model: str) -> ExtractionResult | None:
+        return self.extractions.get((text_sha256, model))
 
-    def save_extraction(self, content_sha256: str, result: ExtractionResult) -> None:
-        self.extractions[(content_sha256, result.model)] = result
+    def save_extraction(self, text_sha256: str, result: ExtractionResult) -> None:
+        self.extractions[(text_sha256, result.model)] = result
 
     def finish(self, run: ScrapeRun) -> None:
         self.finished.append(run)
@@ -341,6 +346,39 @@ def test_forced_second_run_reuses_extractions_and_records_nothing(world: World) 
     assert report.status is ScrapeRunStatus.SUCCEEDED
     assert len(world.catalog.unit_types) == 3
     assert len(world.catalog.developers) == 1
+
+
+def test_new_html_with_the_same_clean_text_reuses_the_extraction(world: World) -> None:
+    world.use_case().execute()
+    world.extractor.calls.clear()
+    # Next day: per-request tokens change the raw HTML, the clean text stays the same.
+    world.now = world.fetcher.fetched_at = datetime(2026, 10, 31, 15, 0, tzinfo=UTC)
+    world.fetcher.html_suffix = "<input name='form_build_id' value='new-token'>"
+
+    report = world.use_case().execute()
+
+    first_day, next_day = world.runs.pages[:2], world.runs.pages[2:]
+    assert [p.content_sha256 for _, p in first_day] != [p.content_sha256 for _, p in next_day]
+    assert [p.text_sha256 for _, p in first_day] == [p.text_sha256 for _, p in next_day]
+    assert world.extractor.calls == []
+    assert (report.extractions_new, report.extractions_reused) == (0, 2)
+    assert (report.input_tokens, report.output_tokens) == (0, 0)
+    assert report.observations_recorded == 3
+
+
+def test_changed_clean_text_is_extracted_again(world: World) -> None:
+    world.use_case().execute()
+    world.extractor.calls.clear()
+    world.now = world.fetcher.fetched_at = datetime(2026, 10, 31, 15, 0, tzinfo=UTC)
+    primavela = world.site.pages["/node/1"]
+    assert isinstance(primavela, ParsedProjectPage)
+    world.site.pages["/node/1"] = replace(primavela, text="texto nuevo de primavela")
+    world.extractor.projects["texto nuevo de primavela"] = project("Primavela", unit("TIPO B"))
+
+    report = world.use_case().execute()
+
+    assert world.extractor.calls == ["texto nuevo de primavela"]
+    assert (report.extractions_new, report.extractions_reused) == (1, 1)
 
 
 def test_out_of_scope_page_is_not_stored_extracted_or_recorded(world: World) -> None:

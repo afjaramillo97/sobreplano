@@ -37,6 +37,7 @@ from sobreplano.domain.scraping import (
     ValidUnitType,
     content_sha256,
     normalize_unit_type_name,
+    text_sha256,
     validate_unit_type,
 )
 
@@ -186,32 +187,33 @@ class ScrapeDeveloper:
             return
         seen.add(parsed.canonical_url)
 
-        sha256 = content_sha256(page.html)
+        text_hash = text_sha256(parsed.text)
         self.runs.record_page(
             run_id,
             ScrapedPage(
                 url=parsed.canonical_url,
                 http_status=page.status,
-                content_sha256=sha256,
+                content_sha256=content_sha256(page.html),
+                text_sha256=text_hash,
                 storage_key=self.store.save(self.site.slug, page),
                 fetched_at=page.fetched_at,
             ),
         )
         report.pages_fetched += 1
 
-        extraction = self._extraction(sha256, parsed.text, report)
+        extraction = self._extraction(text_hash, parsed.text, report)
         project = self._project(developer, parsed, extraction, report)
         if self._record_prices(project, page, parsed, extraction, report):
             report.pages_with_price += 1
 
-    def _extraction(self, sha256: str, text: str, report: ScrapeReport) -> ExtractionResult:
-        # Same HTML and same model: reuse, so an unchanged page costs no tokens.
-        stored = self.runs.find_extraction(sha256, self.extractor.model)
+    def _extraction(self, text_hash: str, text: str, report: ScrapeReport) -> ExtractionResult:
+        # Same clean text and same model: reuse, so an unchanged page costs no tokens.
+        stored = self.runs.find_extraction(text_hash, self.extractor.model)
         if stored is not None:
             report.extractions_reused += 1
             return stored
         extraction = self.extractor.extract(text)
-        self.runs.save_extraction(sha256, extraction)
+        self.runs.save_extraction(text_hash, extraction)
         report.extractions_new += 1
         report.input_tokens += extraction.input_tokens
         report.output_tokens += extraction.output_tokens

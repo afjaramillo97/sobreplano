@@ -58,7 +58,8 @@ class ScrapedPage:
 
     url: str
     http_status: int
-    content_sha256: str
+    content_sha256: str  # hash of the raw HTML: names the stored file
+    text_sha256: str  # hash of the clean text: the extraction reuse key
     storage_key: str
     fetched_at: datetime
 
@@ -162,8 +163,17 @@ def validate_unit_type(unit_type: ExtractedUnitType) -> ValidUnitType | Rejected
 
 
 def content_sha256(html: str) -> str:
-    """Hex SHA-256 of the page's UTF-8 bytes: the raw file name and the extraction reuse key."""
+    """Hex SHA-256 of the raw HTML's UTF-8 bytes: the name of the stored raw file."""
     return hashlib.sha256(html.encode("utf-8")).hexdigest()
+
+
+def text_sha256(text: str) -> str:
+    """Hex SHA-256 of the clean text's UTF-8 bytes: the extraction reuse key.
+
+    The clean text is all the model sees, so the same text gives the same extraction even
+    when the HTML around it changes (per-request form tokens change it every day).
+    """
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def raw_page_key(developer_slug: str, page: FetchedPage) -> str:

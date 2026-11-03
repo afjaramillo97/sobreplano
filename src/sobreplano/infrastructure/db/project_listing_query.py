@@ -121,6 +121,8 @@ class SqlProjectListingQuery:
                             price_cop=price_cop, observed_on=observed_on, source=source
                         )
                     ),
+                    # Read from the database in step 3 of SPEC 07.
+                    first_price=None,
                 )
             )
         return result

@@ -148,7 +148,7 @@ variable "scrape_schedules" {
 }
 ```
 
-`aws_scheduler_schedule.scraper` con `for_each = var.scrape_schedules` y `input = jsonencode({ developer = each.key, limit = null })`. El schedule actual se mueve con un bloque `moved` (de `aws_scheduler_schedule.scraper_daily` a `aws_scheduler_schedule.scraper["londono-gomez"]`), así Terraform no lo borra ni lo vuelve a crear. La variable `scrape_schedule` desaparece.
+`aws_scheduler_schedule.scraper` con `for_each = var.scrape_schedules` y `input = jsonencode({ developer = each.key, limit = null })`. Cada schedule se llama `sobreplano-scraper-{constructora}`. El schedule actual pasa con un bloque `moved` (de `aws_scheduler_schedule.scraper_daily` a `aws_scheduler_schedule.scraper["londono-gomez"]`); como cambia de nombre (`sobreplano-scraper-daily` → `sobreplano-scraper-londono-gomez`) y el nombre obliga a reemplazarlo, el recurso lleva `lifecycle { create_before_destroy = true }`, para que el nuevo exista antes de borrar el viejo. La variable `scrape_schedule` desaparece.
 
 `reserved_concurrent_executions = 2` en la Lambda: con el límite de la cuenta en 40, AWS deja 38 sin reservar (el mínimo es 10). Dos es una corrida por constructora a la vez y limita el costo si algo se dispara. La regla de una corrida por constructora y día sigue en la base de datos.
 
@@ -164,7 +164,7 @@ variable "scrape_schedules" {
 4. **Ubicación con respaldo.** `geo_links.py` (Google, el patrón `lat,lon` suelto y Waze), `manual_locations.py` (vacía por ahora: Ezzenti queda sin ubicación) y el uso desde `LondonoGomezSite`. Migración `0005`, `Project.location` opcional, `update_project_location` y `location: null` en la API. Tests con HTML sintético para cada caso, uno que comprueba que cada entrada de `MANUAL_LOCATIONS` es un `GeoPoint` válido (rango del Valle de Aburrá), uno de un proyecto que se crea sin ubicación y la recibe en una corrida posterior, y uno de la API con `location: null`. Commit `fix:`.
 5. **Semilla reutilizada.** `get_project_by_source_url` en el puerto y el repositorio, `ScrapeDeveloper._project` y la búsqueda de tipologías por área. Tests de integración: una ficha con la URL de un proyecto de la semilla no crea un proyecto nuevo, y una tipología con el área de la semilla reutiliza su fila. Commit `feat:`.
 6. **Scraper de Capital.** `ConstructoraCapitalSite` con la tabla de zonas, los filtros y la limpieza de avances de obra; registro en `SITES`; tests con HTML sintético. Corrida local con `--dry-run` y luego real. Commit `feat:`.
-7. **Terraform.** `scrape_schedules` con `for_each`, bloque `moved` y concurrencia reservada de 2. `terraform plan` debe mostrar 1 schedule nuevo, 1 movido y la Lambda modificada, sin destrucciones. **Esperar el OK de Andrés antes de `terraform apply`.** Commit `feat:`.
+7. **Terraform.** `scrape_schedules` con `for_each`, bloque `moved` y concurrencia reservada de 2. `terraform plan` debe mostrar 1 schedule nuevo (`constructora-capital`), 1 reemplazado con `create_before_destroy` (`londono-gomez`: `sobreplano-scraper-daily` → `sobreplano-scraper-londono-gomez`) y la Lambda modificada; ninguna otra destrucción. El `apply` se hace fuera de 5:45–6:30. **Esperar el OK de Andrés antes de `terraform apply`.** Commit `feat:`.
 8. **Corrida en AWS.** Invocar la Lambda a mano para cada constructora y revisar los reportes. Commit `docs:` con la evidencia en `docs/deploy.md`.
 9. **Documentación.** `docs/scrapers/constructora-capital.md`, la sección de reutilización en `docs/scrapers/londono-gomez.md`, `docs/deploy.md` con los dos schedules y `CLAUDE.md` con el comando de Capital. Commit `docs:`.
 
@@ -180,7 +180,7 @@ Cada criterio se verifica pegando el comando y su salida en el PR (constitución
 - [ ] La corrida de Capital registra precios en al menos los 3 proyectos de la semilla y `select count(*) from projects where slug like '%ciudad-peldar%'` sigue en 3: no hay proyectos duplicados.
 - [ ] Al menos una tipología de cada proyecto de la semilla que tenga precio en el sitio recibe una observación `scraper`: `select ut.name, count(*) from price_observations po join unit_types ut on ut.id = po.unit_type_id join projects p on p.id = ut.project_id where p.slug = 'axis-ciudad-peldar' group by ut.name` muestra filas con más de una observación.
 - [ ] Ningún proyecto de Rionegro ni de Urbanity: `select count(*) from projects where slug ilike '%rosa%' or slug ilike '%urbanity%'` devuelve 0.
-- [ ] `aws scheduler list-schedules --name-prefix sobreplano-scraper` muestra dos schedules, a las 6:00 y 6:15.
+- [ ] `aws scheduler list-schedules --name-prefix sobreplano-scraper` muestra exactamente `sobreplano-scraper-londono-gomez` y `sobreplano-scraper-constructora-capital`, a las 6:00 y 6:15 (el viejo `-daily` ya no existe).
 - [ ] `terraform plan` después del `apply` dice `No changes`.
 - [ ] `curl -s "localhost:8000/projects" | jq '[.items[].developer.slug] | unique'` muestra las dos constructoras, con la API apuntando a la base en la nube.
 - [ ] `uv run pytest -m "not integration"`, `uv run pyright` (0 errores) y `uv run lint-imports` (2 contratos) pasan; el CI del PR queda en verde.
@@ -198,7 +198,8 @@ Cada criterio se verifica pegando el comando y su salida en el PR (constitución
 - **Sí:** guardar sin ubicación el proyecto cuya ficha no publica coordenadas, y completarla cuando la constructora la publique (decidido el 2 nov, caso Ezzenti). **No:** inferir un punto desde el barrio ("Calasanz, Medellín"): una ubicación inventada es peor que ninguna, y el scraper revisa la ficha todos los días.
 - **Sí:** ubicaciones manuales como tabla en código, igual que `CAPITAL_ZONES`: se despliega con `src/`, no depende del directorio de trabajo y `GeoPoint` las valida al importar. **No:** `seeds/locations.json`, que exigía copiarlo en la imagen y agregarlo al workflow de despliegue. Si la tabla crece a decenas de entradas, pasar a un JSON del paquete con `importlib.resources`.
 - **Sí:** buscar el proyecto por `source_url` para reutilizar la semilla. **No:** cambiar el slug de los proyectos de la semilla con una migración de datos; la URL de la ficha ya los identifica.
-- **Sí:** un schedule por constructora con `for_each` y un bloque `moved`. Es una línea por constructora nueva y no recrea el schedule que ya funciona. **No:** SQS todavía; con dos constructoras, dos schedules escalonados son más simples.
+- **Sí:** un schedule por constructora con `for_each` y un bloque `moved`. Es una línea por constructora nueva.
+- **Sí:** nombres uniformes `sobreplano-scraper-{constructora}`. Renombrar obliga a reemplazar el schedule, que no guarda estado; `create_before_destroy` evita que quede un momento sin schedule. **No:** un mapa de nombres heredados, que deja una excepción permanente por un recurso sin estado. El `apply` se hace fuera de 5:45–6:30. **No:** SQS todavía; con dos constructoras, dos schedules escalonados son más simples.
 - **Sí:** escalonar 15 minutos. Una corrida dura menos de 2 minutos, así nunca se cruzan y la alarma dice cuál falló por la hora.
 - **Sí:** concurrencia reservada de 2, ahora que la cuenta tiene límite 40. Limita el costo de un error que dispare invocaciones; la regla de una corrida por día sigue en la base de datos.
 - **Sí:** `slug = "constructora-capital"`, el de la semilla, para no crear una segunda fila de la misma constructora.
@@ -218,7 +219,7 @@ Cada criterio se verifica pegando el comando y su salida en el PR (constitución
 | El texto limpio también cambia cada día (por ejemplo, una fecha o un contador visible) | El paso 1 lo ve en el `diff`. Si pasa, `clean_text` quita ese bloque y el cambio se documenta |
 | La IA nombra distinto la misma tipología en días distintos ("Tipo 4" y "Tipo 04") | Se registra en el log cuando aparece una tipología nueva en un proyecto que ya tenía otras; el golden set del SPEC 09 medirá la estabilidad de los nombres |
 | La primera corrida después del cambio de llave vuelve a extraer todo | Es una vez y cuesta medio centavo por constructora |
-| El bloque `moved` no coincide y Terraform propone borrar el schedule actual | El paso 7 exige un plan sin destrucciones antes del `apply` |
+| El bloque `moved` no coincide y Terraform propone borrar el schedule actual sin crear el nuevo antes | El paso 7 exige revisar el plan: solo el reemplazo de `londono-gomez` con `create_before_destroy`, ninguna otra destrucción |
 | Una tipología de Capital no coincide con la de la semilla por una diferencia de nombre | El criterio de conteo lo detecta; si pasa, se agrega el alias en el test y se ajusta la normalización |
 
 ## Lo que **no** entra en este spec

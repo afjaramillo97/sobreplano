@@ -62,8 +62,10 @@ resource "aws_lambda_function" "scraper" {
   # New accounts are capped at 512 MB; the run mostly waits on the network and the LLM.
   memory_size = 512
   timeout     = 600
-  # No reserved concurrency: the account limit is 5 and AWS keeps 10 unreserved. The
-  # database lock allows one run per developer per day (SPEC 05).
+  # A cost cap: at most one run per developer at a time, so a bug that fires invocations
+  # cannot run up the bill. Needs the account limit of 40 (raised on 2026-11-02; AWS
+  # keeps 10 unreserved). The one-run-per-developer-per-day rule stays in the database.
+  reserved_concurrent_executions = 2
 
   environment {
     variables = {

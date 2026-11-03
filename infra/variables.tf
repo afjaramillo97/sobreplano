@@ -16,10 +16,15 @@ variable "alert_email" {
   }
 }
 
-variable "scrape_schedule" {
-  description = "EventBridge Scheduler expression for the scrape, in America/Bogota time."
-  type        = string
-  default     = "cron(0 6 * * ? *)" # every day at 06:00
+variable "scrape_schedules" {
+  description = "Developer slug -> EventBridge Scheduler expression, in America/Bogota time."
+  type        = map(string)
+  # 15 minutes apart: a run takes under 2, so they never overlap and the alarm's time
+  # tells which developer failed.
+  default = {
+    "londono-gomez"        = "cron(0 6 * * ? *)"
+    "constructora-capital" = "cron(15 6 * * ? *)"
+  }
 }
 
 variable "monthly_budget_usd" {

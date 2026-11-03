@@ -1,6 +1,6 @@
 """Unit tests for ScrapeDeveloper, with in-memory fakes of every port."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
@@ -87,12 +87,17 @@ class FakeFetcher:
         self.status: dict[str, int] = {}
         self.requested: list[str] = []
         self.fetched_at = NOW
+        self.html_suffix = ""
 
     def fetch(self, url: str) -> FetchedPage:
         self.requested.append(url)
         if url in self.errors:
             raise self.errors[url]
-        html = "\n".join(self.site.pages) if url == LISTING else f"<html>{url}</html>"
+        html = (
+            "\n".join(self.site.pages)
+            if url == LISTING
+            else f"<html>{url}{self.html_suffix}</html>"
+        )
         return FetchedPage(
             url=url, status=self.status.get(url, 200), html=html, fetched_at=self.fetched_at
         )
@@ -157,11 +162,11 @@ class FakeRuns:
     def record_page(self, run_id: UUID, page: ScrapedPage) -> None:
         self.pages.append((run_id, page))
 
-    def find_extraction(self, content_sha256: str, model: str) -> ExtractionResult | None:
-        return self.extractions.get((content_sha256, model))
+    def find_extraction(self, text_sha256: str, model: str) -> ExtractionResult | None:
+        return self.extractions.get((text_sha256, model))
 
-    def save_extraction(self, content_sha256: str, result: ExtractionResult) -> None:
-        self.extractions[(content_sha256, result.model)] = result
+    def save_extraction(self, text_sha256: str, result: ExtractionResult) -> None:
+        self.extractions[(text_sha256, result.model)] = result
 
     def finish(self, run: ScrapeRun) -> None:
         self.finished.append(run)
@@ -184,6 +189,14 @@ class InMemoryCatalog:
 
     def get_project_by_slug(self, slug: str) -> Project | None:
         return next((p for p in self.projects if p.slug == slug), None)
+
+    def get_project_by_source_url(self, url: str) -> Project | None:
+        return next((p for p in self.projects if p.source_url == url), None)
+
+    def update_project_location(self, project_id: UUID, location: GeoPoint) -> None:
+        self.projects = [
+            replace(p, location=location) if p.id == project_id else p for p in self.projects
+        ]
 
     def add_unit_type(self, unit_type: UnitType) -> None:
         self.unit_types.append(unit_type)
@@ -343,6 +356,39 @@ def test_forced_second_run_reuses_extractions_and_records_nothing(world: World) 
     assert len(world.catalog.developers) == 1
 
 
+def test_new_html_with_the_same_clean_text_reuses_the_extraction(world: World) -> None:
+    world.use_case().execute()
+    world.extractor.calls.clear()
+    # Next day: per-request tokens change the raw HTML, the clean text stays the same.
+    world.now = world.fetcher.fetched_at = datetime(2026, 10, 31, 15, 0, tzinfo=UTC)
+    world.fetcher.html_suffix = "<input name='form_build_id' value='new-token'>"
+
+    report = world.use_case().execute()
+
+    first_day, next_day = world.runs.pages[:2], world.runs.pages[2:]
+    assert [p.content_sha256 for _, p in first_day] != [p.content_sha256 for _, p in next_day]
+    assert [p.text_sha256 for _, p in first_day] == [p.text_sha256 for _, p in next_day]
+    assert world.extractor.calls == []
+    assert (report.extractions_new, report.extractions_reused) == (0, 2)
+    assert (report.input_tokens, report.output_tokens) == (0, 0)
+    assert report.observations_recorded == 3
+
+
+def test_changed_clean_text_is_extracted_again(world: World) -> None:
+    world.use_case().execute()
+    world.extractor.calls.clear()
+    world.now = world.fetcher.fetched_at = datetime(2026, 10, 31, 15, 0, tzinfo=UTC)
+    primavela = world.site.pages["/node/1"]
+    assert isinstance(primavela, ParsedProjectPage)
+    world.site.pages["/node/1"] = replace(primavela, text="texto nuevo de primavela")
+    world.extractor.projects["texto nuevo de primavela"] = project("Primavela", unit("TIPO B"))
+
+    report = world.use_case().execute()
+
+    assert world.extractor.calls == ["texto nuevo de primavela"]
+    assert (report.extractions_new, report.extractions_reused) == (1, 1)
+
+
 def test_out_of_scope_page_is_not_stored_extracted_or_recorded(world: World) -> None:
     world.site.pages["/node/3"] = None
     report = world.use_case().execute()
@@ -438,6 +484,134 @@ def test_unit_type_name_matches_across_case_and_spaces(world: World) -> None:
 
     assert report.unit_types_added == 0
     assert report.observations_recorded == 2
+
+
+def test_unit_type_listed_twice_is_counted_and_recorded_once(world: World) -> None:
+    world.extractor.projects["texto de primavela"] = project(
+        "Verdeventura", unit("Tipo A"), unit("Tipo A"), unit("TIPO B")
+    )
+    report = world.use_case().execute()
+    assert report.unit_types_valid == 3  # Tipo A and TIPO B here, Tipo 1 on Réflex
+    assert (report.observations_recorded, report.observations_already_recorded) == (3, 0)
+
+
+def test_same_name_with_different_areas_are_two_unit_types(world: World) -> None:
+    world.extractor.projects["texto de primavela"] = project(
+        "Primavela", unit("Tipo A", total="55.58"), unit("Tipo A", total="60.10")
+    )
+    report = world.use_case().execute()
+    names = sorted(u.name for u in world.catalog.unit_types)
+    assert names == ["Tipo 1", "Tipo A · 55.58 m²", "Tipo A · 60.1 m²"]
+    assert report.observations_recorded == 3
+
+
+def test_project_without_location_is_created_and_located_later(world: World) -> None:
+    primavela = world.site.pages["/node/1"]
+    assert isinstance(primavela, ParsedProjectPage)
+    world.site.pages["/node/1"] = replace(primavela, location=None)
+    report = world.use_case().execute()
+    assert report.pages_failed == 0
+    assert world.catalog.projects[0].location is None
+
+    # Next day the developer publishes its map.
+    world.now = world.fetcher.fetched_at = datetime(2026, 10, 31, 15, 0, tzinfo=UTC)
+    world.site.pages["/node/1"] = primavela
+    world.use_case().execute()
+    assert world.catalog.projects[0].location == primavela.location
+    assert len(world.catalog.projects) == 2
+
+
+def test_a_stored_location_is_not_overwritten(world: World) -> None:
+    world.use_case().execute()
+    primavela = world.site.pages["/node/1"]
+    assert isinstance(primavela, ParsedProjectPage)
+    world.now = world.fetcher.fetched_at = datetime(2026, 10, 31, 15, 0, tzinfo=UTC)
+    moved = GeoPoint(lat=6.3, lon=-75.55)
+    world.site.pages["/node/1"] = replace(primavela, location=moved)
+    world.use_case().execute()
+    assert world.catalog.projects[0].location == primavela.location
+
+
+def seed_project(world: World, unit_types: list[tuple[str, str, str]]) -> Project:
+    """A hand-loaded project with primavela's URL, another slug and (name, built, private)."""
+    developer = Developer(
+        id=uuid4(), name="Londoño Gómez", slug="londono-gomez", website_url="https://x"
+    )
+    world.catalog.add_developer(developer)
+    seeded = Project(
+        id=uuid4(),
+        developer_id=developer.id,
+        name="Primavela",
+        slug="primavela-bello",
+        municipality=Municipality.BELLO,
+        neighborhood=None,
+        location=GeoPoint(lat=6.33, lon=-75.56),
+        source_url="https://example.com/proyectos-vivienda/antioquia/x/primavela",
+    )
+    world.catalog.add_project(seeded)
+    for name, built, private in unit_types:
+        world.catalog.add_unit_type(
+            UnitType(
+                id=uuid4(),
+                project_id=seeded.id,
+                name=name,
+                private_area_m2=Decimal(private),
+                built_area_m2=Decimal(built),
+                bedrooms=2,
+                bathrooms=2,
+            )
+        )
+    return seeded
+
+
+def observed_names(world: World, project: Project) -> list[str]:
+    names = {u.id: u.name for u in world.catalog.unit_types if u.project_id == project.id}
+    return sorted(
+        names[o.unit_type_id] for o in world.observations.items if o.unit_type_id in names
+    )
+
+
+def test_page_with_the_url_of_a_seed_project_reuses_it(world: World) -> None:
+    seeded = seed_project(world, [("Tipo 04", "60.01", "54.06")])
+    world.extractor.projects["texto de primavela"] = project(
+        "Primavela", unit("Tipo 04", total="60.01", private="54.06")
+    )
+    report = world.use_case().execute()
+    assert [p.slug for p in world.catalog.projects] == ["primavela-bello", "reflex-living"]
+    assert report.projects_added == 1  # only Réflex Living
+    assert observed_names(world, seeded) == ["Tipo 04"]
+
+
+def test_renamed_unit_type_is_matched_by_area(world: World) -> None:
+    seeded = seed_project(world, [("Tipo 04", "60.01", "54.06"), ("Tipo 12", "60.1", "54.94")])
+    world.extractor.projects["texto de primavela"] = project(
+        "Primavela",
+        unit("Planta Apartamento 60.01 m2", total="60.01", private="54.06"),
+        unit("Planta Apartamento 60.10 m2", total="60.10", private="54.94"),
+    )
+    report = world.use_case().execute()
+    assert observed_names(world, seeded) == ["Tipo 04", "Tipo 12"]
+    assert report.unit_types_added == 1  # only Réflex Living's Tipo 1
+
+
+def test_area_shared_by_two_unit_types_creates_a_new_one(world: World) -> None:
+    seeded = seed_project(world, [("Tipo 04", "60.01", "54.06"), ("Tipo 05", "60.01", "54.50")])
+    world.extractor.projects["texto de primavela"] = project(
+        "Primavela", unit("Planta 60.01", total="60.01", private="53.00")
+    )
+    world.use_case().execute()
+    assert observed_names(world, seeded) == ["Planta 60.01"]
+
+
+def test_an_area_match_never_takes_a_row_matched_by_name(world: World) -> None:
+    seeded = seed_project(world, [("Tipo A", "55", "49.36")])
+    world.extractor.projects["texto de primavela"] = project(
+        "Primavela",
+        unit("Tipo B", total="55", private="49.36"),  # same area as Tipo A, comes first
+        unit("Tipo A", total="55", private="49.36"),
+    )
+    world.use_case().execute()
+    assert observed_names(world, seeded) == ["Tipo A", "Tipo B"]
 
 
 def test_missing_bedrooms_are_stored_as_none(world: World) -> None:

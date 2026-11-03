@@ -11,7 +11,9 @@ from sobreplano.infrastructure.scraping.londono_gomez import (
     LondonoGomezSite,
     municipality_from_name,
 )
+from sobreplano.infrastructure.scraping.manual_locations import MANUAL_LOCATIONS
 
+EZZENTI = GeoPoint(lat=6.2731, lon=-75.5871)
 SITE = LondonoGomezSite()
 MAP_LINK = "https://www.google.com/maps/dir//6.3296009,-75.5595542/@6.3296009,-75.5595542,16z"
 CANONICAL = "https://londonogomez.com/proyectos-vivienda/antioquia/bello/primavela"
@@ -159,9 +161,35 @@ def test_missing_canonical_is_a_parse_error() -> None:
         SITE.parse_project(project_page(canonical=None))
 
 
-def test_missing_map_link_is_a_parse_error() -> None:
-    with pytest.raises(PageParseError, match="Google Maps"):
-        SITE.parse_project(project_page(map_link=None))
+def test_missing_map_link_gives_no_location_not_an_error() -> None:
+    parsed = SITE.parse_project(project_page(map_link=None))
+    assert parsed is not None
+    assert parsed.location is None
+
+
+def test_waze_link_is_the_fallback_when_there_is_no_google_link() -> None:
+    waze = (
+        "https://www.waze.com/es-419/live-map/directions?utm_source=x&to=ll.6.3296009%2C-75.5595542"
+    )
+    parsed = SITE.parse_project(project_page(map_link=waze))
+    assert parsed is not None
+    assert parsed.location == GeoPoint(lat=6.3296009, lon=-75.5595542)
+
+
+def test_manual_location_is_the_last_resort(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(MANUAL_LOCATIONS, "ezzenti", EZZENTI)
+    canonical = "https://londonogomez.com/proyectos-vivienda/antioquia/medellin/ezzenti"
+    parsed = SITE.parse_project(project_page(canonical=canonical, map_link=None))
+    assert parsed is not None
+    assert parsed.location == EZZENTI
+
+
+def test_a_map_link_wins_over_the_manual_location(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(MANUAL_LOCATIONS, "ezzenti", EZZENTI)
+    canonical = "https://londonogomez.com/proyectos-vivienda/antioquia/medellin/ezzenti"
+    parsed = SITE.parse_project(project_page(canonical=canonical))
+    assert parsed is not None
+    assert parsed.location == GeoPoint(lat=6.3296009, lon=-75.5595542)
 
 
 def test_swapped_coordinates_are_a_parse_error() -> None:

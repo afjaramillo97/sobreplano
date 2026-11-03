@@ -14,3 +14,10 @@ LON = func.ST_X(func.geometry(ProjectRow.location), type_=Float())
 def to_wkt_point(point: GeoPoint) -> WKTElement:
     """Build the geography value to store; PostGIS takes x = longitude first, then latitude."""
     return WKTElement(f"POINT({point.lon} {point.lat})", srid=4326)
+
+
+def to_geo_point(lat: float | None, lon: float | None) -> GeoPoint | None:
+    """The point read with LAT and LON, or None for a project stored without location."""
+    if lat is None or lon is None:
+        return None
+    return GeoPoint(lat=lat, lon=lon)

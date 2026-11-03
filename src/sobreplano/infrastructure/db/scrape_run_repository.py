@@ -72,17 +72,18 @@ class SqlScrapeRunRepository:
                 url=page.url,
                 http_status=page.http_status,
                 content_sha256=page.content_sha256,
+                text_sha256=page.text_sha256,
                 storage_key=page.storage_key,
                 fetched_at=page.fetched_at,
             )
         )
         self._session.flush()
 
-    def find_extraction(self, content_sha256: str, model: str) -> ExtractionResult | None:
-        """The stored extraction of this HTML by this model, or None."""
+    def find_extraction(self, text_sha256: str, model: str) -> ExtractionResult | None:
+        """The stored extraction of this clean text by this model, or None."""
         row = self._session.scalars(
             select(PageExtractionRow).where(
-                PageExtractionRow.content_sha256 == content_sha256,
+                PageExtractionRow.text_sha256 == text_sha256,
                 PageExtractionRow.model == model,
             )
         ).one_or_none()
@@ -95,21 +96,21 @@ class SqlScrapeRunRepository:
             project=ExtractedProject.model_validate(row.payload).to_domain(),
         )
 
-    def save_extraction(self, content_sha256: str, result: ExtractionResult) -> None:
-        """Store an extraction; if the same HTML and model are already stored, keep the first."""
+    def save_extraction(self, text_sha256: str, result: ExtractionResult) -> None:
+        """Store an extraction; if the same clean text and model are stored, keep the first."""
         payload = ExtractedProject.from_domain(result.project).model_dump(mode="json")
         # DO NOTHING instead of an error: a concurrent run may have stored the same extraction.
         self._session.execute(
             insert(PageExtractionRow)
             .values(
                 id=uuid4(),
-                content_sha256=content_sha256,
+                text_sha256=text_sha256,
                 model=result.model,
                 input_tokens=result.input_tokens,
                 output_tokens=result.output_tokens,
                 payload=payload,
             )
-            .on_conflict_do_nothing(index_elements=["content_sha256", "model"])
+            .on_conflict_do_nothing(index_elements=["text_sha256", "model"])
         )
 
     def finish(self, run: ScrapeRun) -> None:

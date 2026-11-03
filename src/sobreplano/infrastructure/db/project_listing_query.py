@@ -6,14 +6,14 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from sobreplano.domain.catalog import GeoPoint, Municipality
+from sobreplano.domain.catalog import Municipality
 from sobreplano.domain.listings import (
     LatestPrice,
     ProjectListing,
     ProjectPage,
     UnitTypeListing,
 )
-from sobreplano.infrastructure.db.geo import LAT, LON
+from sobreplano.infrastructure.db.geo import LAT, LON, to_geo_point
 from sobreplano.infrastructure.db.models import (
     DeveloperRow,
     PriceObservationRow,
@@ -62,7 +62,7 @@ class SqlProjectListingQuery:
                 developer_slug=developer_slug,
                 municipality=row.municipality,
                 neighborhood=row.neighborhood,
-                location=GeoPoint(lat=lat, lon=lon),
+                location=to_geo_point(lat, lon),
                 source_url=row.source_url,
                 unit_types=unit_types[row.id],
             )

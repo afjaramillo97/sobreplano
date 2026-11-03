@@ -14,6 +14,7 @@ from sobreplano.infrastructure.db.price_observation_repository import (
 # The seed only has Envigado projects, so these two municipalities start empty in every test.
 MUNICIPALITY = Municipality.ITAGUI
 OTHER_MUNICIPALITY = Municipality.CALDAS
+LOCATION = GeoPoint(lat=6.1735, lon=-75.5925)
 
 
 def add_project(
@@ -21,6 +22,7 @@ def add_project(
     developer: Developer,
     name: str,
     municipality: Municipality = MUNICIPALITY,
+    location: GeoPoint | None = LOCATION,
 ) -> Project:
     project = Project(
         id=uuid4(),
@@ -29,7 +31,7 @@ def add_project(
         slug=f"proj-{uuid4().hex[:8]}",
         municipality=municipality,
         neighborhood=None,
-        location=GeoPoint(lat=6.1735, lon=-75.5925),
+        location=location,
         source_url="https://example.com/proyecto",
     )
     catalog.add_project(project)

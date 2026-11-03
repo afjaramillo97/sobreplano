@@ -84,7 +84,7 @@ class ProjectOut(BaseModel):
     developer: DeveloperOut
     municipality: Municipality
     neighborhood: str | None
-    location: LocationOut
+    location: LocationOut | None  # null while the developer publishes no map
     source_url: str
     unit_types: list[UnitTypeOut]
 
@@ -97,7 +97,11 @@ class ProjectOut(BaseModel):
             developer=DeveloperOut(name=project.developer_name, slug=project.developer_slug),
             municipality=project.municipality,
             neighborhood=project.neighborhood,
-            location=LocationOut(lat=project.location.lat, lon=project.location.lon),
+            location=(
+                None
+                if project.location is None
+                else LocationOut(lat=project.location.lat, lon=project.location.lon)
+            ),
             source_url=project.source_url,
             unit_types=[UnitTypeOut.from_domain(unit_type) for unit_type in project.unit_types],
         )

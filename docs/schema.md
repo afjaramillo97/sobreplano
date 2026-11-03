@@ -25,7 +25,7 @@ erDiagram
         text slug UK
         varchar municipality "CHECK: 10 municipalities"
         text neighborhood "nullable"
-        geography location "POINT, 4326, GIST index"
+        geography location "POINT, 4326, GIST index, nullable"
         text source_url
         timestamptz created_at
         timestamptz updated_at
@@ -101,6 +101,7 @@ erDiagram
 - Prices are whole pesos in `bigint`. There are no cents and no float rounding.
 - Prices are observed per unit type, not per project, so price per m² can be computed (week 4).
 - Coordinates are written as `WKTElement("POINT(lon lat)", srid=4326)` and read with `ST_Y(geometry(location))` and `ST_X(geometry(location))`, without `shapely`.
+- `projects.location` is NULL while a developer publishes no map (SPEC 06, migration `0005`); the scraper fills it in the day the page publishes one, and never overwrites a stored point.
 - Local seed data lives in `seeds/projects.json` (copied by hand from public pages, no scraping). Load it with `uv run --env-file .env python -m sobreplano.interface.cli.seed`; it is idempotent.
 
 ## Not in the schema yet

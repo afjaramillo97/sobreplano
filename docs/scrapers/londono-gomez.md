@@ -26,7 +26,7 @@ uv run --env-file .env python -m sobreplano.interface.cli.scrape londono-gomez
 | Card type | `.views-field-field-tipo-de-proyecto` (`Vivienda`, `Lotes`, `Oficinas`, `Hotel`) |
 | Card municipality | `.views-field-nothing` (`Medellín`, `La Estrella`, …) |
 | Canonical URL | `link[rel="canonical"]` |
-| Coordinates | `a[href*="/maps/dir/"]`, `google.com/maps/dir//{lat},{lon}/@…`, latitude first |
+| Coordinates | `location_from_links` (`geo_links.py`): `google.com/maps/dir//{lat},{lon}/@…`, latitude first; else the Waze link `to=ll.{lat}%2C{lon}`; else `MANUAL_LOCATIONS`; else no location |
 | Unit types | `.detail-apartment` with `h4` (name) and `span.price-apartament-types` (price); read by the LLM from the clean text, not by selector |
 
 ## Filters
@@ -48,8 +48,30 @@ After fetching, from the canonical URL: keep only `/proyectos-vivienda/antioquia
 | Observations | 44, in 12 projects |
 | Tokens (`openai:gpt-6-luna`) | 31,687 input, 3,821 output, about 0.005 USD |
 
+## Extraction reuse (SPEC 06)
+
+An extraction is reused when the **clean text** sent to the model and the model are the same as a stored one: `page_extractions` is keyed by (`text_sha256`, `model`). The raw HTML hash (`content_sha256`) only names the raw file in S3 and on disk. Both hashes are stored per page in `scraped_pages`.
+
+Until SPEC 06 the key was the raw HTML hash, which never repeats on this site (see below), so every run paid for every extraction. Old extractions keep the HTML hash in the renamed column and never match again: the first run after migration `0004` re-extracts every page once (about 0.005 USD); from then on, a page is extracted again only when its visible text changes.
+
+Unit types the page lists twice with the same name, areas and price count once; same name with different areas are stored as two unit types with the area in the name (`Tipo A · 55.58 m²`); same name and areas with two prices keep the lowest (`dedupe_unit_types`). This fixed the `1 already recorded today` every run reported (Verdeventura listed "Tipo A" twice).
+
+## What changes in the HTML from day to day (SPEC 06, step 1)
+
+Primavela on 2026-10-30 and 2026-10-31: same size (145,075 bytes), 14 changed lines, all of them Drupal per-request tokens:
+
+- `form_build_id` (and its `data-drupal-selector`) of the 3 forms on the page.
+- `honeypot_time` of the same 3 forms.
+- The `js-view-dom-id-…` class of the `view-oficinas` block.
+
+All of them live inside `<form>` or in attributes, which `clean_text` already drops. Over the 21 pages stored on both days, the raw HTML hash differs every day and the `clean_text` hash is identical for all 21 (Graz del Río and M Living were stored twice on 2026-10-30, also with the same text). So the clean text is a stable reuse key and `clean_text` needs no change.
+
+The same check on the HTML the Lambda stored in S3 on 2026-11-01 and 2026-11-02 gives the same result: 21 of 21 pages with identical clean text, the same 14 token lines changed in Primavela, and the same clean-text hashes as on 2026-10-30 and 2026-10-31, so the text was stable over four days.
+
+Ezzenti (`/node/203631` → `/proyectos-vivienda/antioquia/medellin/ezzenti`, downloaded once on 2026-11-02): no Google Maps link, no Waze link, and its map script has empty coordinates (`parseFloat(parseFloat().toFixed(7))`). The page does say it is in Calasanz, Medellín. No point is inferred from that: since SPEC 06 the project is stored without coordinates (`location` NULL, a warning in the log) instead of failing, and the scraper stores the point the day the developer publishes its map. A point can also be added by hand to `MANUAL_LOCATIONS` (`src/sobreplano/infrastructure/scraping/manual_locations.py`).
+
 ## Known gaps
 
 - **MAZZI, Ventto del Río and River Park** are housing cards in Medellín, but their canonical URL does not match the expected pattern. Their HTML is not stored (out of scope), so the reason is still unknown; check their canonical by hand on the next visit.
-- **Ezzenti** has no Google Maps directions link, so it has no coordinates and fails every run.
+- **Ezzenti** publishes no map, so it is stored without coordinates (since SPEC 06; before, it failed every run).
 - **9 projects have no price** on the site ("Desde" with no amount). They are created in the catalog but have no observations.

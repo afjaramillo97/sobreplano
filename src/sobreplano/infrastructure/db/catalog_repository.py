@@ -2,16 +2,29 @@
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from sobreplano.domain.catalog import Developer, GeoPoint, Project, UnitType
-from sobreplano.infrastructure.db.geo import LAT, LON, to_wkt_point
+from sobreplano.infrastructure.db.geo import LAT, LON, to_geo_point, to_wkt_point
 from sobreplano.infrastructure.db.models import DeveloperRow, ProjectRow, UnitTypeRow
 
 
 def _to_developer(row: DeveloperRow) -> Developer:
     return Developer(id=row.id, name=row.name, slug=row.slug, website_url=row.website_url)
+
+
+def _to_project(row: ProjectRow, lat: float | None, lon: float | None) -> Project:
+    return Project(
+        id=row.id,
+        developer_id=row.developer_id,
+        name=row.name,
+        slug=row.slug,
+        municipality=row.municipality,
+        neighborhood=row.neighborhood,
+        location=to_geo_point(lat, lon),
+        source_url=row.source_url,
+    )
 
 
 def _to_unit_type(row: UnitTypeRow) -> UnitType:
@@ -65,7 +78,7 @@ class SqlCatalogRepository:
                 slug=project.slug,
                 municipality=project.municipality,
                 neighborhood=project.neighborhood,
-                location=to_wkt_point(project.location),
+                location=None if project.location is None else to_wkt_point(project.location),
                 source_url=project.source_url,
             )
         )
@@ -76,18 +89,24 @@ class SqlCatalogRepository:
         result = self._session.execute(
             select(ProjectRow, LAT, LON).where(ProjectRow.slug == slug)
         ).one_or_none()
-        if result is None:
-            return None
-        row, lat, lon = result
-        return Project(
-            id=row.id,
-            developer_id=row.developer_id,
-            name=row.name,
-            slug=row.slug,
-            municipality=row.municipality,
-            neighborhood=row.neighborhood,
-            location=GeoPoint(lat=lat, lon=lon),
-            source_url=row.source_url,
+        return None if result is None else _to_project(*result)
+
+    def get_project_by_source_url(self, url: str) -> Project | None:
+        """Return the oldest project whose source_url is this URL, or None."""
+        result = self._session.execute(
+            select(ProjectRow, LAT, LON)
+            .where(ProjectRow.source_url == url)
+            .order_by(ProjectRow.created_at, ProjectRow.id)
+            .limit(1)
+        ).one_or_none()
+        return None if result is None else _to_project(*result)
+
+    def update_project_location(self, project_id: UUID, location: GeoPoint) -> None:
+        """Set a project's location; used when a page publishes the map it lacked."""
+        self._session.execute(
+            update(ProjectRow)
+            .where(ProjectRow.id == project_id)
+            .values(location=to_wkt_point(location))
         )
 
     def add_unit_type(self, unit_type: UnitType) -> None:

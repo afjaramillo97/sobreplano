@@ -1,4 +1,4 @@
-# EventBridge Scheduler: invokes the scraper on var.scrape_schedule, Bogotá time.
+# EventBridge Scheduler: one schedule per developer in var.scrape_schedules, Bogotá time.
 
 data "aws_iam_policy_document" "scheduler_assume" {
   statement {
@@ -33,9 +33,18 @@ resource "aws_iam_role_policy" "scheduler" {
   policy = data.aws_iam_policy_document.scheduler.json
 }
 
-resource "aws_scheduler_schedule" "scraper_daily" {
-  name                         = "${local.name}-daily"
-  schedule_expression          = var.scrape_schedule
+# SPEC 05's single schedule becomes the londono-gomez one. Its name changes
+# (sobreplano-scraper-daily -> sobreplano-scraper-londono-gomez), which replaces it.
+moved {
+  from = aws_scheduler_schedule.scraper_daily
+  to   = aws_scheduler_schedule.scraper["londono-gomez"]
+}
+
+resource "aws_scheduler_schedule" "scraper" {
+  for_each = var.scrape_schedules
+
+  name                         = "${local.name}-${each.key}"
+  schedule_expression          = each.value
   schedule_expression_timezone = "America/Bogota" # no daylight saving time
 
   flexible_time_window {
@@ -45,7 +54,7 @@ resource "aws_scheduler_schedule" "scraper_daily" {
   target {
     arn      = aws_lambda_function.scraper.arn
     role_arn = aws_iam_role.scheduler.arn
-    input    = jsonencode({ developer = "londono-gomez", limit = null })
+    input    = jsonencode({ developer = each.key, limit = null })
 
     # Covers failures to deliver the invocation (throttling, service errors); a run that
     # fails inside the function is retried by aws_lambda_function_event_invoke_config.
@@ -53,5 +62,11 @@ resource "aws_scheduler_schedule" "scraper_daily" {
       maximum_retry_attempts       = 2
       maximum_event_age_in_seconds = 3600
     }
+  }
+
+  # A rename replaces the schedule; it holds no state, but the new one must exist before
+  # the old one is deleted so no daily run is lost. Apply outside 05:45-06:30.
+  lifecycle {
+    create_before_destroy = true
   }
 }

@@ -2,20 +2,24 @@
 
 import hashlib
 import re
-from dataclasses import dataclass
+import unicodedata
+from collections import Counter
+from collections.abc import Iterable
+from dataclasses import dataclass, replace
 from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from sobreplano.domain.catalog import GeoPoint, Municipality
+from sobreplano.domain.catalog import GeoPoint, Municipality, UnitType
 
 MIN_PRICE_COP = 50_000_000
 MAX_PRICE_COP = 20_000_000_000
 MIN_AREA_M2 = Decimal(15)
 MAX_AREA_M2 = Decimal(1000)
 MAX_ROOMS = 10
+CENT = Decimal("0.01")
 
 
 class ScrapeRunStatus(StrEnum):
@@ -48,7 +52,7 @@ class ParsedProjectPage:
     canonical_url: str
     municipality: Municipality
     slug: str
-    location: GeoPoint
+    location: GeoPoint | None  # None when the page has no map link nor manual entry
     text: str  # clean text sent to the extractor
 
 
@@ -58,7 +62,8 @@ class ScrapedPage:
 
     url: str
     http_status: int
-    content_sha256: str
+    content_sha256: str  # hash of the raw HTML: names the stored file
+    text_sha256: str  # hash of the clean text: the extraction reuse key
     storage_key: str
     fetched_at: datetime
 
@@ -162,8 +167,17 @@ def validate_unit_type(unit_type: ExtractedUnitType) -> ValidUnitType | Rejected
 
 
 def content_sha256(html: str) -> str:
-    """Hex SHA-256 of the page's UTF-8 bytes: the raw file name and the extraction reuse key."""
+    """Hex SHA-256 of the raw HTML's UTF-8 bytes: the name of the stored raw file."""
     return hashlib.sha256(html.encode("utf-8")).hexdigest()
+
+
+def text_sha256(text: str) -> str:
+    """Hex SHA-256 of the clean text's UTF-8 bytes: the extraction reuse key.
+
+    The clean text is all the model sees, so the same text gives the same extraction even
+    when the HTML around it changes (per-request form tokens change it every day).
+    """
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def raw_page_key(developer_slug: str, page: FetchedPage) -> str:
@@ -177,8 +191,80 @@ def raw_page_key(developer_slug: str, page: FetchedPage) -> str:
 
 
 def normalize_unit_type_name(name: str) -> str:
-    """Key to match a unit type across days: lowercase, single spaces ("TIPO  B" == "Tipo B")."""
-    return re.sub(r"\s+", " ", name).strip().lower()
+    """Key to match a unit type across days: NFKC, casefold, single spaces.
+
+    "TIPO  B", "Tipo B" and "Tipo B " give the same key; NFKC also folds "m²" into "m2".
+    """
+    return re.sub(r"\s+", " ", unicodedata.normalize("NFKC", name)).strip().casefold()
+
+
+def dedupe_unit_types(valid: list[ValidUnitType]) -> list[ValidUnitType]:
+    """Collapse unit types a page lists more than once, keeping the page order.
+
+    Same normalized name and same areas is one unit type read twice (a summary and a
+    card): it is kept once and, if the prices differ, with the lowest one, since sites
+    publish "from" prices; the kept unit type gets a warning naming both prices. Same
+    name with different areas are different unit types: each gets its area appended
+    ("Tipo A · 55.58 m²"), so the stored names stay unique within the project.
+    """
+    kept: dict[tuple[str, Decimal | None, Decimal | None], ValidUnitType] = {}
+    for unit in valid:
+        key = (normalize_unit_type_name(unit.name), unit.built_area_m2, unit.private_area_m2)
+        first = kept.get(key)
+        if first is None:
+            kept[key] = unit
+        elif unit.price_cop != first.price_cop:
+            low, high = sorted((first, unit), key=lambda u: u.price_cop)
+            warning = f"listed twice, at {low.price_cop} and {high.price_cop}: kept the lowest"
+            kept[key] = replace(low, warnings=(*low.warnings, warning))
+
+    same_name = Counter(name for name, _, _ in kept)
+    deduped = list(kept.values())
+    for name, count in same_name.items():
+        if count > 1:
+            _append_areas(deduped, name)
+    return deduped
+
+
+def unit_types_with_same_area(valid: ValidUnitType, stored: Iterable[UnitType]) -> list[UnitType]:
+    """Stored unit types with the same built or the same private area, to two decimals.
+
+    Lets a page that renames a unit type ("Planta Apartamento 60.01 m2" for the seed's
+    "Tipo 04") keep its history. The caller only uses the result when it has exactly one
+    unit type: two candidates sharing an area are ambiguous.
+    """
+    return [
+        unit_type
+        for unit_type in stored
+        if _same_area(unit_type.built_area_m2, valid.built_area_m2)
+        or _same_area(unit_type.private_area_m2, valid.private_area_m2)
+    ]
+
+
+def _same_area(a: Decimal | None, b: Decimal | None) -> bool:
+    return a is not None and b is not None and a.quantize(CENT) == b.quantize(CENT)
+
+
+def _append_areas(units: list[ValidUnitType], name: str) -> None:
+    indexes = [i for i, u in enumerate(units) if normalize_unit_type_name(u.name) == name]
+    labels = [_area_label(_main_area(units[i])) for i in indexes]
+    # Same built area, different private area: one area is not enough to tell them apart.
+    if len(set(labels)) < len(labels):
+        labels = [
+            f"{_area_label(units[i].built_area_m2)} / {_area_label(units[i].private_area_m2)}"
+            for i in indexes
+        ]
+    for i, label in zip(indexes, labels, strict=True):
+        units[i] = replace(units[i], name=f"{units[i].name} · {label}")
+
+
+def _main_area(unit: ValidUnitType) -> Decimal | None:
+    return unit.built_area_m2 if unit.built_area_m2 is not None else unit.private_area_m2
+
+
+def _area_label(area: Decimal | None) -> str:
+    # normalize() drops trailing zeros ("52.00" -> "52"); "f" avoids "1E+2" for 100.
+    return "?" if area is None else f"{area.normalize():f} m²"
 
 
 def _area_in_range(label: str, area: Decimal | None, warnings: list[str]) -> Decimal | None:

@@ -9,29 +9,14 @@ from bs4 import BeautifulSoup, Tag
 from sobreplano.domain.catalog import GeoPoint, Municipality
 from sobreplano.domain.errors import DomainValidationError, PageParseError
 from sobreplano.domain.scraping import FetchedPage, ParsedProjectPage
+from sobreplano.infrastructure.scraping.geo_links import location_from_links
+from sobreplano.infrastructure.scraping.page_text import clean_text
 
 BASE_URL = "https://londonogomez.com"
 HOSTS = {"londonogomez.com", "www.londonogomez.com"}
 CANONICAL_PATH = re.compile(r"^/proyectos-vivienda/antioquia/([a-z0-9-]+)/([a-z0-9-]+)/?$")
-# Directions link: https://www.google.com/maps/dir//6.3296009,-75.5595542/@..., lat then lon.
-MAP_COORDINATES = re.compile(r"google\.[a-z.]+/maps/dir//(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)")
 SKIPPED_TITLE_WORDS = ("outlet", "prueba")
 HOUSING_TYPE = "vivienda"
-# Page chrome and the contact form: noise for the model, and the form is about personal data.
-NOISE_TAGS = [
-    "script",
-    "style",
-    "noscript",
-    "svg",
-    "iframe",
-    "template",
-    "header",
-    "footer",
-    "nav",
-    "form",
-]
-BLOCK_END = "\x00"
-BLOCK_TAGS = ["p", "div", "li", "tr", "br", "h1", "h2", "h3", "h4", "h5", "h6", "section"]
 
 
 class LondonoGomezSite:
@@ -73,8 +58,9 @@ class LondonoGomezSite:
         slug says "outlet": the page is out of scope and must not be stored or extracted.
 
         Raises:
-            PageParseError: if the canonical link is missing, or an in-scope page has no
-                map link or its coordinates fall outside the Aburrá Valley.
+            PageParseError: if the canonical link is missing, or the coordinates of an
+                in-scope page fall outside the Aburrá Valley. A page with no map link and
+                no manual location is not an error: its location is None.
         """
         soup = BeautifulSoup(page.html, "html.parser")
         canonical = soup.select_one('link[rel="canonical"]')
@@ -95,9 +81,16 @@ class LondonoGomezSite:
             canonical_url=canonical_url,
             municipality=municipality,
             slug=slug,
-            location=_location(soup, canonical_url),
+            location=self._location(soup, slug, canonical_url),
             text=clean_text(soup),
         )
+
+    def _location(self, soup: BeautifulSoup, slug: str, canonical_url: str) -> GeoPoint | None:
+        # Must run before clean_text, which removes the links from the soup.
+        try:
+            return location_from_links(soup, slug)
+        except DomainValidationError as error:
+            raise PageParseError(f"{canonical_url}: {error}") from error
 
 
 def municipality_from_name(name: str) -> Municipality | None:
@@ -110,34 +103,6 @@ def municipality_from_name(name: str) -> Municipality | None:
         return None
 
 
-def clean_text(soup: BeautifulSoup) -> str:
-    """Visible text without page chrome, one block per line. Mutates the soup."""
-    for tag in soup(NOISE_TAGS):
-        tag.decompose()
-    # "55.58 m<sup>2</sup>" would otherwise read "55.58 m 2".
-    for sup in soup("sup"):
-        sup.replace_with("²" if sup.get_text(strip=True) == "2" else sup.get_text())
-    # Line breaks only after blocks, so inline pieces ("Desde <span>$506.100.000</span>")
-    # stay on one line. The source HTML's own newlines are just whitespace, hence the marker.
-    for block in soup(BLOCK_TAGS):
-        block.append(BLOCK_END)
-    text = re.sub(r"\s+", " ", soup.get_text(" "))
-    lines = (line.strip() for line in text.split(BLOCK_END))
-    return "\n".join(line for line in lines if line)
-
-
 def _field_text(card: Tag, selector: str) -> str:
     field = card.select_one(selector)
     return field.get_text(" ", strip=True) if field else ""
-
-
-def _location(soup: BeautifulSoup, canonical_url: str) -> GeoPoint:
-    for link in soup.select('a[href*="/maps/dir/"]'):
-        href = link.get("href")
-        match = MAP_COORDINATES.search(href) if isinstance(href, str) else None
-        if match:
-            try:
-                return GeoPoint(lat=float(match.group(1)), lon=float(match.group(2)))
-            except DomainValidationError as error:
-                raise PageParseError(f"{canonical_url}: {error}") from error
-    raise PageParseError(f"no Google Maps directions link in {canonical_url}")

@@ -15,9 +15,9 @@ output "lambda_function_name" {
   value       = aws_lambda_function.scraper.function_name
 }
 
-output "schedule_name" {
-  description = "The EventBridge Scheduler schedule."
-  value       = aws_scheduler_schedule.scraper_daily.name
+output "schedule_names" {
+  description = "The EventBridge Scheduler schedules, by developer slug."
+  value       = { for slug, schedule in aws_scheduler_schedule.scraper : slug => schedule.name }
 }
 
 output "github_deploy_role_arn" {

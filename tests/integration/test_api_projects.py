@@ -63,6 +63,16 @@ def test_unit_type_without_price_has_null_price_fields(
     assert unit["price_per_m2_cop"] is None
 
 
+def test_project_without_location_has_null_location(
+    client: TestClient, catalog: SqlCatalogRepository, developer: Developer
+) -> None:
+    add_project(catalog, developer, "Ezzenti", location=None)
+
+    [item] = client.get("/projects", params={"municipality": MUNICIPALITY}).json()["items"]
+
+    assert item["location"] is None
+
+
 def test_municipality_filter(
     client: TestClient, catalog: SqlCatalogRepository, developer: Developer
 ) -> None:

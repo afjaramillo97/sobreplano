@@ -7,7 +7,8 @@ This repo is public: account IDs, project refs, passwords and keys are **not** w
 ## How it runs
 
 ```text
-EventBridge Scheduler (06:00 America/Bogota, var.scrape_schedule)
+EventBridge Scheduler, one schedule per developer (var.scrape_schedules, America/Bogota):
+  sobreplano-scraper-londono-gomez 06:00, sobreplano-scraper-constructora-capital 06:15
   -> Lambda sobreplano-scraper (container image, arm64, 512 MB, 10 min)
        reads DATABASE_URL and OPENAI_API_KEY from SSM at cold start
        fetches the developer's site, writes raw HTML to S3
@@ -64,6 +65,8 @@ The direct connection is IPv6-only on the Free plan, so everything goes through 
 uv run --env-file .env.cloud alembic upgrade head
 uv run --env-file .env.cloud alembic check
 ```
+
+When a migration renames something the running image writes (SPEC 06's `0004` renames `page_extractions.content_sha256`), the old image breaks as soon as the migration runs. Migrate and merge back to back, outside 05:45–06:45, so no scheduled run falls in between; then apply Terraform if the change needs it, and invoke the Lambda by hand.
 
 ## Copying the local history to the cloud
 
@@ -131,7 +134,7 @@ terraform -chdir=infra apply
 
 ### New-account limits
 
-A new AWS account starts with low Lambda limits. On 2026-11-01 `sobreplano-prod` had 5 concurrent executions and a 512 MB memory cap (`CreateFunction` rejected 1024 MB). Hence 512 MB and no reserved concurrency; one run per developer per day is enforced in the database instead (SPEC 05). An increase to 1000 concurrent executions was requested in Service Quotas.
+A new AWS account starts with low Lambda limits. On 2026-11-01 `sobreplano-prod` had 5 concurrent executions and a 512 MB memory cap (`CreateFunction` rejected 1024 MB). Hence 512 MB and no reserved concurrency; one run per developer per day is enforced in the database instead (SPEC 05). An increase to 1000 concurrent executions was requested in Service Quotas; on 2026-11-02 AWS raised the limit to 40, and SPEC 06 reserves 2 for the scraper as a cost cap (one run per developer at a time; AWS keeps 10 unreserved, so 38 remain).
 
 After the first apply, confirm the SNS subscription from the email AWS sends, or the error alarm reaches nobody.
 
@@ -150,14 +153,16 @@ The deploy does not need anyone's SSO session: the workflow assumes the `sobrepl
 
 ## Changing the schedule
 
-The schedule is the `scrape_schedule` Terraform variable, in Bogotá time (default `cron(0 6 * * ? *)`, every day at 06:00). For example, Mondays and Thursdays:
+The schedules are the `scrape_schedules` Terraform variable: a map from developer slug to a Scheduler expression in Bogotá time (default: `londono-gomez` at 06:00, `constructora-capital` at 06:15, every day). Each entry creates `sobreplano-scraper-{slug}`, which invokes the Lambda with `{"developer": "{slug}", "limit": null}`. A new developer is one more line in the default; keep them 15 minutes apart.
+
+To change a time, edit the default in `infra/variables.tf` (or pass the whole map) and plan as usual:
 
 ```bash
-terraform -chdir=infra plan -var 'scrape_schedule=cron(0 6 ? * MON,THU *)' -out=tfplan
+terraform -chdir=infra plan -var 'scrape_schedules={"londono-gomez":"cron(0 6 ? * MON,THU *)","constructora-capital":"cron(15 6 * * ? *)"}' -out=tfplan
 terraform -chdir=infra apply tfplan
 ```
 
-Keep the value in `.env` as `TF_VAR_scrape_schedule` so later applies do not revert it.
+Renaming a developer slug replaces its schedule (`create_before_destroy`, so the new one exists first); apply outside 05:45-06:30.
 
 ## Running the scraper by hand
 
@@ -167,6 +172,8 @@ aws lambda invoke --function-name sobreplano-scraper \
   --cli-binary-format raw-in-base64-out --log-type Tail out.json
 cat out.json
 ```
+
+The same with `{"developer":"constructora-capital"}`. Reserved concurrency is 2: at most two runs at a time, so a third invocation waits (asynchronous) or is throttled (synchronous).
 
 `--log-type Tail` returns the last 4 KB of the log. `out.json` holds the `ScrapeReport`: `succeeded` or `skipped`. A `failed` run raises instead, so Lambda counts an error, the alarm emails and Lambda retries twice. A second run on the same day ends `skipped` without visiting the site.
 
@@ -181,7 +188,7 @@ The alarm fires when the Lambda raises: a `failed` run (no page got a price, or 
 ## Checking a run
 
 - Logs: `aws logs tail /aws/lambda/sobreplano-scraper --since 1d`. Each run ends with the same summary the CLI prints, then a `REPORT` line with the duration and `Max Memory Used`.
-- Raw HTML: `aws s3 ls "s3://$(terraform -chdir=infra output -raw raw_html_bucket)/londono-gomez/" --recursive`.
+- Raw HTML: `aws s3 ls "s3://$(terraform -chdir=infra output -raw raw_html_bucket)/{developer}/" --recursive` (`londono-gomez/`, `constructora-capital/`).
 - Database: `select run_on, status, pages_fetched, observations_recorded, error from scrape_runs order by started_at desc limit 5;` with `psql` and `.env.cloud`.
 
 ## First run in AWS (2026-11-01)
@@ -221,4 +228,4 @@ The first two rows are the local history copied above.
 
 Raw HTML in S3 afterwards: `aws s3 ls "s3://<bucket>/londono-gomez/" --recursive | wc -l` gives `21`, all under `londono-gomez/2026-11-01/`, about 132 KB each (2.7 MB in total), with `ContentType: text/html; charset=utf-8` and SSE-S3 (`AES256`).
 
-No extraction was reused: the HTML of all 21 pages differed from 2026-10-31, so every raw-HTML hash was new. At 0.005 USD a run this is negligible for one developer; if the HTML keeps changing every day, a later spec should hash the cleaned page text instead.
+No extraction was reused: the HTML of all 21 pages differed from 2026-10-31, so every raw-HTML hash was new. At 0.005 USD a run this is negligible for one developer; if the HTML keeps changing every day, a later spec should hash the cleaned page text instead. SPEC 06 did: per-request Drupal form tokens change the HTML every day, the clean text does not (`docs/scrapers/londono-gomez.md`).

@@ -48,6 +48,20 @@ After fetching, from the canonical URL: keep only `/proyectos-vivienda/antioquia
 | Observations | 44, in 12 projects |
 | Tokens (`openai:gpt-6-luna`) | 31,687 input, 3,821 output, about 0.005 USD |
 
+## What changes in the HTML from day to day (SPEC 06, step 1)
+
+Primavela on 2026-10-30 and 2026-10-31: same size (145,075 bytes), 14 changed lines, all of them Drupal per-request tokens:
+
+- `form_build_id` (and its `data-drupal-selector`) of the 3 forms on the page.
+- `honeypot_time` of the same 3 forms.
+- The `js-view-dom-id-…` class of the `view-oficinas` block.
+
+All of them live inside `<form>` or in attributes, which `clean_text` already drops. Over the 21 pages stored on both days, the raw HTML hash differs every day and the `clean_text` hash is identical for all 21 (Graz del Río and M Living were stored twice on 2026-10-30, also with the same text). So the clean text is a stable reuse key and `clean_text` needs no change.
+
+The same check on the HTML the Lambda stored in S3 on 2026-11-01 and 2026-11-02 gives the same result: 21 of 21 pages with identical clean text, the same 14 token lines changed in Primavela, and the same clean-text hashes as on 2026-10-30 and 2026-10-31, so the text was stable over four days.
+
+Ezzenti (`/node/203631` → `/proyectos-vivienda/antioquia/medellin/ezzenti`, downloaded once on 2026-11-02): no Google Maps link, no Waze link, and its map script has empty coordinates (`parseFloat(parseFloat().toFixed(7))`). Its coordinates have to come from `seeds/locations.json`.
+
 ## Known gaps
 
 - **MAZZI, Ventto del Río and River Park** are housing cards in Medellín, but their canonical URL does not match the expected pattern. Their HTML is not stored (out of scope), so the reason is still unknown; check their canonical by hand on the next visit.

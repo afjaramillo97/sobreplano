@@ -58,6 +58,7 @@ Sitio de Capital, revisado en Chrome el 1 nov descargando el HTML sin ejecutar J
 **Fuera de alcance (para specs futuros):**
 
 - SQS, `/add-scraper` y más constructoras.
+- Cobertura fuera del Valle de Aburrá (Antioquia y el resto del país, decidido el 2 nov). A futuro se traen todos los proyectos de cada constructora; requiere migrar el modelo de ubicación (hoy `projects.municipality` solo admite los 10 municipios del valle) y quitar los filtros de municipio de las dos constructoras. Costo estimado para todo el país: ~1,25 USD/mes de LLM sin reutilización, ~0,07 con reutilización.
 - Deduplicar alianzas entre constructoras (MAZZI, Ventto del Río, River Park).
 - Precio "desde" por proyecto (Conaltura, Coninsa).
 - Volver a extraer el histórico ya guardado.
@@ -110,7 +111,7 @@ Si ninguno da coordenadas, sigue siendo un error de esa ficha, como hoy. Las dos
 - Municipio: tabla determinista `CAPITAL_ZONES: dict[str, Municipality]` de la zona de la URL al municipio (`envigado` → `ENVIGADO`, `ciudad-del-rio` → `MEDELLIN`, `santa-ana` → `BELLO`, `niquia` → `BELLO`, y las demás que encuentre el paso 1). Una zona que no está en la tabla deja la ficha fuera de alcance y se registra en el log con aviso, para agregarla a mano.
 - Fuera de alcance antes de pedir la ficha: zonas de Rionegro y títulos de proyectos que no son vivienda en venta (`office`, `renta`).
 - Coordenadas: el patrón `lat,lon` del HTML y, si no está, el enlace de Waze, con `location_from_links`.
-- Texto limpio: se quita la sección de avances de obra, para que el hash del texto sea estable.
+- Texto limpio: se quitan la sección de avances de obra (`#p_avances`) y la de otros proyectos (`#p_otrosproyectos`), para que el hash del texto sea estable. Las tarjetas de otros proyectos cambian al azar en cada carga y traen precios de otros proyectos (visto el 2 nov en Verde Olivo). Como el sitio no usa `<header>`, `<nav>` ni `<footer>`, el parser quita también `#header`, `#footer` y `#postfooter` por id.
 - El prompt de extracción ya pide precios en pesos; la validación de rangos descarta los rangos de cuotas, los dólares y los SMMLV. Las tipologías que dicen "Consultar precios" quedan sin precio y no se guardan, como en Londoño Gómez.
 
 ### Reutilizar los proyectos y tipologías de la semilla
@@ -189,6 +190,7 @@ Cada criterio se verifica pegando el comando y su salida en el PR (constitución
 - **Sí:** tabla determinista de zona a municipio para Capital, con aviso para zonas nuevas. **No:** pedirle el municipio al modelo; un barrio mal asignado arruinaría el precio por m² por zona.
 - **Sí:** buscar tipologías por área cuando el nombre no coincide, solo si hay una candidata. Conecta la semilla con el scraper sin migraciones de datos. **No:** renombrar las tipologías de la semilla a mano.
 - **Sí:** quitar los avances de obra del texto limpio. Cambian sin que cambien los precios, y harían que el hash del texto nunca se repita.
+- **Sí:** quitar también la sección de otros proyectos del texto limpio (decidido el 2 nov). Sus tarjetas cambian en cada carga, lo que haría que el hash del texto nunca se repita, y sus precios "Desde" de otros proyectos podrían terminar en el histórico del proyecto equivocado.
 
 ## Riesgos identificados
 
@@ -206,6 +208,7 @@ Cada criterio se verifica pegando el comando y su salida en el PR (constitución
 ## Lo que **no** entra en este spec
 
 - SQS, `/add-scraper` y más constructoras.
+- Cobertura fuera del Valle de Aburrá.
 - Alianzas entre constructoras.
 - Precio "desde" por proyecto.
 - Re-extraer el histórico.

@@ -10,27 +10,13 @@ from sobreplano.domain.catalog import GeoPoint, Municipality
 from sobreplano.domain.errors import DomainValidationError, PageParseError
 from sobreplano.domain.scraping import FetchedPage, ParsedProjectPage
 from sobreplano.infrastructure.scraping.geo_links import location_from_links
+from sobreplano.infrastructure.scraping.page_text import clean_text
 
 BASE_URL = "https://londonogomez.com"
 HOSTS = {"londonogomez.com", "www.londonogomez.com"}
 CANONICAL_PATH = re.compile(r"^/proyectos-vivienda/antioquia/([a-z0-9-]+)/([a-z0-9-]+)/?$")
 SKIPPED_TITLE_WORDS = ("outlet", "prueba")
 HOUSING_TYPE = "vivienda"
-# Page chrome and the contact form: noise for the model, and the form is about personal data.
-NOISE_TAGS = [
-    "script",
-    "style",
-    "noscript",
-    "svg",
-    "iframe",
-    "template",
-    "header",
-    "footer",
-    "nav",
-    "form",
-]
-BLOCK_END = "\x00"
-BLOCK_TAGS = ["p", "div", "li", "tr", "br", "h1", "h2", "h3", "h4", "h5", "h6", "section"]
 
 
 class LondonoGomezSite:
@@ -115,22 +101,6 @@ def municipality_from_name(name: str) -> Municipality | None:
         return Municipality(key)
     except ValueError:
         return None
-
-
-def clean_text(soup: BeautifulSoup) -> str:
-    """Visible text without page chrome, one block per line. Mutates the soup."""
-    for tag in soup(NOISE_TAGS):
-        tag.decompose()
-    # "55.58 m<sup>2</sup>" would otherwise read "55.58 m 2".
-    for sup in soup("sup"):
-        sup.replace_with("²" if sup.get_text(strip=True) == "2" else sup.get_text())
-    # Line breaks only after blocks, so inline pieces ("Desde <span>$506.100.000</span>")
-    # stay on one line. The source HTML's own newlines are just whitespace, hence the marker.
-    for block in soup(BLOCK_TAGS):
-        block.append(BLOCK_END)
-    text = re.sub(r"\s+", " ", soup.get_text(" "))
-    lines = (line.strip() for line in text.split(BLOCK_END))
-    return "\n".join(line for line in lines if line)
 
 
 def _field_text(card: Tag, selector: str) -> str:

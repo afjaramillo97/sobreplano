@@ -119,6 +119,7 @@ Cuando la ubicación aparece después:
 ### Constructora Capital (`infrastructure/scraping/constructora_capital.py`)
 
 - `slug = "constructora-capital"`, el mismo de la semilla, para reutilizar la fila de la constructora.
+- Slug de proyecto con prefijo `capital-` (`capital-verde-olivo`), decidido el 2 nov: los slugs son únicos entre constructoras y los de Capital son cortos (`axis`, `lino`). Solo cambia el slug; el nombre que ve el usuario sigue siendo el que extrae el modelo ("Verde Olivo"). Los proyectos de la semilla conservan su slug y se encuentran por `source_url`.
 - Listado: `https://www.constructoracapital.com/proyectos/1/medellin-y-alrededores`. Los selectores exactos los confirma el paso 1 y se anotan en `docs/scrapers/constructora-capital.md`.
 - Municipio: tabla determinista `CAPITAL_ZONES: dict[str, Municipality]` de la zona de la URL al municipio (`envigado` → `ENVIGADO`, `ciudad-del-rio` → `MEDELLIN`, `santa-ana` → `BELLO`, `niquia` → `BELLO`, y las demás que encuentre el paso 1). Una zona que no está en la tabla deja la ficha fuera de alcance y se registra en el log con aviso, para agregarla a mano.
 - Fuera de alcance antes de pedir la ficha: zonas de Rionegro y títulos de proyectos que no son vivienda en venta (`office`, `renta`).
@@ -201,6 +202,7 @@ Cada criterio se verifica pegando el comando y su salida en el PR (constitución
 - **Sí:** escalonar 15 minutos. Una corrida dura menos de 2 minutos, así nunca se cruzan y la alarma dice cuál falló por la hora.
 - **Sí:** concurrencia reservada de 2, ahora que la cuenta tiene límite 40. Limita el costo de un error que dispare invocaciones; la regla de una corrida por día sigue en la base de datos.
 - **Sí:** `slug = "constructora-capital"`, el de la semilla, para no crear una segunda fila de la misma constructora.
+- **Sí:** prefijo `capital-` en los slugs de proyecto de Capital. Evita que un proyecto nuevo choque con uno de otra constructora del mismo nombre. **No:** cambiar los slugs de Londoño Gómez, que ya están en la base.
 - **Sí:** tabla determinista de zona a municipio para Capital, con aviso para zonas nuevas. **No:** pedirle el municipio al modelo; un barrio mal asignado arruinaría el precio por m² por zona.
 - **Sí:** buscar tipologías por área cuando el nombre no coincide, solo si hay una candidata. Conecta la semilla con el scraper sin migraciones de datos. **No:** renombrar las tipologías de la semilla a mano.
 - **Sí:** quitar los avances de obra del texto limpio. Cambian sin que cambien los precios, y harían que el hash del texto nunca se repita.

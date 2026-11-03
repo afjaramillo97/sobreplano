@@ -55,13 +55,48 @@ Reviewed on 2026-11-02 (SPEC 06, step 1) by downloading the listing and two proj
 | `san-antonio-de-prado` | 1 | `MEDELLIN` | |
 | `robledo-pajarito` | 1 | `MEDELLIN` | |
 | `camino-verde` | 2 | `ENVIGADO` | Verde Olivo, Verde Silvestre. Checked on Verde Olivo (2026-11-02): Google Maps `6.154604,-75.578111`, Waze path `antioquia/envigado/…` ("Zona 6, Envigado"), text "En Envigado…", sales room Calle 39 D Sur # 25 - 36 |
-| `tierra-firme` | 1 | — | Turquesa, sold out: discarded (owner's decision, 2026-11-02), not in the table |
-| `santa-fe` | 2 | — | Urbanity Office and Urbanity Renta Selecta: skipped by title |
+| `tierra-firme` | 1 | — | Turquesa, sold out: discarded by slug (`SKIPPED_SLUGS`, owner's decision, 2026-11-02); the zone stays out of the table, so a new project there warns |
+| `santa-fe` | 2 | — | Urbanity Office and Urbanity Renta Selecta: skipped by the slug words `office` and `renta`; a new housing project there warns |
 | `rionegro-los-colegios` | 3 | — | Monte Rosa, Valle Rosa, Bosque Rosa: outside the Aburrá Valley, skipped |
 
-## Filters (step 6)
+## Filters
 
-Before fetching a project page, from the card URL: skip Rionegro zones and slugs with `office` or `renta`. A zone not in the table skips the card with a warning in the log.
+Before fetching a project page, from the card URL, and again on the canonical URL after fetching: skip zones starting with `rionegro`, slugs in `SKIPPED_SLUGS` (`turquesa`) and slugs with `office` or `renta`. Any other zone not in `CAPITAL_ZONES` skips the card with a warning in the log; add it to the table after checking the project's location (map, Waze path, sales room address). On 2026-11-02 this leaves 27 of the 33 cards.
+
+Sold-out projects (`inventario_no`) are not filtered: they enter the catalog without prices.
+
+## Slugs
+
+Project slugs get the prefix `capital-` (`capital-verde-olivo`): slugs are unique across developers and Capital's are short. Only the slug changes; the name users see is the one the model extracts. The three seed projects keep their slugs (`axis-ciudad-peldar`, …) and are found by `source_url`.
+
+## Clean text
+
+Removed before the text is built: `#header`, `#footer`, `#postfooter`, `.contactos_barra` (page chrome, since the site has no `<header>`/`<nav>`/`<footer>` tags), `#p_avances_tit` and `#p_avances` (construction progress, changes monthly) and `#p_otrosproyectos_tit` and `#p_otrosproyectos` (other projects' cards, different on every request and with their own prices). Axis goes from about 12,600 to 9,700 characters.
+
+## First local run (2026-11-02, local database)
+
+```
+uv run --env-file .env python -m sobreplano.interface.cli.scrape constructora-capital --limit 2 --dry-run
+uv run --env-file .env python -m sobreplano.interface.cli.scrape constructora-capital
+```
+
+| | |
+| --- | --- |
+| Pages listed and fetched | 27 of 27, 0 out of scope, 0 failed |
+| Projects | 24 added, plus the 3 seed projects (Axis, Murano, Acento) found by `source_url` |
+| Unit types | 59 valid, 33 rejected (almost all "no price": "Consultar precios…" and sold-out projects), 51 added |
+| Seed unit types matched by area | 8: Axis Tipo 02/04/06/12/14, Murano Apto 02/09, Acento Tipo 2 |
+| Observations | 59 |
+| Projects without location | 0 |
+| Tokens (`openai:gpt-6-luna`) | 74,904 input, 5,257 output, about 0.010 USD (dry run of 2 pages: 0.0007 USD) |
+
+Checks on the local database after the run: `slug like '%ciudad-peldar%'` gives 3 projects; `slug ilike '%rosa%' or '%urbanity%'` gives 0; every Axis seed unit type has 2 observations (manual on 2026-10-28, scraper on 2026-11-02, same price).
+
+**Raw HTML is not stable, the clean text is.** Velvet and Villa Vento were downloaded twice (dry run and real run): the raw HTML hash differed both times, the clean text from `ConstructoraCapitalSite` was identical. With the generic `clean_text` alone (other projects' cards left in) the text differed too, which confirms that `#p_otrosproyectos` has to go.
+
+**The model names the same floor plan differently across pages** ("Apartamento 60.01 m2" on Axis, "Planta Apartamento 67.41 m2 Área Total" on Murano). Within a project this is stable as long as the clean text does not change (the extraction is reused), and the seed rows were matched by area anyway.
+
+The seed's hand-entered coordinates (6.1735, -75.5925 for Axis) differ from the page's (6.1719777, -75.5941694): logged as "location changed", not overwritten.
 
 ## Not done in step 1
 

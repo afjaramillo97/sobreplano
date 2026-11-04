@@ -63,6 +63,10 @@ NOISE_SELECTORS = [
     "#p_otrosproyectos_tit",
     "#p_otrosproyectos",
 ]
+# The dollar reference next to each price follows the exchange rate, so it changes on every
+# business day and would make the clean-text hash never repeat. The same class also holds
+# "Consultar precios y disponibilidad…", which stays: it tells the model there is no price.
+USD_REFERENCE = re.compile(r"^\([\d.,]+ US\)\*?$")
 
 
 class ConstructoraCapitalSite:
@@ -124,6 +128,9 @@ class ConstructoraCapitalSite:
         location = _location(soup, slug, canonical_url)
         for noise in soup.select(", ".join(NOISE_SELECTORS)):
             noise.decompose()
+        for usd in soup.select(".enDolares"):
+            if USD_REFERENCE.match(usd.get_text(strip=True)):
+                usd.decompose()
         return ParsedProjectPage(
             canonical_url=canonical_url,
             municipality=CAPITAL_ZONES[zone],

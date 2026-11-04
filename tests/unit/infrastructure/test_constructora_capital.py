@@ -44,10 +44,11 @@ def project_page(canonical: str | None = AXIS, map_link: str | None = PLACE) -> 
     html = f"""<html><head>{head}</head><body>
       <div id="header"><a>74 Proyectos</a><a>Proyectos (41)</a></div>
       <div class="contactos_barra"><a href="{WAZE_PLACE}">Llega con Waze</a>{location}</div>
-      <div id="p_landing"><p class="tipo">APARTAMENTOS</p><p>Desde $710,200,000</p></div>
+      <div id="p_landing"><p class="tipo">APARTAMENTOS</p><p>Desde $710,200,000</p>
+        <p class="enDolares">(139,820 US)*</p></div>
       <div id="p_plantas">
         <p class="destacado torre">Planta Apartamento 60.01 m2 Área Total</p>
-        <p class="precio">$ 710,200,000</p>
+        <p class="precio">$ 710,200,000</p><p class="enDolares">(139,820 US)</p>
         <p class="destacado">ÁREA TOTAL: 60.01 m2</p><p>ÁREA PRIVADA: 54.06 m2</p>
       </div>
       <div id="p_avances_tit"><div>AXIS / AVANCES DE OBRA</div></div>
@@ -109,6 +110,39 @@ def test_clean_text_keeps_the_floor_plans_and_drops_chrome_progress_and_other_pr
     assert "ÁREA PRIVADA: 54.06 m2" in parsed.text
     for noise in ("74 Proyectos", "Octubre 2026", "OTROS PROYECTOS", "558,700,000", "43G-85"):
         assert noise not in parsed.text
+
+
+def test_clean_text_drops_the_dollar_reference_but_keeps_ask_for_prices() -> None:
+    # The dollar figure follows the daily exchange rate: kept, it changed every page's hash.
+    page = project_page()
+    page = FetchedPage(
+        url=page.url,
+        status=page.status,
+        html=page.html.replace(
+            '</div>\n      <div id="p_avances_tit">',
+            '<p class="enDolares">Consultar precios y disponibilidad con Sala de Ventas</p>'
+            '</div>\n      <div id="p_avances_tit">',
+        ),
+        fetched_at=page.fetched_at,
+    )
+    parsed = SITE.parse_project(page)
+    assert parsed is not None
+    assert "US)" not in parsed.text
+    assert "Desde $710,200,000\n" in parsed.text
+    assert "Consultar precios y disponibilidad con Sala de Ventas" in parsed.text
+
+
+def test_clean_text_ignores_a_new_exchange_rate() -> None:
+    today = project_page()
+    tomorrow = FetchedPage(
+        url=today.url,
+        status=today.status,
+        html=today.html.replace("139,820 US", "137,544 US"),
+        fetched_at=today.fetched_at,
+    )
+    parsed_today, parsed_tomorrow = SITE.parse_project(today), SITE.parse_project(tomorrow)
+    assert parsed_today is not None and parsed_tomorrow is not None
+    assert parsed_today.text == parsed_tomorrow.text
 
 
 def test_page_without_coordinates_has_no_location() -> None:

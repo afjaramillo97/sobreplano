@@ -71,7 +71,7 @@ Project slugs get the prefix `capital-` (`capital-verde-olivo`): slugs are uniqu
 
 ## Clean text
 
-Removed before the text is built: `#header`, `#footer`, `#postfooter`, `.contactos_barra` (page chrome, since the site has no `<header>`/`<nav>`/`<footer>` tags), `#p_avances_tit` and `#p_avances` (construction progress, changes monthly) and `#p_otrosproyectos_tit` and `#p_otrosproyectos` (other projects' cards, different on every request and with their own prices). Axis goes from about 12,600 to 9,700 characters.
+Removed before the text is built: `#header`, `#footer`, `#postfooter`, `.contactos_barra` (page chrome, since the site has no `<header>`/`<nav>`/`<footer>` tags), `#p_avances_tit` and `#p_avances` (construction progress, changes monthly) and `#p_otrosproyectos_tit` and `#p_otrosproyectos` (other projects' cards, different on every request and with their own prices). Axis goes from about 12,600 to 9,700 characters. The dollar reference next to each price, `p.enDolares` with `(139,820 US)`, is removed too: it follows the exchange rate, so on 2026-11-04 it changed the clean text of all 27 pages and nothing was reused. The `p.enDolares` that says "Consultar precios y disponibilidad con Sala de Ventas" stays, because it tells the model the floor plan has no price.
 
 ## First local run (2026-11-02, local database)
 

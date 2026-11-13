@@ -26,12 +26,22 @@ class LlmCall:
 
 
 @dataclass(frozen=True)
+class ToolCallRecord:
+    """One tool call of a turn: what the model asked for and what the tool returned."""
+
+    name: str
+    args: dict[str, object]
+    output: str  # the ToolMessage content (compact JSON, or the error text)
+
+
+@dataclass(frozen=True)
 class AdvisorReply:
     """The advisor's answer to one message, with the tools and LLM calls it took."""
 
     text: str
     tools_used: list[str]  # in call order, repeats included
     llm_calls: list[LlmCall]
+    tool_calls: list[ToolCallRecord]  # in call order, with their arguments and results
 
 
 @dataclass(frozen=True)

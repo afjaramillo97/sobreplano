@@ -216,6 +216,34 @@ def test_repeated_tools_are_kept_in_order() -> None:
     assert reply.tools_used == ["search_projects", "get_project", "search_projects"]
 
 
+def test_tool_calls_keep_arguments_and_results_in_order() -> None:
+    model = ScriptedChatModel(
+        script=[
+            tool_call("search_projects", municipality="sabaneta"),
+            tool_call("list_developers"),
+            answer("Fin."),
+        ]
+    )
+    reply = make_advisor(model).reply(uuid4(), "Busca")
+
+    assert [call.name for call in reply.tool_calls] == ["search_projects", "list_developers"]
+    assert reply.tool_calls[0].args == {"municipality": "sabaneta"}
+    assert '"total":0' in reply.tool_calls[0].output
+    assert reply.tool_calls[1].args == {}
+    assert reply.tool_calls[1].output == '{"developers":[]}'
+
+
+def test_tool_call_with_bad_arguments_records_the_error() -> None:
+    model = ScriptedChatModel(
+        script=[tool_call("search_projects", min_price=-1), answer("Corrijo.")]
+    )
+    reply = make_advisor(model).reply(uuid4(), "Busca")
+
+    [call] = reply.tool_calls
+    assert call.args == {"min_price": -1}
+    assert "min_price: Input should be greater than 0" in call.output
+
+
 def test_recent_messages_cuts_at_a_user_message() -> None:
     messages: list[Any] = []
     for i in range(10):

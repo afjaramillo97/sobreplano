@@ -28,7 +28,10 @@ class FakeAgent:
         if self.error is not None:
             raise self.error
         return AdvisorReply(
-            text="Encontré 2 proyectos.", tools_used=["search_projects"], llm_calls=[CALL]
+            text="Encontré 2 proyectos.",
+            tools_used=["search_projects"],
+            llm_calls=[CALL],
+            tool_calls=[],
         )
 
 

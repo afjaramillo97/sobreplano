@@ -31,7 +31,9 @@ class FakeAgent:
         self.calls.append((thread_id, message))
         if self.error is not None:
             raise self.error
-        return AdvisorReply(text="Hola.", tools_used=["search_projects"], llm_calls=[CALL, CALL])
+        return AdvisorReply(
+            text="Hola.", tools_used=["search_projects"], llm_calls=[CALL, CALL], tool_calls=[]
+        )
 
 
 class InMemoryUsage:

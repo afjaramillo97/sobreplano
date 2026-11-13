@@ -16,7 +16,7 @@ from langgraph.graph import MessagesState  # pyright: ignore[reportMissingTypeSt
 from langgraph.graph.state import CompiledStateGraph  # pyright: ignore[reportMissingTypeStubs]
 from openai import APIError
 
-from sobreplano.domain.advisor import AdvisorReply
+from sobreplano.domain.advisor import AdvisorReply, ToolCallRecord
 from sobreplano.domain.errors import AdvisorLimitError, AdvisorUnavailableError
 from sobreplano.infrastructure.advisor.graph import RECURSION_LIMIT, build_advisor_graph
 from sobreplano.infrastructure.advisor.usage_callback import UsageCallback
@@ -75,11 +75,27 @@ class LangGraphAdvisor:
             if isinstance(message, AIMessage)
             for call in message.tool_calls
         ]
+        outputs = {
+            message.tool_call_id: message.text
+            for message in new_messages
+            if isinstance(message, ToolMessage)
+        }
+        tool_calls = [
+            ToolCallRecord(
+                name=call["name"],
+                args=dict(call["args"]),
+                output=outputs.get(call["id"] or "", ""),
+            )
+            for message in new_messages
+            if isinstance(message, AIMessage)
+            for call in message.tool_calls
+        ]
         answer = new_messages[-1]
         return AdvisorReply(
             text=answer.text if isinstance(answer, AIMessage) else "",
             tools_used=tools_used,
             llm_calls=usage.calls,
+            tool_calls=tool_calls,
         )
 
 

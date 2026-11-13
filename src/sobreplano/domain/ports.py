@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Protocol
 from uuid import UUID
 
-from sobreplano.domain.advisor import LlmCall
+from sobreplano.domain.advisor import AdvisorReply, LlmCall
 from sobreplano.domain.catalog import Developer, GeoPoint, Project, UnitType
 from sobreplano.domain.listings import (
     DeveloperSummary,
@@ -106,6 +106,19 @@ class DeveloperSite(Protocol):
 
         Raises:
             PageParseError: if an in-scope page lacks its canonical URL or map link.
+        """
+        ...
+
+
+class AdvisorAgent(Protocol):
+    """Answers one user message inside a conversation that it remembers by thread_id."""
+
+    def reply(self, thread_id: UUID, message: str) -> AdvisorReply:
+        """Answer message within the conversation thread_id.
+
+        Raises:
+            AdvisorUnavailableError: if the model cannot be reached.
+            AdvisorLimitError: if the message needs more tool rounds than allowed.
         """
         ...
 

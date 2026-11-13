@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from decimal import Decimal
+from uuid import UUID
 
 from sobreplano.domain.errors import DomainValidationError
 
@@ -22,3 +23,20 @@ class LlmCall:
     def __post_init__(self) -> None:
         if self.input_tokens < 0 or self.output_tokens < 0:
             raise DomainValidationError("token counts must be >= 0")
+
+
+@dataclass(frozen=True)
+class AdvisorReply:
+    """The advisor's answer to one message, with the tools and LLM calls it took."""
+
+    text: str
+    tools_used: list[str]  # in call order, repeats included
+    llm_calls: list[LlmCall]
+
+
+@dataclass(frozen=True)
+class AdvisorAnswer:
+    """A reply together with the conversation it belongs to."""
+
+    thread_id: UUID
+    reply: AdvisorReply

@@ -191,11 +191,13 @@ class PageExtractionRow(IdMixin, CreatedAtMixin, Base):
     """Row of `page_extractions`: a validated LLM extraction, reused while the clean text holds."""
 
     __tablename__ = "page_extractions"
-    # The model is part of the key so switching models re-extracts instead of mixing results.
-    __table_args__ = (UniqueConstraint("text_sha256", "model"),)
+    # Model and prompt are part of the key: changing either re-extracts instead of mixing results.
+    __table_args__ = (UniqueConstraint("text_sha256", "model", "prompt_version"),)
 
     text_sha256: Mapped[str] = mapped_column(CHAR(64))
     model: Mapped[str] = mapped_column(Text)
+    # "legacy" on rows from before migration 0008.
+    prompt_version: Mapped[str] = mapped_column(Text)
     input_tokens: Mapped[int] = mapped_column(Integer)
     output_tokens: Mapped[int] = mapped_column(Integer)
     payload: Mapped[dict[str, object]] = mapped_column(JSONB)
@@ -218,6 +220,8 @@ class LlmUsageRow(IdMixin, CreatedAtMixin, Base):
     input_tokens: Mapped[int] = mapped_column(Integer)
     output_tokens: Mapped[int] = mapped_column(Integer)
     cost_usd: Mapped[Decimal | None] = mapped_column(Numeric(12, 6))
+    # NULL on rows from before migration 0008.
+    prompt_version: Mapped[str | None] = mapped_column(Text)
 
 
 class AdvisorThreadRow(IdMixin, CreatedAtMixin, Base):

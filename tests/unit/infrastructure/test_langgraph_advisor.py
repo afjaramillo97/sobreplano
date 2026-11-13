@@ -24,9 +24,8 @@ from sobreplano.domain.listings import (
     ProjectSort,
 )
 from sobreplano.infrastructure.advisor.chat_models import build_chat_model
-from sobreplano.infrastructure.advisor.graph import MAX_TOOL_ROUNDS, recent_messages
+from sobreplano.infrastructure.advisor.graph import MAX_TOOL_ROUNDS, SYSTEM_PROMPT, recent_messages
 from sobreplano.infrastructure.advisor.langgraph_advisor import LangGraphAdvisor
-from sobreplano.infrastructure.advisor.prompts import SYSTEM_PROMPT
 from sobreplano.infrastructure.advisor.tools import build_tools
 from sobreplano.infrastructure.advisor.usage_callback import UsageCallback
 from sobreplano.infrastructure.settings import Settings
@@ -121,6 +120,7 @@ def test_every_llm_call_has_model_tokens_and_cost() -> None:
     assert len(reply.llm_calls) == 2
     for call in reply.llm_calls:
         assert (call.model, call.input_tokens, call.output_tokens) == (MODEL, 1000, 100)
+        assert call.prompt_version == SYSTEM_PROMPT.version
         # 1000 * 0.10 + 100 * 0.50 per million tokens.
         assert call.cost_usd == Decimal("0.000150")
 
@@ -130,7 +130,7 @@ def test_system_prompt_goes_first() -> None:
     make_advisor(model).reply(uuid4(), "Hola")
     first = model.seen[0][0]
     assert isinstance(first, SystemMessage)
-    assert first.content == SYSTEM_PROMPT
+    assert first.content == SYSTEM_PROMPT.text
 
 
 def test_second_question_in_the_same_thread_sees_the_first() -> None:
@@ -264,7 +264,7 @@ def test_recent_messages_keeps_everything_when_short() -> None:
 
 
 def test_usage_callback_without_metadata_counts_zero_and_unknown_model_costs_none() -> None:
-    callback = UsageCallback("openai:unpriced")
+    callback = UsageCallback("openai:unpriced", None)
     callback.on_llm_end(
         LLMResult(generations=[[ChatGeneration(message=AIMessage(content="x"))]]),
         run_id=uuid4(),

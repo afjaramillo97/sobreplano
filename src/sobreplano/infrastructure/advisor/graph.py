@@ -14,13 +14,15 @@ from langgraph.graph import START, MessagesState, StateGraph  # pyright: ignore[
 from langgraph.graph.state import CompiledStateGraph  # pyright: ignore[reportMissingTypeStubs]
 from langgraph.prebuilt import ToolNode, tools_condition
 
-from sobreplano.infrastructure.advisor.prompts import SYSTEM_PROMPT
 from sobreplano.infrastructure.advisor.tools import handle_tool_error
+from sobreplano.infrastructure.llm.prompt_store import APP_PROMPTS, load_prompt
 
 MAX_TOOL_ROUNDS = 5
 # One step per agent call and one per tool round: 5 rounds plus the final answer.
 RECURSION_LIMIT = 2 * MAX_TOOL_ROUNDS + 1
 MAX_QUESTIONS_IN_CONTEXT = 8
+# Scope, language, sources and what the advisor must never do.
+SYSTEM_PROMPT = load_prompt(APP_PROMPTS, "advisor_system")
 
 
 def recent_messages(messages: Sequence[AnyMessage], questions: int) -> list[AnyMessage]:
@@ -48,7 +50,7 @@ def build_advisor_graph(
 
     def agent(state: MessagesState) -> dict[str, list[BaseMessage]]:
         context = recent_messages(state["messages"], MAX_QUESTIONS_IN_CONTEXT)
-        return {"messages": [model.invoke([SystemMessage(SYSTEM_PROMPT), *context])]}
+        return {"messages": [model.invoke([SystemMessage(SYSTEM_PROMPT.text), *context])]}
 
     builder = StateGraph(MessagesState)
     builder.add_node("agent", agent)  # pyright: ignore[reportUnknownMemberType]

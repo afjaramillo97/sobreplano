@@ -76,6 +76,7 @@ class SyntheticFetcher:
 
 class FixedExtractor:
     model = "openai:gpt-6-luna"
+    prompt_version = "6682e7fa8220"
 
     def extract(self, page_text: str) -> ExtractionResult:
         unit = ExtractedUnitType(
@@ -91,6 +92,7 @@ class FixedExtractor:
             input_tokens=900,
             output_tokens=80,
             project=ExtractedProject(name="Primavela", neighborhood=None, unit_types=(unit,)),
+            prompt_version=self.prompt_version,
         )
 
 

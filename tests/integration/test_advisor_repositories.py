@@ -26,6 +26,7 @@ def call(cost: str | None = "0.001000") -> LlmCall:
         input_tokens=1500,
         output_tokens=200,
         cost_usd=Decimal(cost) if cost is not None else None,
+        prompt_version="cd741d6427ec",
     )
 
 
@@ -61,6 +62,7 @@ def test_add_stores_model_tokens_cost_and_thread(
         200,
         Decimal("0.001000"),
     )
+    assert row.prompt_version == "cd741d6427ec"
 
 
 def test_unknown_feature_is_rejected(session: Session, usage: SqlLlmUsageRepository) -> None:

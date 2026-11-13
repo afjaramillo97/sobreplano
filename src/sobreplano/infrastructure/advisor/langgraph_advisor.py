@@ -18,7 +18,11 @@ from openai import APIError
 
 from sobreplano.domain.advisor import AdvisorReply, ToolCallRecord
 from sobreplano.domain.errors import AdvisorLimitError, AdvisorUnavailableError
-from sobreplano.infrastructure.advisor.graph import RECURSION_LIMIT, build_advisor_graph
+from sobreplano.infrastructure.advisor.graph import (
+    RECURSION_LIMIT,
+    SYSTEM_PROMPT,
+    build_advisor_graph,
+)
 from sobreplano.infrastructure.advisor.usage_callback import UsageCallback
 
 ORPHAN_TOOL_RESULT = '{"error": "tool round limit reached"}'
@@ -50,7 +54,7 @@ class LangGraphAdvisor:
                 it carries the LLM calls made so they can be recorded.
         """
         graph = build_advisor_graph(self._chat_model(), self._tools, self._checkpointer)
-        usage = UsageCallback(self._model_name)
+        usage = UsageCallback(self._model_name, SYSTEM_PROMPT.version)
         config: RunnableConfig = {
             "configurable": {"thread_id": str(thread_id)},
             "recursion_limit": RECURSION_LIMIT,

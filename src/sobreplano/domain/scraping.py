@@ -113,6 +113,7 @@ class ExtractionResult:
     input_tokens: int
     output_tokens: int
     project: ExtractedProject
+    prompt_version: str  # part of the reuse key; "legacy" for rows from before migration 0008
 
 
 @dataclass(frozen=True)

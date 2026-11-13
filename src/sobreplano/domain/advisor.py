@@ -19,6 +19,7 @@ class LlmCall:
     input_tokens: int
     output_tokens: int
     cost_usd: Decimal | None  # None when the model is not in the price table
+    prompt_version: str | None  # version of the system prompt the call was sent with
 
     def __post_init__(self) -> None:
         if self.input_tokens < 0 or self.output_tokens < 0:

@@ -15,7 +15,13 @@ from sobreplano.infrastructure.settings import Settings
 from sobreplano.interface.api.dependencies import get_ask_advisor, get_session
 from sobreplano.interface.api.main import create_app
 
-CALL = LlmCall(model="openai:gpt-6-luna", input_tokens=10, output_tokens=5, cost_usd=Decimal(1))
+CALL = LlmCall(
+    model="openai:gpt-6-luna",
+    input_tokens=10,
+    output_tokens=5,
+    cost_usd=Decimal(1),
+    prompt_version="cd741d6427ec",
+)
 
 
 class FakeAgent:

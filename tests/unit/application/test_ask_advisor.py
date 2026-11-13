@@ -18,7 +18,11 @@ from sobreplano.domain.errors import (
 
 TODAY = date(2026, 11, 13)
 CALL = LlmCall(
-    model="openai:gpt-6-luna", input_tokens=1000, output_tokens=100, cost_usd=Decimal("0.01")
+    model="openai:gpt-6-luna",
+    input_tokens=1000,
+    output_tokens=100,
+    cost_usd=Decimal("0.01"),
+    prompt_version="cd741d6427ec",
 )
 
 

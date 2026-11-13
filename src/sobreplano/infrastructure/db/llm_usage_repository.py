@@ -31,6 +31,7 @@ class SqlLlmUsageRepository:
                 input_tokens=call.input_tokens,
                 output_tokens=call.output_tokens,
                 cost_usd=call.cost_usd,
+                prompt_version=call.prompt_version,
             )
         )
         self._session.flush()

@@ -79,12 +79,15 @@ class SqlScrapeRunRepository:
         )
         self._session.flush()
 
-    def find_extraction(self, text_sha256: str, model: str) -> ExtractionResult | None:
-        """The stored extraction of this clean text by this model, or None."""
+    def find_extraction(
+        self, text_sha256: str, model: str, prompt_version: str
+    ) -> ExtractionResult | None:
+        """The stored extraction of this clean text by this model and prompt, or None."""
         row = self._session.scalars(
             select(PageExtractionRow).where(
                 PageExtractionRow.text_sha256 == text_sha256,
                 PageExtractionRow.model == model,
+                PageExtractionRow.prompt_version == prompt_version,
             )
         ).one_or_none()
         if row is None:
@@ -94,10 +97,11 @@ class SqlScrapeRunRepository:
             input_tokens=row.input_tokens,
             output_tokens=row.output_tokens,
             project=ExtractedProject.model_validate(row.payload).to_domain(),
+            prompt_version=row.prompt_version,
         )
 
     def save_extraction(self, text_sha256: str, result: ExtractionResult) -> None:
-        """Store an extraction; if the same clean text and model are stored, keep the first."""
+        """Store an extraction; if the same text, model and prompt are stored, keep the first."""
         payload = ExtractedProject.from_domain(result.project).model_dump(mode="json")
         # DO NOTHING instead of an error: a concurrent run may have stored the same extraction.
         self._session.execute(
@@ -106,11 +110,12 @@ class SqlScrapeRunRepository:
                 id=uuid4(),
                 text_sha256=text_sha256,
                 model=result.model,
+                prompt_version=result.prompt_version,
                 input_tokens=result.input_tokens,
                 output_tokens=result.output_tokens,
                 payload=payload,
             )
-            .on_conflict_do_nothing(index_elements=["text_sha256", "model"])
+            .on_conflict_do_nothing(index_elements=["text_sha256", "model", "prompt_version"])
         )
 
     def finish(self, run: ScrapeRun) -> None:

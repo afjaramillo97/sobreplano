@@ -16,6 +16,7 @@ from sobreplano.infrastructure.llm.providers import PROVIDERS, build_extractor
 from sobreplano.infrastructure.scraping import extraction_schema
 from sobreplano.infrastructure.scraping.openai_compatible_extractor import (
     MAX_PAGE_CHARS,
+    PROMPT,
     OpenAICompatibleExtractor,
     UnavailableExtractor,
 )
@@ -95,6 +96,7 @@ def test_result_keeps_model_tokens_and_domain_project() -> None:
         1200,
         150,
     )
+    assert result.prompt_version == PROMPT.version
     assert result.project == ExtractedProject(
         name="Réflex Living",
         neighborhood="Pan de Azúcar",
@@ -183,6 +185,8 @@ def test_factory_without_key_still_builds_for_reuse(key: str | None) -> None:
     extractor = build_extractor(settings(key=key))
     assert isinstance(extractor, UnavailableExtractor)
     assert extractor.model == "openai:gpt-6-luna"
+    # Same version as the real extractor, or no stored extraction would ever be reused.
+    assert extractor.prompt_version == PROMPT.version
     with pytest.raises(ExtractionError, match="OPENAI_API_KEY"):
         extractor.extract("texto")
 

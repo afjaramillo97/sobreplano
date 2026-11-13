@@ -17,9 +17,10 @@ _COST_QUANTUM = Decimal("0.000001")  # llm_usage.cost_usd is numeric(12, 6)
 class UsageCallback(BaseCallbackHandler):
     """Collects one LlmCall per model call, also for calls of a turn that later fails."""
 
-    def __init__(self, model: str) -> None:
+    def __init__(self, model: str, prompt_version: str | None) -> None:
         super().__init__()
         self.model = model  # the configured "provider:model", not what the API echoes back
+        self.prompt_version = prompt_version
         self.calls: list[LlmCall] = []
 
     def on_llm_end(
@@ -48,5 +49,6 @@ class UsageCallback(BaseCallbackHandler):
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
                 cost_usd=Decimal(str(cost)).quantize(_COST_QUANTUM) if cost is not None else None,
+                prompt_version=self.prompt_version,
             )
         )

@@ -19,10 +19,10 @@ from sobreplano.infrastructure.db.price_observation_repository import (
     SqlPriceObservationRepository,
 )
 from sobreplano.infrastructure.db.scrape_run_repository import SqlScrapeRunRepository
+from sobreplano.infrastructure.llm.providers import build_extractor, estimate_cost_usd
 from sobreplano.infrastructure.scraping.constructora_capital import ConstructoraCapitalSite
 from sobreplano.infrastructure.scraping.http_fetcher import HttpFetcher
 from sobreplano.infrastructure.scraping.londono_gomez import LondonoGomezSite
-from sobreplano.infrastructure.scraping.providers import build_extractor, estimate_cost_usd
 from sobreplano.infrastructure.scraping.raw_store import build_raw_page_store
 from sobreplano.infrastructure.settings import Settings
 

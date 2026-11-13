@@ -4,7 +4,7 @@ import pytest
 
 from sobreplano.application.scrape_developer import ScrapeReport
 from sobreplano.domain.scraping import ScrapeRunStatus
-from sobreplano.infrastructure.scraping.providers import estimate_cost_usd
+from sobreplano.infrastructure.llm.providers import estimate_cost_usd
 from sobreplano.interface.cli.scrape import main
 from sobreplano.interface.composition import format_summary
 

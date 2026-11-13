@@ -12,13 +12,13 @@ from pydantic import SecretStr
 
 from sobreplano.domain.errors import ExtractionError
 from sobreplano.domain.scraping import ExtractedProject, ExtractedUnitType
+from sobreplano.infrastructure.llm.providers import PROVIDERS, build_extractor
 from sobreplano.infrastructure.scraping import extraction_schema
 from sobreplano.infrastructure.scraping.openai_compatible_extractor import (
     MAX_PAGE_CHARS,
     OpenAICompatibleExtractor,
     UnavailableExtractor,
 )
-from sobreplano.infrastructure.scraping.providers import PROVIDERS, build_extractor
 from sobreplano.infrastructure.settings import Settings
 
 PAYLOAD: dict[str, Any] = {

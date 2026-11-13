@@ -5,10 +5,10 @@ import os
 import pytest
 
 from sobreplano.domain.scraping import ValidUnitType, validate_unit_type
+from sobreplano.infrastructure.llm.providers import build_extractor
 from sobreplano.infrastructure.scraping.openai_compatible_extractor import (
     OpenAICompatibleExtractor,
 )
-from sobreplano.infrastructure.scraping.providers import build_extractor
 from sobreplano.infrastructure.settings import load_settings
 
 pytestmark = [

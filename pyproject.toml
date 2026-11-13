@@ -19,6 +19,12 @@ dependencies = [
 ]
 
 [dependency-groups]
+# Advisor only: kept out of the scraper Lambda image (Dockerfile exports --no-default-groups).
+advisor = [
+    "langchain-openai>=1.8.0",
+    "langgraph>=1.2.21",
+    "langgraph-checkpoint-postgres>=3.2.0",
+]
 dev = [
     "boto3-stubs[s3,ssm]>=1.43.123",
     "import-linter>=2.15",
@@ -26,6 +32,9 @@ dev = [
     "pytest>=9.1.1",
     "ruff>=0.17.3",
 ]
+
+[tool.uv]
+default-groups = ["dev", "advisor"]
 
 [build-system]
 requires = ["uv_build>=0.13.4,<0.14"]
@@ -81,4 +90,7 @@ forbidden_modules = [
     "bs4",
     "boto3",
     "botocore",
+    "langgraph",
+    "langchain_core",
+    "langchain_openai",
 ]

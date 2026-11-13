@@ -2,12 +2,13 @@
 #   docker build --platform linux/arm64 --provenance=false -t sobreplano-scraper .
 
 # Stage 1: turn uv.lock into a hashed requirements file, runtime dependencies only.
+# --no-default-groups drops both dev and advisor: the scraper does not use LangGraph.
 FROM ghcr.io/astral-sh/uv:0.13.4 AS uv
 FROM public.ecr.aws/lambda/python:3.13 AS requirements
 COPY --from=uv /uv /usr/local/bin/uv
 COPY pyproject.toml uv.lock /build/
 # --no-emit-project: the package itself is copied as source below, not installed.
-RUN cd /build && uv export --frozen --no-dev --no-emit-project -o requirements.txt
+RUN cd /build && uv export --frozen --no-default-groups --no-emit-project -o requirements.txt
 
 # Stage 2: the Lambda image, without uv.
 FROM public.ecr.aws/lambda/python:3.13

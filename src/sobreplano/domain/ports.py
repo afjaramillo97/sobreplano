@@ -1,9 +1,11 @@
 """Ports: the repository interfaces that infrastructure implements."""
 
-from datetime import date
+from datetime import date, datetime
+from decimal import Decimal
 from typing import Protocol
 from uuid import UUID
 
+from sobreplano.domain.advisor import LlmCall
 from sobreplano.domain.catalog import Developer, GeoPoint, Project, UnitType
 from sobreplano.domain.listings import (
     DeveloperSummary,
@@ -106,3 +108,20 @@ class DeveloperSite(Protocol):
             PageParseError: if an in-scope page lacks its canonical URL or map link.
         """
         ...
+
+
+class LlmUsageRepository(Protocol):
+    """Append-only log of LLM calls with their tokens and cost. Does not commit."""
+
+    def add(self, feature: str, call: LlmCall, thread_id: UUID | None) -> None: ...
+    def cost_on(self, feature: str, day: date) -> Decimal: ...  # day in America/Bogota
+
+
+class AdvisorThreadRepository(Protocol):
+    """Advisor conversations: message count and last activity, never the messages."""
+
+    def create(self) -> UUID: ...
+    def get_turns(self, thread_id: UUID) -> int | None: ...  # None if it does not exist
+    def record_turn(self, thread_id: UUID) -> None: ...  # turns + 1, last_message_at = now()
+    def list_inactive_since(self, cutoff: datetime) -> list[UUID]: ...
+    def delete(self, thread_id: UUID) -> None: ...

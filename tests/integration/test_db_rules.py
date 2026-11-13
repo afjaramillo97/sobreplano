@@ -27,6 +27,12 @@ TABLES = {
     "scrape_runs",
     "scraped_pages",
     "page_extractions",
+    "llm_usage",
+    "advisor_threads",
+    "checkpoint_migrations",
+    "checkpoints",
+    "checkpoint_blobs",
+    "checkpoint_writes",
 }
 
 

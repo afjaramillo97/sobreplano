@@ -122,8 +122,8 @@ def tools(query: FakeQuery) -> dict[str, BaseTool]:
     return {tool.name: tool for tool in build_tools(query)}
 
 
-def call(tools: dict[str, BaseTool], name: str, **args: Any) -> dict[str, Any]:
-    return json.loads(tools[name].invoke(args))
+def call(tools: dict[str, BaseTool], tool_name: str, **args: Any) -> dict[str, Any]:
+    return json.loads(tools[tool_name].invoke(args))
 
 
 def test_there_are_seven_tools_with_descriptions(tools: dict[str, BaseTool]) -> None:
@@ -145,6 +145,7 @@ def test_search_passes_filters_sort_and_default_limit(
     call(
         tools,
         "search_projects",
+        name="Réflex",
         municipality="sabaneta",
         max_price=450_000_000,
         min_bedrooms=3,
@@ -153,6 +154,7 @@ def test_search_passes_filters_sort_and_default_limit(
     )
     [seen] = query.calls
     assert seen["filters"] == ProjectFilters(
+        name="Réflex",
         municipality=Municipality.SABANETA,
         max_price=450_000_000,
         min_bedrooms=3,

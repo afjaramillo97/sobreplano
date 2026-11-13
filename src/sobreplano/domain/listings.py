@@ -1,5 +1,6 @@
 """Read models for project listings: prices, price history and filters of the read API."""
 
+import unicodedata
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
@@ -143,14 +144,17 @@ class ProjectSort(StrEnum):
 class ProjectFilters:
     """Filters of a project listing; None means no filter.
 
+    name matches any project whose name contains it, ignoring case and accents.
     Price and area apply to the latest price and the base area (private if known, else built)
     of a unit type; a project matches when one unit type meets all of them at once.
 
     Raises:
-        DomainValidationError: if a number is not > 0 or a minimum is above its maximum.
+        DomainValidationError: if a number is not > 0, a minimum is above its maximum, or
+            name is blank.
     """
 
     municipality: Municipality | None = None
+    name: str | None = None  # part of the project name
     developer: str | None = None  # slug
     min_price: int | None = None
     max_price: int | None = None
@@ -159,6 +163,8 @@ class ProjectFilters:
     max_area: Decimal | None = None
 
     def __post_init__(self) -> None:
+        if self.name is not None and not self.name.strip():
+            raise DomainValidationError("name must not be blank")
         numbers = {
             "min_price": self.min_price,
             "max_price": self.max_price,
@@ -181,3 +187,14 @@ class ProjectFilters:
             and self.min_area > self.max_area
         ):
             raise DomainValidationError("min_area must be <= max_area")
+
+
+# Accented letters of Spanish and their plain form; the SQL side uses the same pairs.
+ACCENTED = "áàäâéèëêíìïîóòöôúùüûñ"
+PLAIN = "aaaaeeeeiiiioooouuuun"
+
+
+def normalize_name(text: str) -> str:
+    """Lowercase text without accents or surrounding spaces, to compare project names."""
+    decomposed = unicodedata.normalize("NFD", text.strip().lower())
+    return "".join(char for char in decomposed if not unicodedata.combining(char))

@@ -473,3 +473,28 @@ def test_list_developers_counts_projects_and_orders_by_name(
     assert by_slug[developer.slug].name == developer.name
     assert by_slug[empty.slug].projects == 0
     assert [s.name for s in summaries] == sorted(s.name for s in summaries)
+
+
+def test_name_filter_ignores_case_and_accents(
+    query: SqlProjectListingQuery, catalog: SqlCatalogRepository, developer: Developer
+) -> None:
+    tag = uuid4().hex[:6]  # local databases may hold real projects with similar names
+    reflex = add_project(catalog, developer, f"Réflex Living {tag}")
+    add_project(catalog, developer, f"Nature Aqua {tag}")
+
+    for term in (f"reflex living {tag}", f"RÉFLEX LIVING {tag}", f"flex living {tag}"):
+        page = query.list_projects(
+            filters=ProjectFilters(name=term), sort=ProjectSort.NAME, limit=10, offset=0
+        )
+        assert [item.slug for item in page.items] == [reflex.slug], term
+        assert page.total == 1
+
+
+def test_name_filter_escapes_like_wildcards(
+    query: SqlProjectListingQuery, catalog: SqlCatalogRepository, developer: Developer
+) -> None:
+    add_project(catalog, developer, f"Proyecto {uuid4().hex[:6]}")
+    page = query.list_projects(
+        filters=ProjectFilters(name="%_%zz-no-such-name"), sort=ProjectSort.NAME, limit=10, offset=0
+    )
+    assert page.total == 0

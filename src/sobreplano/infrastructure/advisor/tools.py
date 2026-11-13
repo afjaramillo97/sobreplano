@@ -41,7 +41,8 @@ from sobreplano.infrastructure.advisor.tool_schemas import (
 )
 
 SEARCH_DESCRIPTION = (
-    "Search new off-plan housing projects in the Aburrá Valley. Every filter is optional. "
+    "Search new off-plan housing projects in the Aburrá Valley. Every filter is optional; "
+    "filter by name to find the slug of a project the user names. "
     "Prices are in COP and are published 'from' prices. Returns the total number of matches "
     "and, per project, the unit types that meet the filters with their latest price and "
     "its observation date, price per m² and the change since the first observed price."
@@ -107,6 +108,7 @@ def build_tools(query: ProjectListingQuery) -> list[BaseTool]:
     """
 
     def search_projects(
+        name: str | None = None,
         municipality: Municipality | None = None,
         developer: str | None = None,
         min_price: int | None = None,
@@ -118,6 +120,7 @@ def build_tools(query: ProjectListingQuery) -> list[BaseTool]:
         limit: int = DEFAULT_SEARCH_LIMIT,
     ) -> str:
         filters = ProjectFilters(
+            name=name,
             municipality=municipality,
             developer=developer,
             min_price=min_price,

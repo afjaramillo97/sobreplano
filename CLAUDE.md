@@ -4,7 +4,7 @@
 
 Sobreplano is a portfolio project (AI Engineer): a search engine for new off-plan housing in the Aburrá Valley, Colombia, with a daily price history and an AI advisor. Its differentiator versus portals (Fincaraíz, Metrocuadrado, La Haus) is showing how much each project has risen since its first observed price.
 
-Status: week 3 of 8. Schema, read API and the first scraper (Londoño Gómez) are in place (SPECs 01–04); since SPEC 05 the scraper runs daily in AWS (Lambda + Supabase cloud); SPEC 06 adds Constructora Capital and reuses extractions by clean-text hash. No advisor yet. Budget: at most ~20 USD/month, so check cost before proposing any new service.
+Status: week 3 of 8. Schema, read API and the first scraper (Londoño Gómez) are in place (SPECs 01–04); since SPEC 05 the scraper runs daily in AWS (Lambda + Supabase cloud); SPEC 06 adds Constructora Capital and reuses extractions by clean-text hash; SPEC 08 adds the advisor (`POST /advisor/chat`, LangGraph, memory in Postgres). Budget: at most ~20 USD/month, so check cost before proposing any new service.
 
 ## Stack
 
@@ -93,7 +93,7 @@ API (docs at `/docs`):
 uv run --env-file .env uvicorn sobreplano.interface.api.main:app --reload   # http://localhost:8000
 ```
 
-Routes (SPEC 03, 07): `GET /health`; `GET /projects` (filters `municipality`, `developer`, `min_price`, `max_price`, `min_bedrooms`, `min_area`, `max_area`; `sort=name|price`; `limit`, `offset`); `GET /projects/{slug}` (unit types with price history, 404 if unknown); `GET /developers`. Queries live behind the `ProjectListingQuery` port, so the advisor can reuse them without HTTP.
+Routes (SPEC 03, 07, 08): `POST /advisor/chat` (`message`, optional `thread_id`; see `docs/advisor.md`); `GET /health`; `GET /projects` (filters `municipality`, `developer`, `min_price`, `max_price`, `min_bedrooms`, `min_area`, `max_area`; `sort=name|price`; `limit`, `offset`); `GET /projects/{slug}` (unit types with price history, 404 if unknown); `GET /developers`. Queries live behind the `ProjectListingQuery` port, so the advisor can reuse them without HTTP.
 
 Scraper (one pass per site per day; paid LLM calls, see `docs/scrapers/`):
 
@@ -104,6 +104,15 @@ uv run --env-file .env python -m sobreplano.interface.cli.scrape londono-gomez -
 uv run --env-file .env python -m sobreplano.interface.cli.scrape constructora-capital   # same flags; developer slugs are the keys of SITES
 RUN_LLM_TESTS=1 uv run --env-file .env pytest tests/llm   # optional paid test against the real API
 ```
+
+Advisor (SPEC 08; paid model calls, capped by `ADVISOR_DAILY_BUDGET_USD`):
+
+```
+uv run --env-file .env python -m sobreplano.interface.cli.advise                    # terminal chat
+uv run --env-file .env python -m sobreplano.interface.cli.advisor_cleanup --dry-run # conversations idle 7 days
+```
+
+LangGraph and LangChain stay in `infrastructure/advisor/` (import-linter) and in the `advisor` dependency group, which the scraper image excludes.
 
 Production (AWS account `sobreplano-prod`, `us-east-1`; details and first-apply steps in `docs/deploy.md`):
 
@@ -162,6 +171,8 @@ This file is an index, not a manual. When a topic needs depth (scrapers, schema,
 
 - Schema: `docs/schema.md`.
 - Scrapers: `docs/scrapers/` (one file per developer).
+- Advisor (graph, tools, limits, retention, cost): `docs/advisor.md`.
+- Ideas left out of a spec: `docs/backlog.md`.
 - Deploy, cloud database and production runs: `docs/deploy.md`.
 - AWS accounts, access and guardrails: `docs/aws-accounts.md`. Sign in with `eval "$(scripts/aws-sso.sh)"`.
 

@@ -18,6 +18,8 @@ from sqlalchemy import (
 from sqlalchemy.orm import InstrumentedAttribute, Session
 
 from sobreplano.domain.listings import (
+    ACCENTED,
+    PLAIN,
     DeveloperSummary,
     LatestPrice,
     PricePoint,
@@ -28,6 +30,7 @@ from sobreplano.domain.listings import (
     ProjectSort,
     UnitTypeDetail,
     UnitTypeListing,
+    normalize_name,
 )
 from sobreplano.infrastructure.db.geo import LAT, LON, to_geo_point
 from sobreplano.infrastructure.db.models import (
@@ -328,8 +331,12 @@ def _unit_type_conditions(
 
 
 def _project_conditions(filters: ProjectFilters) -> list[ColumnElement[bool]]:
-    """WHERE clauses for the project level filters: municipality and developer slug."""
+    """WHERE clauses for the project level filters: municipality, developer slug and name."""
     conditions: list[ColumnElement[bool]] = []
+    if filters.name is not None:
+        # translate() instead of the unaccent extension: no migration, same pairs as Python.
+        plain_name = func.translate(func.lower(ProjectRow.name), ACCENTED, PLAIN)
+        conditions.append(plain_name.contains(normalize_name(filters.name), autoescape=True))
     if filters.municipality is not None:
         conditions.append(ProjectRow.municipality == filters.municipality)
     if filters.developer is not None:

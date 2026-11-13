@@ -91,6 +91,16 @@ curl -s localhost:8000/projects/axis-ciudad-peldar \
 curl -s localhost:8000/developers
 ```
 
+The advisor (SPEC 08) answers in natural language with that same data and remembers the conversation by `thread_id`; it needs `OPENAI_API_KEY` in `.env`:
+
+```bash
+curl -s -X POST localhost:8000/advisor/chat -H 'content-type: application/json' \
+  -d '{"message": "Busco 3 alcobas en Sabaneta por menos de 450 millones"}'
+uv run --env-file .env python -m sobreplano.interface.cli.advise   # chat in the terminal
+```
+
+Tools, limits, retention and cost: [docs/advisor.md](docs/advisor.md).
+
 Tests: `uv run pytest -m "not integration"` needs no database; `uv run --env-file .env pytest` runs everything. Stop the database with `supabase stop`.
 
 Production (AWS, Terraform, deploys and how to check a run): [docs/deploy.md](docs/deploy.md).

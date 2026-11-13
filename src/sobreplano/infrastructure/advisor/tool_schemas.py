@@ -33,6 +33,11 @@ _DEFAULT_DOWN_PAYMENT = float(DEFAULT_DOWN_PAYMENT_PCT)
 class SearchProjectsArgs(BaseModel):
     """Filters of search_projects; every filter is optional."""
 
+    name: str | None = Field(
+        None,
+        description="Part of the project name, ignoring case and accents. Use it when the user "
+        "names a project, to get its slug.",
+    )
     municipality: Municipality | None = Field(None, description="Municipality of the valley.")
     developer: str | None = Field(None, description="Developer slug, from list_developers.")
     min_price: int | None = Field(None, gt=0, description="Minimum price in COP.")
@@ -54,14 +59,18 @@ class SearchProjectsArgs(BaseModel):
 class GetProjectArgs(BaseModel):
     """Argument of get_project."""
 
-    slug: str = Field(description="Project slug, as returned by search_projects.")
+    slug: str = Field(
+        description="Project slug from search_projects; never guess it, search by name first."
+    )
 
 
 class CompareProjectsArgs(BaseModel):
     """Argument of compare_projects."""
 
     slugs: list[str] = Field(
-        min_length=2, max_length=3, description="Two or three project slugs to compare."
+        min_length=2,
+        max_length=3,
+        description="Two or three project slugs from search_projects; never guess them.",
     )
 
 

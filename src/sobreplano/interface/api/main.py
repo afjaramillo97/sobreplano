@@ -7,7 +7,7 @@ from fastapi import FastAPI
 
 from sobreplano.infrastructure.db.engine import create_db_engine, create_session_factory
 from sobreplano.infrastructure.settings import Settings, load_settings
-from sobreplano.interface.api.routes import developers, health, projects
+from sobreplano.interface.api.routes import advisor, developers, health, projects
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -20,7 +20,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         # create_engine opens no connection, so nothing here blocks the event loop.
-        engine = create_db_engine((settings or load_settings()).database_url)
+        resolved = settings or load_settings()
+        engine = create_db_engine(resolved.database_url)
+        app.state.settings = resolved
         app.state.session_factory = create_session_factory(engine)
         yield
         engine.dispose()
@@ -29,6 +31,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(health.router)
     app.include_router(projects.router)
     app.include_router(developers.router)
+    app.include_router(advisor.router)
     return app
 
 

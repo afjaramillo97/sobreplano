@@ -167,6 +167,35 @@ def test_a_model_that_always_calls_tools_hits_the_limit_with_its_calls() -> None
     assert all(call.model == MODEL for call in raised.value.llm_calls)
 
 
+def unanswered_tool_calls(messages: list[BaseMessage]) -> list[str]:
+    answered = {message.tool_call_id for message in messages if isinstance(message, ToolMessage)}
+    return [
+        call["id"] or ""
+        for message in messages
+        if isinstance(message, AIMessage)
+        for call in message.tool_calls
+        if call["id"] not in answered
+    ]
+
+
+def test_orphan_tool_call_is_closed_so_the_thread_keeps_answering() -> None:
+    saver = InMemorySaver()
+    thread_id = uuid4()
+    model = ScriptedChatModel(script=[tool_call("list_developers")])
+    with pytest.raises(AdvisorLimitError):
+        make_advisor(model, saver).reply(thread_id, "Bucle")
+
+    model.script = [answer("Ya respondo.")]
+    reply = make_advisor(model, saver).reply(thread_id, "¿Sigues ahí?")
+
+    assert reply.text == "Ya respondo."
+    sent = model.seen[-1]
+    assert unanswered_tool_calls(sent) == []
+    closing = [m for m in sent if isinstance(m, ToolMessage) and "round limit" in m.text]
+    assert len(closing) == 1
+    assert closing[0].text == '{"error": "tool round limit reached"}'
+
+
 def test_provider_error_makes_the_advisor_unavailable() -> None:
     error = APIConnectionError(request=httpx2.Request("POST", "https://api.openai.com"))
     model = ScriptedChatModel(script=[answer("x")], error=error)

@@ -1,6 +1,6 @@
 # SPEC 08 — Asesor: grafo LangGraph con herramientas sobre los datos reales
 
-> **Estado:** aprobado
+> **Estado:** implementado
 > **Depende de:** SPEC 06, SPEC 07
 > **Fecha:** 2026-11-13
 > **Objetivo:** Que una persona pregunte en lenguaje natural (`POST /advisor/chat`) y un agente LangGraph le responda solo con datos de Sobreplano: buscar y comparar proyectos, explicar cuánto han subido, simular el crédito, calcular qué puede comprar y cuánto pagaría de cuota inicial mientras construyen, con memoria por conversación, registro de tokens y topes de costo.
@@ -320,24 +320,24 @@ Limpieza (`interface/cli/advisor_cleanup.py`): borra con `PostgresSaver.delete_t
 
 Cada criterio se verifica pegando el comando y su salida en el PR (constitución, principio 6).
 
-- [ ] `uv run pytest tests/unit/domain/test_finance.py` pasa con los tres ejemplos de la tabla: cuota 2.964.145, máximo 500.000.000 limitado por `savings` y 4.583.333 al mes.
-- [ ] `alembic upgrade head`, `downgrade -1` y `upgrade head` en local; `alembic check` limpio; una sola cabeza; la nube en `0007`.
-- [ ] `psql -c "select relname, relrowsecurity from pg_class where relname in ('llm_usage','advisor_threads','checkpoints','checkpoint_blobs','checkpoint_writes','checkpoint_migrations')"` muestra las seis con `t`.
-- [ ] Con la API local apuntando a la nube y `OPENAI_API_KEY`, cinco conversaciones pegadas en `docs/advisor.md`, cada una con sus `tools_used`:
-  - [ ] "Busco apartamento de 3 alcobas en Sabaneta por menos de 450 millones" usa `search_projects`, y cada precio de la respuesta trae fecha y enlace.
-  - [ ] En la misma conversación, "¿y cuánto ha subido el primero?" usa `get_project` sin repetir el nombre del proyecto.
-  - [ ] "Compara [proyecto A] y [proyecto B]" usa `compare_projects` y menciona el precio por m².
-  - [ ] "Gano 12 millones, tengo 150 ahorrados; con una tasa del 12 % a 20 años, ¿qué puedo comprar?" usa `max_affordable_price` y luego `search_projects` con `max_price`.
-  - [ ] "Si compro [proyecto] con entrega en 24 meses, ¿cuánto pago al mes de cuota inicial?" usa `down_payment_plan`.
-  - [ ] "What projects does Constructora Capital have in Envigado?" responde en inglés.
-- [ ] `select model, count(*), sum(input_tokens), sum(output_tokens), sum(cost_usd) from llm_usage group by 1` en la nube tiene una fila por llamada de esas conversaciones, y el costo total queda escrito en `docs/advisor.md`.
-- [ ] `curl -s -X POST localhost:8000/advisor/chat -H 'content-type: application/json' -d '{"message":""}' -o /dev/null -w "%{http_code}"` imprime `422`, y con un `thread_id` aleatorio imprime `404`.
-- [ ] Con `ADVISOR_DAILY_BUDGET_USD=0`, el mismo `curl` con un mensaje válido imprime `503` y no agrega filas a `llm_usage`.
-- [ ] Reiniciar la API y seguir una conversación por su `thread_id`: el asesor recuerda la pregunta anterior.
-- [ ] `uv run --env-file .env python -m sobreplano.interface.cli.advisor_cleanup --dry-run` corre y cuenta las conversaciones de más de 7 días.
-- [ ] `docker build` de la imagen del scraper y `pip list` dentro de ella no muestran `langgraph` ni `langchain-core`; la corrida programada siguiente al merge termina en `succeeded`.
-- [ ] Las convenciones de FastAPI siguen: `grep -rn "return HTTPException" src` vacío, `grep -rnE "= Depends\(" src` vacío, `async def` solo en el lifespan.
-- [ ] `uv run pytest -m "not integration"`, `uv run pyright` (0 errores) y `uv run lint-imports` (2 contratos, con `langgraph` y `langchain_*` prohibidos en `domain` y `application`) pasan; el CI del PR queda en verde con los tests de integración.
+- [x] `uv run pytest tests/unit/domain/test_finance.py` pasa con los tres ejemplos de la tabla: cuota 2.964.145, máximo 500.000.000 limitado por `savings` y 4.583.333 al mes.
+- [x] `alembic upgrade head`, `downgrade -1` y `upgrade head` en local; `alembic check` limpio; una sola cabeza; la nube en `0007`.
+- [x] `psql -c "select relname, relrowsecurity from pg_class where relname in ('llm_usage','advisor_threads','checkpoints','checkpoint_blobs','checkpoint_writes','checkpoint_migrations')"` muestra las seis con `t`. _(Local con `psql`; en la nube la misma consulta por SQLAlchemy, porque `psql` no está instalado.)_
+- [x] Con la API local apuntando a la nube y `OPENAI_API_KEY`, cinco conversaciones pegadas en `docs/advisor.md`, cada una con sus `tools_used`:
+  - [x] "Busco apartamento de 3 alcobas en Sabaneta por menos de 450 millones" usa `search_projects`, y cada precio de la respuesta trae fecha y enlace. _(Con 3 alcobas no hay resultados en la nube y el asesor lo dice sin inventar; fecha y enlace se verificaron con la variante de 2 alcobas, 1b en `docs/advisor.md`.)_
+  - [x] En la misma conversación, "¿y cuánto ha subido el primero?" usa `get_project` sin repetir el nombre del proyecto. _(En la conversación 1b.)_
+  - [x] "Compara [proyecto A] y [proyecto B]" usa `compare_projects` y menciona el precio por m². _(Después del filtro `name` y la regla 7 del prompt.)_
+  - [x] "Gano 12 millones, tengo 150 ahorrados; con una tasa del 12 % a 20 años, ¿qué puedo comprar?" usa `max_affordable_price` y luego `search_projects` con `max_price`. _(`max_price=500000000`, leído del checkpoint de la conversación.)_
+  - [x] "Si compro [proyecto] con entrega en 24 meses, ¿cuánto pago al mes de cuota inicial?" usa `down_payment_plan`.
+  - [x] "What projects does Constructora Capital have in Envigado?" responde en inglés.
+- [x] `select model, count(*), sum(input_tokens), sum(output_tokens), sum(cost_usd) from llm_usage group by 1` en la nube tiene una fila por llamada de esas conversaciones, y el costo total queda escrito en `docs/advisor.md`.
+- [x] `curl -s -X POST localhost:8000/advisor/chat -H 'content-type: application/json' -d '{"message":""}' -o /dev/null -w "%{http_code}"` imprime `422`, y con un `thread_id` aleatorio imprime `404`.
+- [x] Con `ADVISOR_DAILY_BUDGET_USD=0`, el mismo `curl` con un mensaje válido imprime `503` y no agrega filas a `llm_usage`.
+- [x] Reiniciar la API y seguir una conversación por su `thread_id`: el asesor recuerda la pregunta anterior.
+- [x] `uv run --env-file .env python -m sobreplano.interface.cli.advisor_cleanup --dry-run` corre y cuenta las conversaciones de más de 7 días.
+- [ ] `docker build` de la imagen del scraper y `pip list` dentro de ella no muestran `langgraph` ni `langchain-core`; la corrida programada siguiente al merge termina en `succeeded`. _(Imagen verificada en local con `pip list --path /var/task`, sin `langgraph` ni `langchain`; el deploy del merge terminó en verde. Falta la corrida programada del 14 nov.)_
+- [x] Las convenciones de FastAPI siguen: `grep -rn "return HTTPException" src` vacío, `grep -rnE "= Depends\(" src` vacío, `async def` solo en el lifespan.
+- [x] `uv run pytest -m "not integration"`, `uv run pyright` (0 errores) y `uv run lint-imports` (2 contratos, con `langgraph` y `langchain_*` prohibidos en `domain` y `application`) pasan; el CI del PR queda en verde con los tests de integración.
 
 ## Decisiones tomadas y descartadas
 

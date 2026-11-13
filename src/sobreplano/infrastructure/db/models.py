@@ -14,6 +14,7 @@ from sqlalchemy import (
     DateTime,
     Enum,
     ForeignKey,
+    Index,
     Integer,
     MetaData,
     Numeric,
@@ -198,3 +199,34 @@ class PageExtractionRow(IdMixin, CreatedAtMixin, Base):
     input_tokens: Mapped[int] = mapped_column(Integer)
     output_tokens: Mapped[int] = mapped_column(Integer)
     payload: Mapped[dict[str, object]] = mapped_column(JSONB)
+
+
+class LlmUsageRow(IdMixin, CreatedAtMixin, Base):
+    """Row of `llm_usage`: one advisor LLM call with its tokens and cost (migration 0007)."""
+
+    __tablename__ = "llm_usage"
+    __table_args__ = (
+        CheckConstraint("feature IN ('advisor')", name="feature_known"),
+        CheckConstraint("input_tokens >= 0 AND output_tokens >= 0", name="tokens_non_negative"),
+        Index("ix_llm_usage_created_at", "created_at"),
+    )
+
+    feature: Mapped[str] = mapped_column(Text)
+    # No foreign key: the usage record must outlive the conversation's deletion.
+    thread_id: Mapped[UUID | None] = mapped_column()
+    model: Mapped[str] = mapped_column(Text)
+    input_tokens: Mapped[int] = mapped_column(Integer)
+    output_tokens: Mapped[int] = mapped_column(Integer)
+    cost_usd: Mapped[Decimal | None] = mapped_column(Numeric(12, 6))
+
+
+class AdvisorThreadRow(IdMixin, CreatedAtMixin, Base):
+    """Row of `advisor_threads`: message count and last activity; messages live in checkpoints."""
+
+    __tablename__ = "advisor_threads"
+    __table_args__ = (CheckConstraint("turns >= 0", name="turns_non_negative"),)
+
+    last_message_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    turns: Mapped[int] = mapped_column(Integer, server_default="0")

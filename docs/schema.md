@@ -84,7 +84,29 @@ erDiagram
         jsonb payload "validated extraction"
         timestamptz created_at
     }
+    llm_usage {
+        uuid id PK
+        text feature "CHECK: advisor"
+        uuid thread_id "nullable, no FK"
+        text model "provider:model"
+        int input_tokens ">= 0"
+        int output_tokens ">= 0"
+        numeric cost_usd "nullable, 12,6"
+        timestamptz created_at "indexed"
+    }
+    advisor_threads {
+        uuid id PK
+        int turns ">= 0"
+        timestamptz last_message_at
+        timestamptz created_at
+    }
 ```
+
+The advisor's memory also uses the four tables of `langgraph-checkpoint-postgres` 3.2.0
+(`checkpoints`, `checkpoint_blobs`, `checkpoint_writes`, `checkpoint_migrations`). Migration `0007`
+creates them with the library's own SQL (without `CONCURRENTLY`) and marks its 10 migrations as
+applied; they have no SQLAlchemy model and `migrations/env.py` leaves them out of `alembic check`.
+A unit test fails if a new library version adds migrations.
 
 ## Rules the database enforces
 
@@ -93,6 +115,7 @@ erDiagram
 - **A unit type needs at least one area**, and any given area is greater than 0.
 - **Row-level security is on** for every table, `alembic_version` included, with no policies. The Supabase REST API gets no access; the application connects as the table owner and is unaffected.
 - **One extraction per HTML and model:** unique (`content_sha256`, `model`) in `page_extractions`, so an unchanged page is never sent to the model again, and switching models re-extracts instead of mixing results.
+- **`llm_usage` has no foreign key** to `advisor_threads`: the cost log must survive the deletion of a conversation after 7 days (`docs/advisor.md`).
 - **Municipality, source and scrape run status** are `varchar(16)` with a CHECK, not native Postgres enums, which are harder to change in a migration.
 
 ## Conventions

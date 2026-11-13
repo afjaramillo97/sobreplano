@@ -9,11 +9,14 @@ import pytest
 
 from sobreplano.domain.errors import DomainValidationError
 from sobreplano.domain.listings import (
+    ACCENTED,
+    PLAIN,
     AreaBasis,
     LatestPrice,
     PricePoint,
     ProjectFilters,
     UnitTypeListing,
+    normalize_name,
 )
 from sobreplano.domain.pricing import ObservationSource
 
@@ -130,3 +133,26 @@ def test_filters_accept_equal_minimum_and_maximum() -> None:
 def test_filters_reject_invalid_values(kwargs: dict[str, int | Decimal]) -> None:
     with pytest.raises(DomainValidationError):
         ProjectFilters(**kwargs)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("Réflex Living", "reflex living"),
+        ("  ÁRTIKO ", "artiko"),
+        ("Pingüino Ñandú", "pinguino nandu"),
+    ],
+)
+def test_normalize_name_drops_case_accents_and_spaces(text: str, expected: str) -> None:
+    assert normalize_name(text) == expected
+
+
+def test_accent_table_matches_normalize_name() -> None:
+    # The SQL side translates ACCENTED to PLAIN; both sides must agree.
+    assert normalize_name(ACCENTED) == PLAIN
+
+
+@pytest.mark.parametrize("name", ["", "   "])
+def test_blank_name_filter_is_rejected(name: str) -> None:
+    with pytest.raises(DomainValidationError, match="name"):
+        ProjectFilters(name=name)

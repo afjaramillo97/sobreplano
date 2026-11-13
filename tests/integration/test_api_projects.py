@@ -115,7 +115,13 @@ def test_invalid_query_params_give_422(client: TestClient, params: dict[str, str
 def test_openapi_lists_every_route(client: TestClient) -> None:
     paths = client.get("/openapi.json").json()["paths"]
 
-    assert sorted(paths) == ["/developers", "/health", "/projects", "/projects/{slug}"]
+    assert sorted(paths) == [
+        "/advisor/chat",
+        "/developers",
+        "/health",
+        "/projects",
+        "/projects/{slug}",
+    ]
 
 
 def test_detail_filters_and_developers_end_to_end(

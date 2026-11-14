@@ -9,7 +9,7 @@ from sobreplano.infrastructure.llm.prompt_store import APP_PROMPTS, load_prompt
 # Changing a prompt changes its version: update the value here in the same PR, so the change
 # shows up in review (SPEC 09).
 PINNED_VERSIONS = {
-    "advisor_system": "51a5d765091a",
+    "advisor_system": "d86c2ea4b1b9",
     "extractor": "6682e7fa8220",
 }
 
@@ -33,7 +33,7 @@ def test_version_is_the_short_sha256_of_the_exact_text(name: str) -> None:
 
 def test_text_is_read_as_stored() -> None:
     # The advisor prompt ended in a newline as a constant; the extractor prompt did not.
-    assert load_prompt(APP_PROMPTS, "advisor_system").text.endswith("separators.\n")
+    assert load_prompt(APP_PROMPTS, "advisor_system").text.endswith("English.\n")
     assert load_prompt(APP_PROMPTS, "extractor").text.endswith("missing values.")
 
 

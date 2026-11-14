@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     # Advisor (SPEC 08): same "provider:model" table as the extractor. The final model is
     # chosen by the golden set of SPEC 09.
     advisor_model: str = "openai:gpt-6-luna"
-    advisor_reasoning_effort: str = "low"
+    advisor_reasoning_effort: str = "medium"  # SPEC 09: Luna passes the golden set at medium, not at low
     # 0.20 USD a day caps the worst month at 6 USD, inside the project's 20 USD budget.
     advisor_daily_budget_usd: Decimal = Decimal("0.20")
     advisor_max_turns: int = Field(default=20, gt=0)

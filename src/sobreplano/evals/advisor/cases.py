@@ -70,6 +70,9 @@ class EvalCase(_Strict):
     id: Annotated[str, Field(pattern=r"^[A-Z]\d+$")]
     category: Category
     description: str
+    # Written after the prompt was tuned on the other cases: the report shows them apart, so
+    # that tuning is not confused with learning the cases.
+    holdout: bool = False
     turns: Annotated[list[Turn], Field(min_length=1)]
 
 

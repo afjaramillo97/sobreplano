@@ -615,6 +615,113 @@
           }
         }
       ]
+    },
+    {
+      "id": "X1",
+      "category": "search",
+      "description": "Holdout: búsqueda con un tope de presupuesto dicho con otras palabras",
+      "holdout": true,
+      "turns": [
+        {
+          "message": "Quiero algo en Envigado que no pase de 450 millones",
+          "expect": {
+            "tools_required": [
+              "search_projects"
+            ],
+            "tool_args": {
+              "search_projects": {
+                "municipality": {
+                  "eq": "envigado"
+                },
+                "max_price": {
+                  "lte": 450000000
+                }
+              }
+            },
+            "must_mention": [
+              "Parque Ficticio"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "X2",
+      "category": "compare",
+      "description": "Holdout: comparar sin pedirlo con la palabra comparar",
+      "holdout": true,
+      "turns": [
+        {
+          "message": "¿Cuál me conviene más, Jardín de Prueba o Reserva Simulada?",
+          "expect": {
+            "tools_required": [
+              "compare_projects"
+            ],
+            "tool_args": {
+              "compare_projects": {
+                "slugs": {
+                  "contains": [
+                    "jardin-de-prueba",
+                    "reserva-simulada"
+                  ]
+                }
+              }
+            },
+            "rubrics": [
+              "helpful"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "X3",
+      "category": "search",
+      "description": "Holdout: pregunta en inglés sobre el proyecto más barato de un municipio",
+      "holdout": true,
+      "turns": [
+        {
+          "message": "What is the cheapest project in Bello?",
+          "expect": {
+            "tools_required": [
+              "search_projects"
+            ],
+            "tool_args": {
+              "search_projects": {
+                "municipality": {
+                  "eq": "bello"
+                }
+              }
+            },
+            "must_mention": [
+              "Viento Imaginario"
+            ],
+            "language": "en"
+          }
+        }
+      ]
+    },
+    {
+      "id": "X4",
+      "category": "history",
+      "description": "Holdout: subida de precio pedida en pesos, no en porcentaje (acepta la búsqueda o el detalle)",
+      "holdout": true,
+      "turns": [
+        {
+          "message": "¿Cuántos pesos ha subido el Tipo B de Mirador del Ejemplo desde la primera vez que lo vieron?",
+          "expect": {
+            "tools_required": [
+              "search_projects|get_project"
+            ],
+            "rubrics": [
+              "helpful"
+            ],
+            "must_mention": [
+              "35.000.000"
+            ]
+          }
+        }
+      ]
     }
   ]
 }

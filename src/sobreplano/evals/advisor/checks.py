@@ -54,12 +54,16 @@ def check_completed(turn: TurnTrace) -> CheckResult:
 
 
 def check_tools(expect: TurnExpectation, turn: TurnTrace) -> CheckResult:
-    """Required tools all appear (in order if tools_ordered) and no forbidden one does."""
+    """Required tools all appear (in order if tools_ordered) and no forbidden one does.
+
+    An entry "a|b" is met by a call to either; entries with fewer alternatives are matched
+    first, so a call is not spent on a flexible entry that a strict one needed.
+    """
     called = [call.name for call in turn.tool_calls]
     problems: list[str] = []
-    missing = Counter(expect.tools_required) - Counter(called)
+    missing = _missing_tools(expect.tools_required, called)
     if missing:
-        problems.append(f"missing {sorted(missing.elements())}")
+        problems.append(f"missing {missing}")
     elif expect.tools_ordered and not _is_subsequence(expect.tools_required, called):
         problems.append(f"expected order {expect.tools_required}")
     forbidden = sorted({name for name in called if name in expect.tools_forbidden})
@@ -220,9 +224,27 @@ def _describe(expectations: dict[str, ArgExpectation]) -> str:
     )
 
 
+def tool_alternatives(requirement: str) -> list[str]:
+    """The tools that satisfy one tools_required entry: "a|b" accepts a or b."""
+    return requirement.split("|")
+
+
+def _missing_tools(required: list[str], called: list[str]) -> list[str]:
+    """Required entries with no call left to satisfy them; each call satisfies one entry."""
+    remaining = Counter(called)
+    missing: list[str] = []
+    for requirement in sorted(required, key=lambda r: len(tool_alternatives(r))):
+        chosen = next((n for n in tool_alternatives(requirement) if remaining[n] > 0), None)
+        if chosen is None:
+            missing.append(requirement)
+        else:
+            remaining[chosen] -= 1
+    return sorted(missing)
+
+
 def _is_subsequence(wanted: list[str], called: list[str]) -> bool:
     remaining = iter(called)
-    return all(name in remaining for name in wanted)
+    return all(any(name in tool_alternatives(w) for name in remaining) for w in wanted)
 
 
 def _source_numbers(turns: Sequence[TurnTrace]) -> list[Decimal]:

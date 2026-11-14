@@ -19,6 +19,7 @@ from sobreplano.evals.advisor.checks import (
     check_tool_args,
     check_tools,
     run_checks,
+    tool_alternatives,
 )
 
 URL = "https://example.com/proyectos/mirador-del-ejemplo"
@@ -77,6 +78,28 @@ def test_required_tools_with_repeats() -> None:
     assert check_tools(expect(tools_required=["search_projects", "search_projects"]), turn).passed
     result = check_tools(expect(tools_required=["get_project", "get_project"]), turn)
     assert not result.passed and "missing ['get_project']" in result.detail
+
+
+def test_a_required_tool_can_have_alternatives() -> None:
+    wanted = expect(tools_required=["search_projects|get_project"])
+    assert check_tools(wanted, trace("x", call("search_projects"))).passed
+    assert check_tools(wanted, trace("x", call("get_project"))).passed
+    result = check_tools(wanted, trace("x", call("compare_projects")))
+    assert not result.passed and "missing ['search_projects|get_project']" in result.detail
+
+
+def test_alternatives_do_not_steal_the_call_a_strict_entry_needs() -> None:
+    wanted = expect(tools_required=["search_projects|get_project", "get_project"])
+    assert not check_tools(wanted, trace("x", call("get_project"))).passed
+    assert check_tools(wanted, trace("x", call("get_project"), call("search_projects"))).passed
+
+
+def test_ordered_alternatives() -> None:
+    wanted = expect(
+        tools_required=["search_projects|get_project", "compare_projects"], tools_ordered=True
+    )
+    assert check_tools(wanted, trace("x", call("get_project"), call("compare_projects"))).passed
+    assert not check_tools(wanted, trace("x", call("compare_projects"), call("get_project"))).passed
 
 
 def test_ordered_tools() -> None:
@@ -278,9 +301,9 @@ def test_turn_that_did_not_complete_only_reports_completed() -> None:
 # case file
 
 
-def test_case_file_has_the_24_cases_of_the_spec() -> None:
+def test_case_file_has_the_cases_of_the_spec_and_its_holdouts() -> None:
     cases = load_cases()
-    assert len(cases) == 24
+    assert len(cases) == 28
     assert {case.id for case in cases if len(case.turns) == 2} == {"H1", "M1", "M2"}
     by_category = {
         category: 0 for category in ["search", "history", "compare", "finance", "scope", "memory"]
@@ -288,13 +311,17 @@ def test_case_file_has_the_24_cases_of_the_spec() -> None:
     for case in cases:
         by_category[case.category] += 1
     assert by_category == {
-        "search": 7,
-        "history": 3,
-        "compare": 2,
+        "search": 9,
+        "history": 4,
+        "compare": 3,
         "finance": 6,
         "scope": 4,
         "memory": 2,
     }
+
+
+def test_holdout_cases_are_the_four_written_after_tuning() -> None:
+    assert {case.id for case in load_cases() if case.holdout} == {"X1", "X2", "X3", "X4"}
 
 
 def test_case_tools_exist() -> None:
@@ -310,7 +337,7 @@ def test_case_tools_exist() -> None:
     for case in load_cases():
         for turn in case.turns:
             named = {
-                *turn.expect.tools_required,
+                *(n for entry in turn.expect.tools_required for n in tool_alternatives(entry)),
                 *turn.expect.tools_forbidden,
                 *turn.expect.tool_args,
             }

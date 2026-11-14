@@ -79,6 +79,7 @@ class CaseRun(BaseModel):
 
     case_id: str
     category: Category
+    holdout: bool = False
     run: int  # 1-based, up to --repeat
     thread_id: str
     turns: list[TurnResult]
@@ -235,6 +236,15 @@ class AdvisorRunReport(BaseModel):
             f"Passed in all {self.repeat} runs: "
             f"{len(consistent)}/{len(consistent) + len(inconsistent)}"
             + (f" · failed at least once: {', '.join(inconsistent)}" if inconsistent else ""),
+        ]
+        holdout = sorted({run.case_id for run in self.runs if run.holdout})
+        if holdout:
+            ok_holdout = [case for case in holdout if case in consistent]
+            lines.append(
+                f"Holdout cases ({', '.join(holdout)}), written after tuning the prompt: "
+                f"passed in all {self.repeat} runs: {len(ok_holdout)}/{len(holdout)}"
+            )
+        lines += [
             "",
             "## Failed turns",
             "",
@@ -249,7 +259,8 @@ class AdvisorRunReport(BaseModel):
             lines.append("None.")
         for run, turn in failed:
             lines.append(
-                f"- **{run.case_id}** run {run.run} turn {turn.turn}: {turn.trace.message}"
+                f"- **{run.case_id}**{' (holdout)' if run.holdout else ''} run {run.run} "
+                f"turn {turn.turn}: {turn.trace.message}"
             )
             lines += [f"  - `{c.name}`: {c.detail}" for c in turn.checks if not c.passed]
             lines += [
@@ -330,7 +341,12 @@ def run_case(
         )
         history.append(trace)
     return CaseRun(
-        case_id=case.id, category=case.category, run=run, thread_id=str(thread_id), turns=results
+        case_id=case.id,
+        category=case.category,
+        holdout=case.holdout,
+        run=run,
+        thread_id=str(thread_id),
+        turns=results,
     )
 
 

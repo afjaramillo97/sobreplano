@@ -1,0 +1,89 @@
+# Advisor golden set (SPEC 09): paid model calls, so only when the advisor can change, with a
+# cost cap and an OpenAI key from a CI-only project with its own monthly limit.
+# Not a required check: a check that does not run on a PR would block its merge.
+# On/off: repository variable RUN_ADVISOR_EVALS ("true" runs it on PRs; Settings > Secrets and
+# variables > Actions > Variables). A manual run (workflow_dispatch) always runs.
+name: evals
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/sobreplano/infrastructure/advisor/**"
+      - "src/sobreplano/infrastructure/llm/**"
+      - "src/sobreplano/evals/**"
+      - "evals/advisor/**"
+  workflow_dispatch:
+    inputs:
+      model:
+        description: 'Advisor model, "provider:model" (empty: ADVISOR_MODEL default)'
+        required: false
+        default: ""
+      repeat:
+        description: "Runs per case"
+        required: false
+        default: "1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: evals-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  advisor:
+    if: github.event_name == 'workflow_dispatch' || vars.RUN_ADVISOR_EVALS == 'true'
+    runs-on: ubuntu-latest
+    env:
+      # Settings needs it; the evals themselves use the isolated sobreplano_evals database.
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:54322/postgres
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      # Optional: without them there are no traces and nothing fails.
+      LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+      LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+    steps:
+      # Secrets cannot be read in `if`, so a step says whether the key is there. Without it
+      # the job skips the run with a notice instead of failing the PR.
+      - name: check the OpenAI key
+        id: key
+        run: |
+          if [ -n "$OPENAI_API_KEY" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::OPENAI_API_KEY secret is not set: advisor evals skipped"
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.key.outputs.present == 'true'
+      - uses: astral-sh/setup-uv@v6
+        if: steps.key.outputs.present == 'true'
+      - run: uv sync --locked
+        if: steps.key.outputs.present == 'true'
+      - uses: supabase/setup-cli@v1
+        if: steps.key.outputs.present == 'true'
+        with:
+          version: latest
+      - name: supabase db start
+        if: steps.key.outputs.present == 'true'
+        run: supabase db start
+      - name: prepare the evals database
+        if: steps.key.outputs.present == 'true'
+        run: uv run python -m sobreplano.evals.advisor prepare
+      - name: run the advisor golden set
+        if: steps.key.outputs.present == 'true'
+        env:
+          MODEL: ${{ inputs.model }}
+          REPEAT: ${{ inputs.repeat || '1' }}
+        run: |
+          uv run python -m sobreplano.evals.advisor run \
+            --repeat "$REPEAT" --max-cost 0.25 ${MODEL:+--model "$MODEL"}
+      - name: report to the job summary
+        if: always() && steps.key.outputs.present == 'true'
+        run: cat evals/reports/advisor-*.md >> "$GITHUB_STEP_SUMMARY" || echo "No report." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.key.outputs.present == 'true'
+        with:
+          name: advisor-evals-report
+          path: evals/reports/
+          if-no-files-found: ignore

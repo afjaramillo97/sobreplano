@@ -77,6 +77,7 @@ def test_prompt_has_a_section_per_rubric() -> None:
         "asks_rate",
         "scope",
         "privacy",
+        "no_false_claims",
     }
 
 

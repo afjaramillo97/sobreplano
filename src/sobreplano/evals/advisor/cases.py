@@ -8,7 +8,13 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 CASES_PATH = Path("evals/advisor/cases.json")
 
 RubricId = Literal[
-    "helpful", "price_citation", "simulation_caveat", "asks_rate", "scope", "privacy"
+    "helpful",
+    "price_citation",
+    "simulation_caveat",
+    "asks_rate",
+    "scope",
+    "privacy",
+    "no_false_claims",
 ]
 Category = Literal["search", "history", "compare", "finance", "scope", "memory"]
 

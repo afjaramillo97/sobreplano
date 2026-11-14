@@ -101,6 +101,8 @@ uv run --env-file .env python -m sobreplano.interface.cli.advise   # chat in the
 
 Tools, limits, retention and cost: [docs/advisor.md](docs/advisor.md).
 
+Quality is measured, not assumed (SPEC 09): a golden set of 28 advisor cases with deterministic checks and an LLM judge calibrated against hand labels, and a golden set for the extraction. They pick the cheapest model that passes (Luna as the advisor at `medium` reasoning, and as the extractor), and run in CI on advisor changes. Numbers, method and decisions: [docs/evals.md](docs/evals.md).
+
 Tests: `uv run pytest -m "not integration"` needs no database; `uv run --env-file .env pytest` runs everything. Stop the database with `supabase stop`.
 
 Production (AWS, Terraform, deploys and how to check a run): [docs/deploy.md](docs/deploy.md).

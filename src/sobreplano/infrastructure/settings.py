@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     extraction_model: str = "openai:gpt-6-luna"
     # Optional: without it nothing new is extracted, but stored extractions are still reused.
     openai_api_key: SecretStr | None = None
+    # Optional: OpenRouter models ("openrouter:qwen/qwen3.7-flash"), same rule as OpenAI's key.
+    openrouter_api_key: SecretStr | None = None
     # "data/raw" (default, local disk) or "s3://bucket-name".
     raw_store: str = "data/raw"
     # Advisor (SPEC 08): same "provider:model" table as the extractor. The final model is

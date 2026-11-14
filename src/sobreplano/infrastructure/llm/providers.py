@@ -33,8 +33,20 @@ PROVIDERS: dict[str, Provider] = {
         api_key=lambda settings: settings.openai_api_key,
         extra={"reasoning_effort": "none"},
     ),
-    # Qwen goes here once tested: its base_url, QWEN_API_KEY and its documented switch to
-    # turn reasoning off.
+    # One key for many models (SPEC 09). Checked on openrouter.ai on 2026-11-13: Qwen3.7 Flash
+    # reasons by default but allows turning it off; require_parameters routes only to
+    # providers that honor every parameter, response_format included.
+    "openrouter": Provider(
+        base_url="https://openrouter.ai/api/v1",
+        api_key_variable="OPENROUTER_API_KEY",
+        api_key=lambda settings: settings.openrouter_api_key,
+        extra={
+            "extra_body": {
+                "reasoning": {"enabled": False},
+                "provider": {"require_parameters": True},
+            }
+        },
+    ),
 }
 
 
@@ -44,6 +56,8 @@ MODEL_PRICES_USD_PER_MILLION: dict[str, tuple[float, float]] = {
     "openai:gpt-6-luna": (0.10, 0.50),
     # Judge of the advisor evals (SPEC 09); checked on developers.openai.com on 2026-11-13.
     "openai:gpt-6.1-terra": (1.00, 5.00),
+    # Extraction candidate (SPEC 09); OpenRouter's listed price on 2026-11-13.
+    "openrouter:qwen/qwen3.7-flash": (0.03, 0.13),
 }
 
 

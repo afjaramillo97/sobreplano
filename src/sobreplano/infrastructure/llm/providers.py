@@ -34,18 +34,14 @@ PROVIDERS: dict[str, Provider] = {
         extra={"reasoning_effort": "none"},
     ),
     # One key for many models (SPEC 09). Checked on openrouter.ai on 2026-11-13: Qwen3.7 Flash
-    # reasons by default but allows turning it off; require_parameters routes only to
-    # providers that honor every parameter, response_format included.
+    # reasons by default but allows turning it off. No require_parameters: with a json_schema
+    # response_format it asks for "structured_outputs", which the catalog does not list, and
+    # answers 404; the schema is validated by pydantic after the call anyway.
     "openrouter": Provider(
         base_url="https://openrouter.ai/api/v1",
         api_key_variable="OPENROUTER_API_KEY",
         api_key=lambda settings: settings.openrouter_api_key,
-        extra={
-            "extra_body": {
-                "reasoning": {"enabled": False},
-                "provider": {"require_parameters": True},
-            }
-        },
+        extra={"extra_body": {"reasoning": {"enabled": False}}},
     ),
 }
 
@@ -56,6 +52,8 @@ MODEL_PRICES_USD_PER_MILLION: dict[str, tuple[float, float]] = {
     "openai:gpt-6-luna": (0.10, 0.50),
     # Judge of the advisor evals (SPEC 09); checked on developers.openai.com on 2026-11-13.
     "openai:gpt-6.1-terra": (1.00, 5.00),
+    # Stronger judge candidate; developers.openai.com pricing page, 2026-11-13.
+    "openai:gpt-6.1-sol": (2.00, 10.00),
     # Extraction candidate (SPEC 09); OpenRouter's listed price on 2026-11-13.
     "openrouter:qwen/qwen3.7-flash": (0.03, 0.13),
 }

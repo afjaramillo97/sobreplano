@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from sobreplano.domain.advisor import LlmCall
 from sobreplano.domain.errors import ExtractionError
 from sobreplano.domain.ports import ProjectPageExtractor
+from sobreplano.domain.scraping import normalize_unit_type_name
 from sobreplano.evals.extraction.golden import ExtractionLabel
 from sobreplano.evals.extraction.metrics import Metrics, PageScore, score_page, total
 from sobreplano.evals.report import CostCap, UsageTotals
@@ -47,6 +48,23 @@ class ExtractionRunReport(BaseModel):
         """Totals over every page of every run."""
         return total([page.score for page in self.pages])
 
+    def renamed_between_runs(self) -> list[str]:
+        """Unit types the model named differently in different runs of the same page.
+
+        A new name for the same unit type would split its price history, so this is worth
+        watching even though it has no threshold. Needs at least two runs.
+        """
+        names: dict[tuple[str, str], dict[str, str]] = {}
+        for page in self.pages:
+            for label_name, given in page.score.pairing.items():
+                seen = names.setdefault((page.score.case_id, label_name), {})
+                seen.setdefault(normalize_unit_type_name(given), given)
+        return [
+            f"{case_id}: {label_name!r} named {' / '.join(repr(n) for n in seen.values())}"
+            for (case_id, label_name), seen in names.items()
+            if len(seen) > 1
+        ]
+
     def failures(self) -> list[str]:
         """Why the run fails: incomplete, or a threshold the model misses as the extractor."""
         reasons = [] if self.complete else [f"incomplete: {self.stop_reason}"]
@@ -75,6 +93,8 @@ class ExtractionRunReport(BaseModel):
             f"| Unit type recall | {m.type_recall:.1%} ({m.matched}/{m.expected}) | ≥ 95% |",
             f"| Unit type precision | {m.type_precision:.1%} ({m.matched}/{m.found}) | |",
             f"| Field accuracy | {m.field_accuracy:.1%} | ≥ 95% |",
+            f"| Unit type name exact (of matched) | {m.name_accuracy:.1%} "
+            f"({m.names_exact}/{m.matched}) | |",
             f"| Project name and neighborhood | {m.project_accuracy:.1%} | |",
             f"| Perfect pages | {m.perfect_pages}/{m.pages} | |",
             f"| Extraction errors | {m.errors} | |",
@@ -90,6 +110,10 @@ class ExtractionRunReport(BaseModel):
             if page.score.error:
                 lines.append(f"  - error: {page.score.error}")
             lines += [f"  - {problem}" for problem in page.score.problems]
+        if self.repeat >= 2:
+            renamed = self.renamed_between_runs()
+            lines += ["", f"## Unit types renamed between runs: {len(renamed)}", ""]
+            lines += [f"- {entry}" for entry in renamed] or ["None."]
         lines += [
             "",
             "## Cost and latency",

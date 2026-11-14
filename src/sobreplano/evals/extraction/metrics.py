@@ -1,4 +1,4 @@
-"""Extraction metrics: unit types paired by normalized name, then compared field by field."""
+"""Extraction metrics: unit types paired by name, then by area, then compared field by field."""
 
 from collections.abc import Sequence
 from decimal import Decimal
@@ -25,10 +25,12 @@ class PageScore(BaseModel):
     expected: int  # unit types in the label
     found: int  # unit types the model returned
     matched: int
+    names_exact: int = 0  # matched unit types whose name is the label's, normalized
     prices_ok: int
     fields_ok: int
     project_ok: bool
     problems: list[str]
+    pairing: dict[str, str] = {}  # label unit type name -> name the model gave it
     error: str | None = None  # the extraction failed: nothing was found
 
     @property
@@ -50,6 +52,7 @@ class Metrics(BaseModel):
     expected: int
     found: int
     matched: int
+    names_exact: int = 0
     prices_ok: int
     fields_ok: int
     projects_ok: int
@@ -65,6 +68,11 @@ class Metrics(BaseModel):
     def type_precision(self) -> float:
         """Unit types the model found that exist in the label."""
         return self.matched / self.found if self.found else 1.0
+
+    @property
+    def name_accuracy(self) -> float:
+        """Matched unit types named exactly as in the label (report only, no threshold)."""
+        return self.names_exact / self.matched if self.matched else 1.0
 
     @property
     def price_accuracy(self) -> float:
@@ -99,7 +107,12 @@ class Metrics(BaseModel):
 def pair_unit_types(
     expected: Sequence[ExpectedUnitType], found: Sequence[ExtractedUnitType]
 ) -> tuple[list[tuple[ExpectedUnitType, ExtractedUnitType]], list[str], list[str]]:
-    """Pairs with the same normalized name, in page order; repeated names pair one by one.
+    """Pairs by normalized name first, then by area; repeated names pair one by one.
+
+    What is left pairs by area (total or private, within AREA_TOLERANCE) only when the area
+    is unambiguous: one leftover label unit and one leftover found unit share it. Models
+    drop or add words such as "Planta" or "Área Total"; the area still says which unit type it
+    is. Two leftovers with the same area are a tie, and a tie pairs nothing.
 
     Returns the pairs, the expected names left unpaired and the found names left unpaired.
     """
@@ -107,15 +120,33 @@ def pair_unit_types(
     for unit in found:
         available.setdefault(normalize_unit_type_name(unit.name), []).append(unit)
     pairs: list[tuple[ExpectedUnitType, ExtractedUnitType]] = []
-    missing: list[str] = []
+    unpaired: list[ExpectedUnitType] = []
     for unit in expected:
         candidates = available.get(normalize_unit_type_name(unit.name), [])
         if candidates:
             pairs.append((unit, candidates.pop(0)))
         else:
-            missing.append(unit.name)
-    extra = [unit.name for units in available.values() for unit in units]
-    return pairs, missing, extra
+            unpaired.append(unit)
+
+    leftovers = [unit for units in available.values() for unit in units]
+    missing: list[str] = []
+    for want in unpaired:
+        same_area = [got for got in leftovers if _share_area(want, got)]
+        if len(same_area) == 1 and (
+            sum(_share_area(other, same_area[0]) for other in unpaired) == 1
+        ):
+            pairs.append((want, same_area[0]))
+            leftovers.remove(same_area[0])
+        else:
+            missing.append(want.name)
+    return pairs, missing, [unit.name for unit in leftovers]
+
+
+def _share_area(want: ExpectedUnitType, got: ExtractedUnitType) -> bool:
+    """True if any area of want (total or private) is within tolerance of any area of got."""
+    wanted = [a for a in (want.total_area_m2, want.private_area_m2) if a is not None]
+    gotten = [a for a in (got.total_area_m2, got.private_area_m2) if a is not None]
+    return any(abs(Decimal(str(w)) - g) <= AREA_TOLERANCE for w in wanted for g in gotten)
 
 
 def score_page(
@@ -126,8 +157,9 @@ def score_page(
     pairs, missing, extra = pair_unit_types(label.unit_types, found)
     problems = [f"missing unit type {name!r}" for name in missing]
     problems += [f"extra unit type {name!r}" for name in extra]
-    prices_ok = fields_ok = 0
+    prices_ok = fields_ok = names_exact = 0
     for want, got in pairs:
+        names_exact += normalize_unit_type_name(want.name) == normalize_unit_type_name(got.name)
         if want.price_cop == got.price_cop:
             prices_ok += 1
         else:
@@ -154,10 +186,12 @@ def score_page(
         expected=len(label.unit_types),
         found=len(found),
         matched=len(pairs),
+        names_exact=names_exact,
         prices_ok=prices_ok,
         fields_ok=fields_ok,
         project_ok=project_ok,
         problems=problems,
+        pairing={want.name: got.name for want, got in pairs},
         error=error,
     )
 
@@ -169,6 +203,7 @@ def total(scores: Sequence[PageScore]) -> Metrics:
         expected=sum(s.expected for s in scores),
         found=sum(s.found for s in scores),
         matched=sum(s.matched for s in scores),
+        names_exact=sum(s.names_exact for s in scores),
         prices_ok=sum(s.prices_ok for s in scores),
         fields_ok=sum(s.fields_ok for s in scores),
         projects_ok=sum(s.project_ok for s in scores),

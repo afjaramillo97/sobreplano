@@ -81,7 +81,8 @@ def test_identical_extraction_is_perfect() -> None:
 
 def test_missing_and_extra_unit_types_lower_recall_and_precision() -> None:
     score = score_page(
-        label(expected("Tipo 1"), expected("Tipo 2")), project(found("Tipo 1"), found("Tipo 9"))
+        label(expected("Tipo 1"), expected("Tipo 2", total_area_m2=70.0, private_area_m2=65.0)),
+        project(found("Tipo 1"), found("Tipo 9")),
     )
     assert (score.expected, score.found, score.matched) == (2, 2, 1)
     assert "missing unit type 'Tipo 2'" in score.problems
@@ -100,6 +101,73 @@ def test_repeated_names_pair_one_by_one_in_order() -> None:
         (310_000_000, 310_000_000),
     ]
     assert (missing, extra) == ([], ["Tipo A"])
+
+
+@pytest.mark.parametrize(
+    ("label_name", "model_name"),
+    [
+        ("Planta Apartamento 48.40 m2 Área Total", "Planta Apartamento 48.40 m2"),
+        ("Planta Apartamento 66.40 m2 Área Total", "Apartamento 66.40 m2 Área Total"),
+        ("Planta Apartamento 30.10 m2 Área Total", "Apartamento 30.10 m2"),
+    ],
+)
+def test_a_renamed_unit_type_pairs_by_its_area(label_name: str, model_name: str) -> None:
+    pairs, missing, extra = pair_unit_types(
+        [expected(label_name, total_area_m2=48.4, private_area_m2=None)],
+        [found(model_name, total_area_m2=Decimal("48.43"), private_area_m2=None)],
+    )
+    assert [(want.name, got.name) for want, got in pairs] == [(label_name, model_name)]
+    assert (missing, extra) == ([], [])
+
+
+def test_the_exact_name_wins_over_the_area() -> None:
+    pairs, _, _ = pair_unit_types(
+        [expected("Tipo A", total_area_m2=50.0), expected("Tipo B", total_area_m2=50.0)],
+        [
+            found("Tipo B", total_area_m2=Decimal("50.0")),
+            found("Tipo A", total_area_m2=Decimal("50.0")),
+        ],
+    )
+    assert [(want.name, got.name) for want, got in pairs] == [
+        ("Tipo A", "Tipo A"),
+        ("Tipo B", "Tipo B"),
+    ]
+
+
+def test_two_unit_types_with_the_same_area_do_not_pair() -> None:
+    pairs, missing, extra = pair_unit_types(
+        [
+            expected("Tipo 1 Torre 1", total_area_m2=60.0, private_area_m2=None),
+            expected("Tipo 1 Torre 2", total_area_m2=60.0, private_area_m2=None),
+        ],
+        [found("Unidad X", total_area_m2=Decimal("60.0"), private_area_m2=None)],
+    )
+    assert pairs == []
+    assert (missing, extra) == (["Tipo 1 Torre 1", "Tipo 1 Torre 2"], ["Unidad X"])
+    # And the other way round: one label unit, two found units with that area.
+    pairs, _, extra = pair_unit_types(
+        [expected("Tipo 1", total_area_m2=60.0, private_area_m2=None)],
+        [
+            found("X", total_area_m2=Decimal("60.0"), private_area_m2=None),
+            found("Y", total_area_m2=Decimal("60.0"), private_area_m2=None),
+        ],
+    )
+    assert pairs == [] and extra == ["X", "Y"]
+
+
+def test_names_exact_and_pairing_are_recorded() -> None:
+    score = score_page(
+        label(
+            expected("Tipo 1", total_area_m2=48.4, private_area_m2=None),
+            expected("Tipo 2", total_area_m2=70.0, private_area_m2=None),
+        ),
+        project(
+            found("Tipo 1", total_area_m2=Decimal("48.4"), private_area_m2=None),
+            found("Apto 70", total_area_m2=Decimal("70.0"), private_area_m2=None),
+        ),
+    )
+    assert (score.matched, score.names_exact) == (2, 1)
+    assert score.pairing == {"Tipo 1": "Tipo 1", "Tipo 2": "Apto 70"}
 
 
 @pytest.mark.parametrize(

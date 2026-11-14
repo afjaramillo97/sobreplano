@@ -216,7 +216,7 @@ def test_openrouter_request_turns_reasoning_off_and_requires_parameters() -> Non
     [body] = api.bodies
     assert body["model"] == "qwen/qwen3.7-flash"
     assert body["reasoning"] == {"enabled": False}
-    assert body["provider"] == {"require_parameters": True}
+    assert "provider" not in body
     assert "reasoning_effort" not in body
     assert body["response_format"]["type"] == "json_schema"
     assert result.model == "openrouter:qwen/qwen3.7-flash"

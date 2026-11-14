@@ -319,7 +319,7 @@ class ExtractionLabel(BaseModel):
     unit_types: list[ExpectedUnitType]
 ```
 
-Métricas (`metrics.py`), con tipologías emparejadas por `normalize_unit_type_name`:
+Métricas (`metrics.py`). Las tipologías se emparejan primero por nombre normalizado exacto (`normalize_unit_type_name`). Con las que sobran se empareja por área (total o privada, diferencia ≤ 0,05 m²) solo si esa área es única entre las sobrantes de la etiqueta y entre las sobrantes de la predicción; si hay empate, no se empareja. Los modelos quitan o agregan palabras como «Planta» o «Área Total» y el área sigue diciendo de qué tipología se trata (ajuste del 14 nov: con nombres exactos Luna daba 72,1 % de recall solo por eso):
 
 | Métrica | Definición |
 | --- | --- |
@@ -327,6 +327,8 @@ Métricas (`metrics.py`), con tipologías emparejadas por `normalize_unit_type_n
 | Precisión de tipologías | encontradas que existen en la etiqueta / encontradas |
 | Exactitud de precio | precios iguales (incluido `null` con `null`) / tipologías emparejadas |
 | Exactitud de campos | áreas con diferencia ≤ 0,05 m², alcobas y baños iguales / campos emparejados |
+| Nombre exacto | emparejadas cuyo nombre normalizado es el de la etiqueta / emparejadas. Solo se reporta, sin umbral |
+| Renombradas entre corridas | con `--repeat` ≥ 2: tipologías que el modelo nombró distinto en corridas de la misma página. Solo se reporta, sin umbral |
 | Proyecto | nombre y barrio iguales sin tildes ni mayúsculas |
 | Páginas perfectas | páginas sin ningún error |
 

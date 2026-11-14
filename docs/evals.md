@@ -177,3 +177,87 @@ except `price_citation`.
 
 The golden set has 24 cases and 3 runs, so a difference of one or two turns is noise; the
 gap between 16/24 and 24/24 stable cases is not.
+
+### Iteration on Luna (2026-11-14)
+
+Terra passes and Luna did not, so Luna was improved with general changes (not tailored to a
+case) and measured again. Terra and the judge were not touched.
+
+**What changed** (advisor prompt `51a5d765091a` → `d86c2ea4b1b9`):
+
+- The tools return the arithmetic already done: `change_since_first_cop` (the rise or fall in
+  pesos next to the percentage) in `search_projects`, `get_project` and `compare_projects`, and
+  `down_payment_cop` and `loan_cop` of the maximum price in `max_affordable_price`. The failure
+  of F6 (Luna computed the loan as price minus savings) had no tool figure to copy: the old
+  `max_loan_cop` is what the income supports, not what the price needs. It was a real failure,
+  not a false positive of `numbers.py`.
+- The prompt forbids computing any figure (differences, sums, percentages, loan amounts) and
+  ends with a language rule.
+- `search_projects` says that any budget or ceiling goes in `max_price`; `compare_projects` says
+  to use it every time the user asks to compare.
+- Four new cases, marked `holdout` in the case file and in the report (they were written after
+  the changes above were decided, so they measure whether the changes generalize): X1 search
+  with a ceiling said in other words, X2 "which suits me more" between two projects, X3 a
+  question in English, X4 a rise in pesos. (They were H4 to H7 in the reports of that run; H
+  stays for history cases.)
+
+Deterministic checks only (no judge), 3 runs per case. The first column is the baseline of the
+section above (24 cases); the others have the 28 cases of now.
+
+| | Luna before (low) | Luna after, `low` | Luna after, `medium` | Terra (before) |
+| --- | --- | --- | --- | --- |
+| Cases | 24 | 28 | 28 | 24 |
+| tools | 65/66 (98.5 %) | 74/78 (94.9 %) | 75/78 (96.2 %) | 66/66 |
+| tool_args | 43/45 (95.6 %) | 53/57 (93.0 %) | 54/57 (94.7 %) | 45/45 |
+| grounded (100 %) | 80/81 (98.8 %) | 92/93 (98.9 %) | **93/93** | 81/81 |
+| language | 79/81 (97.5 %) | 92/93 (98.9 %) | 93/93 | 81/81 |
+| Cases stable in 3 runs | 16/24 | 25/28 | 27/28 | 24/24 |
+| Holdout stable | | 3/4 | 3/4 | |
+| Result | fails (`grounded`) | fails (`grounded`) | **passes** | passes |
+| Advisor cost | 0.038 USD | 0.048 USD | 0.051 USD | 0.372 USD |
+| Cost per message | 0.00047 USD | 0.00051 USD | 0.00055 USD | 0.00459 USD |
+| Latency per turn | 4.0 s | 4.6 s | 5.7 s | 5.2 s |
+
+What the iteration shows:
+
+- With `reasoning_effort=medium` Luna passes every threshold at about 12 % of Terra's cost per
+  message. With `low`, the current setting, it still fails `grounded` once (F6 run 1: a
+  figure with no source, and an answer in Spanish to the English question).
+- The stability went from 16/24 to 27/28 cases. The remaining unstable case is the holdout X4
+  (then H7), and it was a case problem, not a model one: Luna answered "35.000.000" correctly
+  and cited it, but from `search_projects`, which now already carried `change_since_first_cop`,
+  while the case demanded `get_project`. X4 (antes H7) corregido el 14 nov:
+  `change_since_first_cop` llegó a `search_projects` en esta iteración; la expectativa cambió
+  por la herramienta, no por el prompt. It now accepts either tool (`"search_projects|get_project"`
+  in `tools_required`) and demands the figure 35.000.000 in the answer; `grounded` and
+  `cites_source` still apply.
+- F3 (search with the affordable price as ceiling) failed once at `low` and never at `medium`.
+- Not measured: the judge's rubrics, so `price_citation` and the others are untested on the
+  new prompt. They need a run with the judge before the choice is final.
+- Total spend of the two runs: 0.099 USD. `ADVISOR_REASONING_EFFORT` is an environment
+  variable (see the decision below).
+
+### Run with the judge and decision
+
+Luna with `reasoning_effort=medium`, new prompt, 28 cases, 1 run each, judged by Terra
+(2026-11-14, 0.050 USD: 0.017 advisor and 0.033 judge): **every threshold passes**, including
+the only calibrated rubric.
+
+| | Luna `medium` |
+| --- | --- |
+| tools, tool_args, mentions, cites_source | 100 % |
+| grounded (100 %) | 31/31 |
+| language | 30/31 (96.8 %; S3 answered in English to a Spanish question) |
+| `price_citation` (calibrated, ≥ 85 %) | 18/18 |
+| Other rubrics (report only) | all 100 % |
+| Holdout X1–X4 | 4/4 |
+| Cost per message | about 0.00055 USD (Terra: 0.00459, about 8 times more) |
+
+**Decision:** Luna with `reasoning_effort=medium` is the advisor. It is the cheapest option
+that passes every threshold: Terra also passes, at about 8 times the cost per message. The
+default of `ADVISOR_REASONING_EFFORT` in `Settings` and `.env.example` is now `medium`
+(a local `.env` that sets it keeps its value). `ADVISOR_MODEL` stays `openai:gpt-6-luna`.
+
+Caveats: one run per case in the last measurement (the 3-run runs above used the checks
+only), and only `price_citation` is calibrated, so the other rubrics say little.
+

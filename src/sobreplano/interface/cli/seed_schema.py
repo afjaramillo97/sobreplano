@@ -1,6 +1,7 @@
 """Pydantic schema of seeds/projects.json, validated before anything touches the database."""
 
 from decimal import Decimal
+from itertools import pairwise
 from typing import Annotated, Self
 from uuid import UUID, uuid4
 
@@ -36,20 +37,34 @@ class SeedObservation(_Strict):
 
 
 class SeedUnitType(_Strict):
-    """A unit type with its first manual price observation."""
+    """A unit type with its latest manual price observation and, optionally, earlier ones."""
 
     name: Name
     private_area_m2: Decimal | None = None
     built_area_m2: Decimal | None = None
     bedrooms: Annotated[int, Field(ge=0)]
     bathrooms: Annotated[int, Field(ge=0)]
-    observation: SeedObservation
+    # None for a unit type the developer lists without a price.
+    observation: SeedObservation | None = None
+    # Observations before `observation`, oldest first (the evals catalog uses it).
+    history: list[SeedObservation] = []
 
     @model_validator(mode="after")
     def _build_once_to_validate(self) -> Self:
         # Reuse the domain rules (areas) instead of copying them here.
         self.to_unit_type(uuid4())
+        if self.history and self.observation is None:
+            raise ValueError(f"unit type {self.name!r} has history but no observation")
+        dates = [o.observed_at for o in self.history]
+        if self.observation is not None:
+            dates.append(self.observation.observed_at)
+        if any(earlier >= later for earlier, later in pairwise(dates)):
+            raise ValueError(f"observations of unit type {self.name!r} are not in date order")
         return self
+
+    def observations(self) -> list[SeedObservation]:
+        """History and latest observation, oldest first."""
+        return [*self.history, *([self.observation] if self.observation is not None else [])]
 
     def to_unit_type(self, project_id: UUID) -> UnitType:
         """Build the domain entity with a fresh id.
@@ -76,19 +91,28 @@ class SeedProject(_Strict):
     slug: Slug
     municipality: Municipality
     neighborhood: str | None = None
-    lat: float
-    lon: float
+    # Both or neither: None while the developer publishes no map.
+    lat: float | None = None
+    lon: float | None = None
     source_url: Url
     unit_types: Annotated[list[SeedUnitType], Field(min_length=1)]
 
     @model_validator(mode="after")
     def _validate_location_and_names(self) -> Self:
+        if (self.lat is None) != (self.lon is None):
+            raise ValueError(f"project {self.slug!r} needs both lat and lon, or neither")
         # GeoPoint holds the Aburrá Valley range check; building it raises on swapped lat/lon.
-        GeoPoint(lat=self.lat, lon=self.lon)
+        self.location()
         names = [unit_type.name for unit_type in self.unit_types]
         if len(set(names)) != len(names):
             raise ValueError(f"duplicate unit type names in project {self.slug!r}")
         return self
+
+    def location(self) -> GeoPoint | None:
+        """The project's point, or None when the seed gives no coordinates."""
+        if self.lat is None or self.lon is None:
+            return None
+        return GeoPoint(lat=self.lat, lon=self.lon)
 
     def to_developer(self) -> Developer:
         """Build the domain developer with a fresh id."""
@@ -108,7 +132,7 @@ class SeedProject(_Strict):
             slug=self.slug,
             municipality=self.municipality,
             neighborhood=self.neighborhood,
-            location=GeoPoint(lat=self.lat, lon=self.lon),
+            location=self.location(),
             source_url=self.source_url,
         )
 

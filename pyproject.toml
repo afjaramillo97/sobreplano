@@ -69,6 +69,8 @@ include_external_packages = true
 name = "Layers"
 type = "layers"
 layers = [
+    # Evals run the real system; nothing in the app may import them.
+    "sobreplano.evals",
     "sobreplano.interface",
     "sobreplano.application | sobreplano.infrastructure",
     "sobreplano.domain",

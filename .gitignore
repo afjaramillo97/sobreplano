@@ -236,3 +236,6 @@ test-results/
 tfplan*
 .env.*
 !.env.example
+# Evals: local cache of the extraction golden set (scraped data) and run reports
+.evals/
+evals/reports/

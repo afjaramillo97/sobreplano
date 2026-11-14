@@ -67,7 +67,7 @@ turn ends in too many tool rounds. Calls of a model without a price in
 | Variable | Default |
 | --- | --- |
 | `ADVISOR_MODEL` | `openai:gpt-6-luna` (same provider table as the extractor) |
-| `ADVISOR_REASONING_EFFORT` | `low` |
+| `ADVISOR_REASONING_EFFORT` | `medium` (SPEC 09: Luna passes the golden set at `medium`, not at `low`) |
 | `ADVISOR_DAILY_BUDGET_USD` | `0.20` |
 | `ADVISOR_MAX_TURNS` | `20` |
 

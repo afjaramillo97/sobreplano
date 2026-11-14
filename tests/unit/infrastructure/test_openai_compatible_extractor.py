@@ -16,6 +16,7 @@ from sobreplano.infrastructure.llm.providers import PROVIDERS, build_extractor
 from sobreplano.infrastructure.scraping import extraction_schema
 from sobreplano.infrastructure.scraping.openai_compatible_extractor import (
     MAX_PAGE_CHARS,
+    PROMPT,
     OpenAICompatibleExtractor,
     UnavailableExtractor,
 )
@@ -95,6 +96,7 @@ def test_result_keeps_model_tokens_and_domain_project() -> None:
         1200,
         150,
     )
+    assert result.prompt_version == PROMPT.version
     assert result.project == ExtractedProject(
         name="Réflex Living",
         neighborhood="Pan de Azúcar",
@@ -183,6 +185,8 @@ def test_factory_without_key_still_builds_for_reuse(key: str | None) -> None:
     extractor = build_extractor(settings(key=key))
     assert isinstance(extractor, UnavailableExtractor)
     assert extractor.model == "openai:gpt-6-luna"
+    # Same version as the real extractor, or no stored extraction would ever be reused.
+    assert extractor.prompt_version == PROMPT.version
     with pytest.raises(ExtractionError, match="OPENAI_API_KEY"):
         extractor.extract("texto")
 
@@ -191,3 +195,46 @@ def test_factory_without_key_still_builds_for_reuse(key: str | None) -> None:
 def test_factory_fails_at_startup_on_a_bad_model(model: str) -> None:
     with pytest.raises(ValueError, match="EXTRACTION_MODEL"):
         build_extractor(settings(model=model))
+
+
+def test_openrouter_request_turns_reasoning_off_and_requires_parameters() -> None:
+    api = FakeApi(httpx2.Response(200, json=completion()))
+    client = OpenAI(
+        api_key="test-key",
+        max_retries=0,
+        http_client=httpx2.Client(transport=httpx2.MockTransport(api.handler)),
+    )
+    extractor = OpenAICompatibleExtractor(
+        client,
+        model="openrouter:qwen/qwen3.7-flash",
+        api_model="qwen/qwen3.7-flash",
+        extra=PROVIDERS["openrouter"].extra,
+    )
+
+    result = extractor.extract("Tipo 1 Desde $426.706.000")
+
+    [body] = api.bodies
+    assert body["model"] == "qwen/qwen3.7-flash"
+    assert body["reasoning"] == {"enabled": False}
+    assert "provider" not in body
+    assert "reasoning_effort" not in body
+    assert body["response_format"]["type"] == "json_schema"
+    assert result.model == "openrouter:qwen/qwen3.7-flash"
+
+
+def test_factory_builds_the_openrouter_extractor() -> None:
+    configured = Settings(
+        database_url="postgresql+psycopg://x",
+        extraction_model="openrouter:qwen/qwen3.7-flash",
+        openrouter_api_key=SecretStr("sk-or-test"),
+    )
+    extractor = build_extractor(configured)
+    assert isinstance(extractor, OpenAICompatibleExtractor)
+    assert extractor.model == "openrouter:qwen/qwen3.7-flash"
+
+
+def test_openrouter_without_key_still_builds_for_reuse() -> None:
+    extractor = build_extractor(settings(model="openrouter:qwen/qwen3.7-flash"))
+    assert isinstance(extractor, UnavailableExtractor)
+    with pytest.raises(ExtractionError, match="OPENROUTER_API_KEY"):
+        extractor.extract("texto")

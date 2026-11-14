@@ -7,6 +7,7 @@ from uuid import uuid4
 
 import httpx2
 import pytest
+from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.outputs import ChatGeneration, ChatResult, LLMResult
@@ -24,9 +25,8 @@ from sobreplano.domain.listings import (
     ProjectSort,
 )
 from sobreplano.infrastructure.advisor.chat_models import build_chat_model
-from sobreplano.infrastructure.advisor.graph import MAX_TOOL_ROUNDS, recent_messages
+from sobreplano.infrastructure.advisor.graph import MAX_TOOL_ROUNDS, SYSTEM_PROMPT, recent_messages
 from sobreplano.infrastructure.advisor.langgraph_advisor import LangGraphAdvisor
-from sobreplano.infrastructure.advisor.prompts import SYSTEM_PROMPT
 from sobreplano.infrastructure.advisor.tools import build_tools
 from sobreplano.infrastructure.advisor.usage_callback import UsageCallback
 from sobreplano.infrastructure.settings import Settings
@@ -121,6 +121,7 @@ def test_every_llm_call_has_model_tokens_and_cost() -> None:
     assert len(reply.llm_calls) == 2
     for call in reply.llm_calls:
         assert (call.model, call.input_tokens, call.output_tokens) == (MODEL, 1000, 100)
+        assert call.prompt_version == SYSTEM_PROMPT.version
         # 1000 * 0.10 + 100 * 0.50 per million tokens.
         assert call.cost_usd == Decimal("0.000150")
 
@@ -130,7 +131,7 @@ def test_system_prompt_goes_first() -> None:
     make_advisor(model).reply(uuid4(), "Hola")
     first = model.seen[0][0]
     assert isinstance(first, SystemMessage)
-    assert first.content == SYSTEM_PROMPT
+    assert first.content == SYSTEM_PROMPT.text
 
 
 def test_second_question_in_the_same_thread_sees_the_first() -> None:
@@ -167,6 +168,68 @@ def test_a_model_that_always_calls_tools_hits_the_limit_with_its_calls() -> None
     assert all(call.model == MODEL for call in raised.value.llm_calls)
 
 
+def unanswered_tool_calls(messages: list[BaseMessage]) -> list[str]:
+    answered = {message.tool_call_id for message in messages if isinstance(message, ToolMessage)}
+    return [
+        call["id"] or ""
+        for message in messages
+        if isinstance(message, AIMessage)
+        for call in message.tool_calls
+        if call["id"] not in answered
+    ]
+
+
+def test_orphan_tool_call_is_closed_so_the_thread_keeps_answering() -> None:
+    saver = InMemorySaver()
+    thread_id = uuid4()
+    model = ScriptedChatModel(script=[tool_call("list_developers")])
+    with pytest.raises(AdvisorLimitError):
+        make_advisor(model, saver).reply(thread_id, "Bucle")
+
+    model.script = [answer("Ya respondo.")]
+    reply = make_advisor(model, saver).reply(thread_id, "¿Sigues ahí?")
+
+    assert reply.text == "Ya respondo."
+    sent = model.seen[-1]
+    assert unanswered_tool_calls(sent) == []
+    closing = [m for m in sent if isinstance(m, ToolMessage) and "round limit" in m.text]
+    assert len(closing) == 1
+    assert closing[0].text == '{"error": "tool round limit reached"}'
+
+
+class MetadataRecorder(BaseCallbackHandler):
+    """Records the metadata of every chain run, as the Langfuse handler would read it."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.metadata: list[dict[str, Any]] = []
+
+    def on_chain_start(self, serialized: dict[str, Any] | None, inputs: Any, **kwargs: Any) -> None:
+        self.metadata.append(dict(kwargs.get("metadata") or {}))
+
+
+def test_extra_callbacks_get_the_session_tags_and_prompt_version() -> None:
+    recorder = MetadataRecorder()
+    model = ScriptedChatModel(script=[answer("Hola.")])
+    thread_id = uuid4()
+    advisor = LangGraphAdvisor(
+        chat_model=lambda: model,
+        model_name=MODEL,
+        tools=build_tools(EmptyQuery()),
+        checkpointer=InMemorySaver(),
+        callbacks=[recorder],
+        tags=["cli"],
+    )
+
+    advisor.reply(thread_id, "Hola")
+
+    root = recorder.metadata[0]
+    assert root["langfuse_session_id"] == str(thread_id)
+    assert root["langfuse_tags"] == ["cli"]
+    assert root["prompt_version"] == SYSTEM_PROMPT.version
+    assert root["model"] == MODEL
+
+
 def test_provider_error_makes_the_advisor_unavailable() -> None:
     error = APIConnectionError(request=httpx2.Request("POST", "https://api.openai.com"))
     model = ScriptedChatModel(script=[answer("x")], error=error)
@@ -185,6 +248,34 @@ def test_repeated_tools_are_kept_in_order() -> None:
     )
     reply = make_advisor(model).reply(uuid4(), "Busca")
     assert reply.tools_used == ["search_projects", "get_project", "search_projects"]
+
+
+def test_tool_calls_keep_arguments_and_results_in_order() -> None:
+    model = ScriptedChatModel(
+        script=[
+            tool_call("search_projects", municipality="sabaneta"),
+            tool_call("list_developers"),
+            answer("Fin."),
+        ]
+    )
+    reply = make_advisor(model).reply(uuid4(), "Busca")
+
+    assert [call.name for call in reply.tool_calls] == ["search_projects", "list_developers"]
+    assert reply.tool_calls[0].args == {"municipality": "sabaneta"}
+    assert '"total":0' in reply.tool_calls[0].output
+    assert reply.tool_calls[1].args == {}
+    assert reply.tool_calls[1].output == '{"developers":[]}'
+
+
+def test_tool_call_with_bad_arguments_records_the_error() -> None:
+    model = ScriptedChatModel(
+        script=[tool_call("search_projects", min_price=-1), answer("Corrijo.")]
+    )
+    reply = make_advisor(model).reply(uuid4(), "Busca")
+
+    [call] = reply.tool_calls
+    assert call.args == {"min_price": -1}
+    assert "min_price: Input should be greater than 0" in call.output
 
 
 def test_recent_messages_cuts_at_a_user_message() -> None:
@@ -207,7 +298,7 @@ def test_recent_messages_keeps_everything_when_short() -> None:
 
 
 def test_usage_callback_without_metadata_counts_zero_and_unknown_model_costs_none() -> None:
-    callback = UsageCallback("openai:unpriced")
+    callback = UsageCallback("openai:unpriced", None)
     callback.on_llm_end(
         LLMResult(generations=[[ChatGeneration(message=AIMessage(content="x"))]]),
         run_id=uuid4(),

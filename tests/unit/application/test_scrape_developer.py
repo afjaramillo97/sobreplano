@@ -26,6 +26,7 @@ from sobreplano.domain.scraping import (
 LISTING = "https://example.com/proyectos"
 NOW = datetime(2026, 10, 30, 15, 0, tzinfo=UTC)
 MODEL = "openai:gpt-6-luna"
+PROMPT_VERSION = "aaaaaaaaaaaa"
 
 
 def unit(
@@ -114,6 +115,7 @@ class FakeStore:
 
 class FakeExtractor:
     model = MODEL
+    prompt_version = PROMPT_VERSION
 
     def __init__(self) -> None:
         self.projects: dict[str, ExtractedProject | Exception] = {}
@@ -124,15 +126,21 @@ class FakeExtractor:
         result = self.projects[page_text]
         if isinstance(result, Exception):
             raise result
-        return ExtractionResult(model=MODEL, input_tokens=1000, output_tokens=100, project=result)
+        return ExtractionResult(
+            model=MODEL,
+            input_tokens=1000,
+            output_tokens=100,
+            project=result,
+            prompt_version=self.prompt_version,
+        )
 
 
 @dataclass
 class FakeRuns:
     started: list[ScrapeRun] = field(default_factory=list[ScrapeRun])
     pages: list[tuple[UUID, ScrapedPage]] = field(default_factory=list[tuple[UUID, ScrapedPage]])
-    extractions: dict[tuple[str, str], ExtractionResult] = field(
-        default_factory=dict[tuple[str, str], ExtractionResult]
+    extractions: dict[tuple[str, str, str], ExtractionResult] = field(
+        default_factory=dict[tuple[str, str, str], ExtractionResult]
     )
     finished: list[ScrapeRun] = field(default_factory=list[ScrapeRun])
     locked_by_another_run: bool = False
@@ -162,11 +170,13 @@ class FakeRuns:
     def record_page(self, run_id: UUID, page: ScrapedPage) -> None:
         self.pages.append((run_id, page))
 
-    def find_extraction(self, text_sha256: str, model: str) -> ExtractionResult | None:
-        return self.extractions.get((text_sha256, model))
+    def find_extraction(
+        self, text_sha256: str, model: str, prompt_version: str
+    ) -> ExtractionResult | None:
+        return self.extractions.get((text_sha256, model, prompt_version))
 
     def save_extraction(self, text_sha256: str, result: ExtractionResult) -> None:
-        self.extractions[(text_sha256, result.model)] = result
+        self.extractions[(text_sha256, result.model, result.prompt_version)] = result
 
     def finish(self, run: ScrapeRun) -> None:
         self.finished.append(run)
@@ -387,6 +397,18 @@ def test_changed_clean_text_is_extracted_again(world: World) -> None:
 
     assert world.extractor.calls == ["texto nuevo de primavela"]
     assert (report.extractions_new, report.extractions_reused) == (1, 1)
+
+
+def test_a_new_prompt_version_extracts_again_instead_of_reusing(world: World) -> None:
+    world.use_case().execute()
+    world.extractor.calls.clear()
+    world.extractor.prompt_version = "bbbbbbbbbbbb"
+
+    report = world.use_case().execute(force=True)
+
+    assert len(world.extractor.calls) == 2
+    assert (report.extractions_new, report.extractions_reused) == (2, 0)
+    assert {key[2] for key in world.runs.extractions} == {PROMPT_VERSION, "bbbbbbbbbbbb"}
 
 
 def test_out_of_scope_page_is_not_stored_extracted_or_recorded(world: World) -> None:

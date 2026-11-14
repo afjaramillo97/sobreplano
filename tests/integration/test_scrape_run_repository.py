@@ -27,6 +27,7 @@ SHA = "a" * 64
 TEXT_SHA = "e" * 64
 FETCHED_AT = datetime(2026, 10, 30, 15, 0, tzinfo=UTC)
 RESULT = ExtractionResult(
+    prompt_version="6682e7fa8220",
     model="openai:gpt-6-luna",
     input_tokens=1200,
     output_tokens=150,
@@ -108,24 +109,36 @@ def test_same_url_twice_in_a_run_is_rejected(
 
 def test_extraction_round_trip(runs: SqlScrapeRunRepository) -> None:
     sha = "b" * 64
-    assert runs.find_extraction(sha, RESULT.model) is None
+    assert runs.find_extraction(sha, RESULT.model, RESULT.prompt_version) is None
     runs.save_extraction(sha, RESULT)
-    assert runs.find_extraction(sha, RESULT.model) == RESULT
+    assert runs.find_extraction(sha, RESULT.model, RESULT.prompt_version) == RESULT
 
 
 def test_extraction_is_keyed_by_model_too(runs: SqlScrapeRunRepository) -> None:
     sha = "c" * 64
     runs.save_extraction(sha, RESULT)
-    assert runs.find_extraction(sha, "qwen:qwen3.7-flash") is None
+    assert runs.find_extraction(sha, "qwen:qwen3.7-flash", RESULT.prompt_version) is None
 
 
-def test_same_text_and_model_twice_hits_the_renamed_unique(session: Session) -> None:
-    # Checks the unique on the migrated schema, under its renamed name (migration 0004).
+def test_extraction_is_keyed_by_prompt_version_too(runs: SqlScrapeRunRepository) -> None:
+    sha = "9" * 64
+    runs.save_extraction(sha, RESULT)
+    assert runs.find_extraction(sha, RESULT.model, "000000000000") is None
+    # A new prompt's extraction of the same text is stored next to the old one.
+    newer = replace(RESULT, prompt_version="000000000000", input_tokens=7)
+    runs.save_extraction(sha, newer)
+    assert runs.find_extraction(sha, RESULT.model, "000000000000") == newer
+    assert runs.find_extraction(sha, RESULT.model, RESULT.prompt_version) == RESULT
+
+
+def test_same_text_model_and_prompt_twice_hits_the_unique(session: Session) -> None:
+    # Checks the unique on the migrated schema, under its name from migration 0008.
     def row() -> PageExtractionRow:
         return PageExtractionRow(
             id=uuid4(),
             text_sha256="f" * 64,
             model=RESULT.model,
+            prompt_version=RESULT.prompt_version,
             input_tokens=1,
             output_tokens=1,
             payload={},
@@ -134,7 +147,9 @@ def test_same_text_and_model_twice_hits_the_renamed_unique(session: Session) -> 
     session.add(row())
     session.flush()
     session.add(row())
-    with pytest.raises(IntegrityError, match="uq_page_extractions_text_sha256_model"):
+    with pytest.raises(
+        IntegrityError, match="uq_page_extractions_text_sha256_model_prompt_version"
+    ):
         session.flush()
 
 
@@ -142,7 +157,7 @@ def test_saving_the_same_extraction_twice_keeps_the_first(runs: SqlScrapeRunRepo
     sha = "d" * 64
     runs.save_extraction(sha, RESULT)
     runs.save_extraction(sha, replace(RESULT, input_tokens=9999))
-    stored = runs.find_extraction(sha, RESULT.model)
+    stored = runs.find_extraction(sha, RESULT.model, RESULT.prompt_version)
     assert stored is not None
     assert stored.input_tokens == 1200
 

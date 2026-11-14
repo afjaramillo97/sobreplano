@@ -4,7 +4,7 @@
 
 Sobreplano is a portfolio project (AI Engineer): a search engine for new off-plan housing in the Aburrá Valley, Colombia, with a daily price history and an AI advisor. Its differentiator versus portals (Fincaraíz, Metrocuadrado, La Haus) is showing how much each project has risen since its first observed price.
 
-Status: week 3 of 8. Schema, read API and the first scraper (Londoño Gómez) are in place (SPECs 01–04); since SPEC 05 the scraper runs daily in AWS (Lambda + Supabase cloud); SPEC 06 adds Constructora Capital and reuses extractions by clean-text hash; SPEC 08 adds the advisor (`POST /advisor/chat`, LangGraph, memory in Postgres). Budget: at most ~20 USD/month, so check cost before proposing any new service.
+Status: week 3 of 8. Schema, read API and the first scraper (Londoño Gómez) are in place (SPECs 01–04); since SPEC 05 the scraper runs daily in AWS (Lambda + Supabase cloud); SPEC 06 adds Constructora Capital and reuses extractions by clean-text hash; SPEC 08 adds the advisor (`POST /advisor/chat`, LangGraph, memory in Postgres); SPEC 09 adds the evals (golden sets, LLM judge, prompt versions, Langfuse). Budget: at most ~20 USD/month, so check cost before proposing any new service.
 
 ## Stack
 
@@ -112,6 +112,16 @@ uv run --env-file .env python -m sobreplano.interface.cli.advise                
 uv run --env-file .env python -m sobreplano.interface.cli.advisor_cleanup --dry-run # conversations idle 7 days
 ```
 
+Evals (SPEC 09; paid model calls, always with a cost cap, ask before each run; details in `docs/evals.md`):
+
+```
+uv run --env-file .env python -m sobreplano.evals.advisor prepare                      # isolated local database
+uv run --env-file .env python -m sobreplano.evals.advisor run --repeat 3 --max-cost 1.00   # golden set; --no-judge, --model
+uv run --env-file .env python -m sobreplano.evals.extraction run --model openai:gpt-6-luna --repeat 2
+```
+
+Prompts live in `src/sobreplano/infrastructure/llm/prompts/` and are versioned by hash: changing one changes its version, and `tests/unit/infrastructure/test_prompt_store.py` pins it, so update that test in the same change. Golden set data of the extraction stays outside the repo (S3 and `.evals/`). The `evals.yml` workflow runs the advisor evals on PRs that touch the advisor, only if the repository variable `RUN_ADVISOR_EVALS` is `true`.
+
 LangGraph and LangChain stay in `infrastructure/advisor/` (import-linter) and in the `advisor` dependency group, which the scraper image excludes.
 
 Production (AWS account `sobreplano-prod`, `us-east-1`; details and first-apply steps in `docs/deploy.md`):
@@ -172,6 +182,7 @@ This file is an index, not a manual. When a topic needs depth (scrapers, schema,
 - Schema: `docs/schema.md`.
 - Scrapers: `docs/scrapers/` (one file per developer).
 - Advisor (graph, tools, limits, retention, cost): `docs/advisor.md`.
+- Evals (golden sets, judge calibration, model choice, results): `docs/evals.md`.
 - Ideas left out of a spec: `docs/backlog.md`.
 - Deploy, cloud database and production runs: `docs/deploy.md`.
 - AWS accounts, access and guardrails: `docs/aws-accounts.md`. Sign in with `eval "$(scripts/aws-sso.sh)"`.

@@ -1,0 +1,356 @@
+{
+  "projects": [
+    {
+      "developer": {
+        "name": "Constructora Ejemplo Norte",
+        "slug": "constructora-ejemplo-norte",
+        "website_url": "https://example.com/norte"
+      },
+      "name": "Mirador del Ejemplo",
+      "slug": "mirador-del-ejemplo",
+      "municipality": "sabaneta",
+      "lat": 6.151,
+      "lon": -75.616,
+      "source_url": "https://example.com/proyectos/mirador-del-ejemplo",
+      "unit_types": [
+        {
+          "name": "Tipo A",
+          "private_area_m2": 58,
+          "bedrooms": 2,
+          "bathrooms": 2,
+          "observation": {
+            "price_cop": 380000000,
+            "observed_at": "2026-11-02T10:00:00-05:00",
+            "source_url": "https://example.com/proyectos/mirador-del-ejemplo"
+          },
+          "history": [
+            {
+              "price_cop": 350000000,
+              "observed_at": "2026-09-07T10:00:00-05:00",
+              "source_url": "https://example.com/proyectos/mirador-del-ejemplo"
+            },
+            {
+              "price_cop": 365000000,
+              "observed_at": "2026-10-05T10:00:00-05:00",
+              "source_url": "https://example.com/proyectos/mirador-del-ejemplo"
+            }
+          ]
+        },
+        {
+          "name": "Tipo B",
+          "private_area_m2": 72,
+          "bedrooms": 3,
+          "bathrooms": 2,
+          "observation": {
+            "price_cop": 445000000,
+            "observed_at": "2026-11-02T10:00:00-05:00",
+            "source_url": "https://example.com/proyectos/mirador-del-ejemplo"
+          },
+          "history": [
+            {
+              "price_cop": 410000000,
+              "observed_at": "2026-09-07T10:00:00-05:00",
+              "source_url": "https://example.com/proyectos/mirador-del-ejemplo"
+            },
+            {
+              "price_cop": 425000000,
+              "observed_at": "2026-10-05T10:00:00-05:00",
+              "source_url": "https://example.com/proyectos/mirador-del-ejemplo"
+            }
+          ]
+        },
+        {
+          "name": "Tipo C",
+          "private_area_m2": 85,
+          "bedrooms": 3,
+          "bathrooms": 2,
+          "observation": {
+            "price_cop": 520000000,
+            "observed_at": "2026-11-02T10:00:00-05:00",
+            "source_url": "https://example.com/proyectos/mirador-del-ejemplo"
+          }
+        }
+      ]
+    },
+    {
+      "developer": {
+        "name": "Constructora Ejemplo Norte",
+        "slug": "constructora-ejemplo-norte",
+        "website_url": "https://example.com/norte"
+      },
+      "name": "Bosque Prueba",
+      "slug": "bosque-prueba",
+      "municipality": "sabaneta",
+      "lat": 6.145,
+      "lon": -75.61,
+      "source_url": "https://example.com/proyectos/bosque-prueba",
+      "unit_types": [
+        {
+          "name": "Tipo 1",
+          "private_area_m2": 68,
+          "bedrooms": 3,
+          "bathrooms": 2,
+          "observation": {
+            "price_cop": 430000000,
+            "observed_at": "2026-11-02T10:00:00-05:00",
+            "source_url": "https://example.com/proyectos/bosque-prueba"
+          },
+          "history": [
+            {
+              "price_cop": 430000000,
+              "observed_at": "2026-08-03T10:00:00-05:00",
+              "source_url": "https://example.com/proyectos/bosque-prueba"
+            },
+            {
+              "price_cop": 430000000,
+              "observed_at": "2026-09-07T10:00:00-05:00",
+              "source_url": "https://example.com/proyectos/bosque-prueba"
+            },
+            {
+              "price_cop": 430000000,
+              "observed_at": "2026-10-05T10:00:00-05:00",
+              "source_url": "https://example.com/proyectos/bosque-prueba"
+            }
+          ]
+        },
+        {
+          "name": "Tipo 2",
+          "private_area_m2": 52,
+          "bedrooms": 2,
+          "bathrooms": 2,
+          "observation": {
+            "price_cop": 330000000,
+            "observed_at": "2026-11-02T10:00:00-05:00",
+            "source_url": "https://example.com/proyectos/bosque-prueba"
+          }
+        }
+      ]
+    },
+    {
+      "developer": {
+        "name": "Constructora Ejemplo Norte",
+        "slug": "constructora-ejemplo-norte",
+        "website_url": "https://example.com/norte"
+      },
+      "name": "Torres Demo",
+      "slug": "torres-demo",
+      "municipality": "envigado",
+      "lat": 6.17,
+      "lon": -75.585,
+      "source_url": "https://example.com/proyectos/torres-demo",
+      "unit_types": [
+        {
+          "name": "Tipo 1",
+          "private_area_m2": 90,
+          "bedrooms": 3,
+          "bathrooms": 2,
+          "observation": {
+            "price_cop": 610000000,
+            "observed_at": "2026-11-02T10:00:00-05:00",
+            "source_url": "https://example.com/proyectos/torres-demo"
+          }
+        },
+        {
+          "name": "Tipo 2",
+          "private_area_m2": 60,
+          "bedrooms": 2,
+          "bathrooms": 2,
+          "observation": {
+            "price_cop": 420000000,
+            "observed_at": "2026-11-02T10:00:00-05:00",
+            "source_url": "https://example.com/proyectos/torres-demo"
+          }
+        }
+      ]
+    },
+    {
+      "developer": {
+        "name": "Constructora Ejemplo Sur",
+        "slug": "constructora-ejemplo-sur",
+        "website_url": "https://example.com/sur"
+      },
+      "name": "Parque Ficticio",
+      "slug": "parque-ficticio",
+      "municipality": "envigado",
+      "lat": 6.165,
+      "lon": -75.58,
+      "source_url": "https://example.com/proyectos/parque-ficticio",
+      "unit_types": [
+        {
+          "name": "Tipo 1",
+          "private_area_m2": 40,
+          "bedrooms": 1,
+          "bathrooms": 1,
+          "observation": {
+            "price_cop": 290000000,
+            "observed_at": "2026-11-02T10:00:00-05:00",
+            "source_url": "https://example.com/proyectos/parque-ficticio"
+          }
+        },
+        {
+          "name": "Tipo 2",
+          "private_area_m2": 55,
+          "bedrooms": 2,
+          "bathrooms": 2,
+          "observation": {
+            "price_cop": 360000000,
+            "observed_at": "2026-11-02T10:00:00-05:00",
+            "source_url": "https://example.com/proyectos/parque-ficticio"
+          },
+          "history": [
+            {
+              "price_cop": 380000000,
+              "observed_at": "2026-10-05T10:00:00-05:00",
+              "source_url": "https://example.com/proyectos/parque-ficticio"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "developer": {
+        "name": "Constructora Ejemplo Sur",
+        "slug": "constructora-ejemplo-sur",
+        "website_url": "https://example.com/sur"
+      },
+      "name": "Altos de Muestra",
+      "slug": "altos-de-muestra",
+      "municipality": "medellin",
+      "lat": 6.21,
+      "lon": -75.57,
+      "source_url": "https://example.com/proyectos/altos-de-muestra",
+      "unit_types": [
+        {
+          "name": "Tipo 1",
+          "private_area_m2": 75,
+          "bedrooms": 3,
+          "bathrooms": 2,
+          "observation": {
+            "price_cop": 480000000,
+            "observed_at": "2026-11-02T10:00:00-05:00",
+            "source_url": "https://example.com/proyectos/altos-de-muestra"
+          }
+        }
+      ]
+    },
+    {
+      "developer": {
+        "name": "Constructora Ejemplo Sur",
+        "slug": "constructora-ejemplo-sur",
+        "website_url": "https://example.com/sur"
+      },
+      "name": "Reserva Simulada",
+      "slug": "reserva-simulada",
+      "municipality": "itagui",
+      "lat": 6.172,
+      "lon": -75.611,
+      "source_url": "https://example.com/proyectos/reserva-simulada",
+      "unit_types": [
+        {
+          "name": "Tipo 1",
+          "private_area_m2": 50,
+          "bedrooms": 2,
+          "bathrooms": 2,
+          "observation": {
+            "price_cop": 260000000,
+            "observed_at": "2026-11-02T10:00:00-05:00",
+            "source_url": "https://example.com/proyectos/reserva-simulada"
+          }
+        },
+        {
+          "name": "Tipo 2",
+          "private_area_m2": 63,
+          "bedrooms": 3,
+          "bathrooms": 2,
+          "observation": {
+            "price_cop": 315000000,
+            "observed_at": "2026-11-02T10:00:00-05:00",
+            "source_url": "https://example.com/proyectos/reserva-simulada"
+          }
+        }
+      ]
+    },
+    {
+      "developer": {
+        "name": "Constructora Ejemplo Norte",
+        "slug": "constructora-ejemplo-norte",
+        "website_url": "https://example.com/norte"
+      },
+      "name": "Jardín de Prueba",
+      "slug": "jardin-de-prueba",
+      "municipality": "itagui",
+      "lat": 6.178,
+      "lon": -75.605,
+      "source_url": "https://example.com/proyectos/jardin-de-prueba",
+      "unit_types": [
+        {
+          "name": "Tipo 1",
+          "private_area_m2": 54,
+          "bedrooms": 2,
+          "bathrooms": 2,
+          "observation": {
+            "price_cop": 285000000,
+            "observed_at": "2026-11-02T10:00:00-05:00",
+            "source_url": "https://example.com/proyectos/jardin-de-prueba"
+          }
+        }
+      ]
+    },
+    {
+      "developer": {
+        "name": "Constructora Ejemplo Sur",
+        "slug": "constructora-ejemplo-sur",
+        "website_url": "https://example.com/sur"
+      },
+      "name": "Viento Imaginario",
+      "slug": "viento-imaginario",
+      "municipality": "bello",
+      "lat": 6.335,
+      "lon": -75.558,
+      "source_url": "https://example.com/proyectos/viento-imaginario",
+      "unit_types": [
+        {
+          "name": "Tipo 1",
+          "private_area_m2": 48,
+          "bedrooms": 2,
+          "bathrooms": 2,
+          "observation": {
+            "price_cop": 210000000,
+            "observed_at": "2026-11-02T10:00:00-05:00",
+            "source_url": "https://example.com/proyectos/viento-imaginario"
+          }
+        }
+      ]
+    },
+    {
+      "developer": {
+        "name": "Constructora Ejemplo Sur",
+        "slug": "constructora-ejemplo-sur",
+        "website_url": "https://example.com/sur"
+      },
+      "name": "Nube Sin Mapa",
+      "slug": "nube-sin-mapa",
+      "municipality": "la_estrella",
+      "source_url": "https://example.com/proyectos/nube-sin-mapa",
+      "unit_types": [
+        {
+          "name": "Tipo 1",
+          "private_area_m2": 51,
+          "bedrooms": 2,
+          "bathrooms": 2,
+          "observation": {
+            "price_cop": 300000000,
+            "observed_at": "2026-11-02T10:00:00-05:00",
+            "source_url": "https://example.com/proyectos/nube-sin-mapa"
+          }
+        },
+        {
+          "name": "Tipo 2",
+          "private_area_m2": 64,
+          "bedrooms": 3,
+          "bathrooms": 2
+        }
+      ]
+    }
+  ]
+}

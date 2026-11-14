@@ -19,10 +19,20 @@ class LlmCall:
     input_tokens: int
     output_tokens: int
     cost_usd: Decimal | None  # None when the model is not in the price table
+    prompt_version: str | None  # version of the system prompt the call was sent with
 
     def __post_init__(self) -> None:
         if self.input_tokens < 0 or self.output_tokens < 0:
             raise DomainValidationError("token counts must be >= 0")
+
+
+@dataclass(frozen=True)
+class ToolCallRecord:
+    """One tool call of a turn: what the model asked for and what the tool returned."""
+
+    name: str
+    args: dict[str, object]
+    output: str  # the ToolMessage content (compact JSON, or the error text)
 
 
 @dataclass(frozen=True)
@@ -32,6 +42,7 @@ class AdvisorReply:
     text: str
     tools_used: list[str]  # in call order, repeats included
     llm_calls: list[LlmCall]
+    tool_calls: list[ToolCallRecord]  # in call order, with their arguments and results
 
 
 @dataclass(frozen=True)

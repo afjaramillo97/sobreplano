@@ -68,6 +68,7 @@ class Store:
 
 class Extractor:
     model = "openai:gpt-6-luna"
+    prompt_version = "6682e7fa8220"
 
     def extract(self, page_text: str) -> ExtractionResult:
         unit = ExtractedUnitType(
@@ -79,7 +80,13 @@ class Extractor:
             bathrooms=1,
         )
         project = ExtractedProject(name="Axis", neighborhood=None, unit_types=(unit,))
-        return ExtractionResult(model=self.model, input_tokens=1, output_tokens=1, project=project)
+        return ExtractionResult(
+            model=self.model,
+            input_tokens=1,
+            output_tokens=1,
+            project=project,
+            prompt_version=self.prompt_version,
+        )
 
 
 def test_page_reuses_the_seed_project_and_its_unit_type_by_area(

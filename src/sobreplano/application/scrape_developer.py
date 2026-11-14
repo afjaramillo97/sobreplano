@@ -209,8 +209,10 @@ class ScrapeDeveloper:
             report.pages_with_price += 1
 
     def _extraction(self, text_hash: str, text: str, report: ScrapeReport) -> ExtractionResult:
-        # Same clean text and same model: reuse, so an unchanged page costs no tokens.
-        stored = self.runs.find_extraction(text_hash, self.extractor.model)
+        # Same clean text, model and prompt: reuse, so an unchanged page costs no tokens.
+        stored = self.runs.find_extraction(
+            text_hash, self.extractor.model, self.extractor.prompt_version
+        )
         if stored is not None:
             report.extractions_reused += 1
             return stored

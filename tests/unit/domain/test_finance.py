@@ -55,6 +55,23 @@ def test_mortgage_fixed_example() -> None:
     assert sim.min_monthly_income_cop == 7_410_363
 
 
+def test_affordability_gives_the_down_payment_and_loan_of_the_max_price() -> None:
+    # Savings bind: 150 M is 30 % of 500 M, so the loan is the other 350 M. This is not
+    # max_loan_cop, which is what the income alone could repay.
+    result = affordability()
+    assert (result.max_price_cop, result.limited_by) == (500_000_000, "savings")
+    assert (result.down_payment_cop, result.loan_cop) == (150_000_000, 350_000_000)
+    assert result.down_payment_cop + result.loan_cop == result.max_price_cop
+
+
+def test_affordability_loan_when_income_binds() -> None:
+    result = affordability(monthly_income_cop=5_000_000, savings_cop=900_000_000)
+    assert result.limited_by == "income"
+    assert result.loan_cop + result.down_payment_cop == result.max_price_cop
+    # When income binds, the loan needed is the loan the income supports (within rounding).
+    assert abs(result.loan_cop - result.max_loan_cop) <= 1
+
+
 def test_payments_repay_the_loan_at_the_monthly_rate() -> None:
     sim = mortgage()
     rate = monthly_rate(RATE)

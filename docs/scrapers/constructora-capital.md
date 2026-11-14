@@ -37,6 +37,15 @@ Reviewed on 2026-11-02 (SPEC 06, step 1) by downloading the listing and two proj
 - **Unit type names include the area** ("Planta Apartamento 60.01 m2 Área Total"). The seed names them "Tipo 04" etc. Axis matches the seed one to one by built area: 60.01 → Tipo 04, 60.67 → Tipo 02, 60.10 → Tipo 12, 85.86 → Tipo 06, 94.73 → Tipo 14. Acento 78.46 → Tipo 2.
 - **Coordinates:** Axis and Acento share `6.171977710068938,-75.59416941716492` (Ciudad Peldar). They appear only inside the Google Maps `place` link (`/maps/place/{lat}+{lon}/@{lat},{lon},17z`); there is no loose `lat,lon` outside a link. The seed has `6.1735` / `6.172` (hand-entered).
 
+## Known limitation: bathrooms only from the text (2026-11-13)
+
+The extractor reads only the clean text, never the floor plan images. Capital lists rooms per plan
+("Habitación principal con baño", "Baño social"), and the bathroom count is inferred from those
+lines. A bathroom drawn on the plan but missing from the list is lost: Acento's 100.65 m² plan
+shows 3 bathrooms (main, hall and one next to the laundry), while its text lists 2. The golden set
+of SPEC 09 labels what the text says (2), because it measures the extractor on its input; the
+catalog and the advisor carry the same undercount. Reading the plans is in `docs/backlog.md`.
+
 ## Zones (all 33 cards on 2026-11-02)
 
 | Zone in URL | Cards | Municipality | Note |

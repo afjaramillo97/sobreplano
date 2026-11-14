@@ -73,16 +73,16 @@ def run_seed(session: Session, seed: SeedFile) -> SeedReport:
                 catalog.add_unit_type(unit_type)
                 report.unit_types_added += 1
 
-            observation = seed_unit_type.observation
-            result = record.execute(
-                unit_type_id=unit_type.id,
-                price_cop=observation.price_cop,
-                observed_at=observation.observed_at,
-                source=ObservationSource.MANUAL,
-                source_url=observation.source_url,
-            )
-            if result is RecordResult.RECORDED:
-                report.observations_recorded += 1
+            for observation in seed_unit_type.observations():
+                result = record.execute(
+                    unit_type_id=unit_type.id,
+                    price_cop=observation.price_cop,
+                    observed_at=observation.observed_at,
+                    source=ObservationSource.MANUAL,
+                    source_url=observation.source_url,
+                )
+                if result is RecordResult.RECORDED:
+                    report.observations_recorded += 1
     return report
 
 

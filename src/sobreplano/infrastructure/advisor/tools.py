@@ -42,20 +42,25 @@ from sobreplano.infrastructure.advisor.tool_schemas import (
 
 SEARCH_DESCRIPTION = (
     "Search new off-plan housing projects in the Aburrá Valley. Every filter is optional; "
-    "filter by name to find the slug of a project the user names. "
+    "filter by name to find the slug of a project the user names. Any budget, ceiling or "
+    "maximum price the user states goes in max_price, and any minimum in min_price, so the "
+    "results already respect it. "
     "Prices are in COP and are published 'from' prices. Returns the total number of matches "
     "and, per project, the unit types that meet the filters with their latest price and "
-    "its observation date, price per m² and the change since the first observed price."
+    "its observation date, price per m² and the change since the first observed price, as a "
+    "percentage and in pesos."
 )
 GET_PROJECT_DESCRIPTION = (
     "Get one project by slug with, per unit type, the first, minimum and maximum observed "
-    "price, the number of observations and the days on which the price changed (last 20). "
+    "price, the change since the first price in percent and in pesos, the number of "
+    "observations and the days on which the price changed (last 20). "
     "Use it to explain how much a project has risen. Returns found=false if the slug is unknown."
 )
 COMPARE_DESCRIPTION = (
     "Compare two or three projects by slug: one row per unit type with price, area, price per "
     "m² and change since the first price, plus the unit type with the lowest price per m². "
-    "Unknown slugs are listed in not_found."
+    "Use it every time the user asks to compare projects, after getting their slugs; do not "
+    "compare from the results of a search. Unknown slugs are listed in not_found."
 )
 DEVELOPERS_DESCRIPTION = "List the developers (constructoras) with their slug and project count."
 MORTGAGE_DESCRIPTION = (
@@ -65,7 +70,8 @@ MORTGAGE_DESCRIPTION = (
 )
 AFFORDABILITY_DESCRIPTION = (
     "Compute the highest home price a household can buy from its monthly income and savings, "
-    "and whether income or savings is the limit. Never guess the rate; ask the user for it."
+    "and whether income or savings is the limit, with the down payment and the loan that price "
+    "needs. Never guess the rate; ask the user for it."
 )
 DOWN_PAYMENT_DESCRIPTION = (
     "Plan the down payment of an off-plan home: the monthly installment to pay until delivery "

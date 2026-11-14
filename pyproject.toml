@@ -22,6 +22,7 @@ dependencies = [
 # Advisor only: kept out of the scraper Lambda image (Dockerfile exports --no-default-groups).
 advisor = [
     "langchain-openai>=1.8.0",
+    "langfuse>=5.2.0",
     "langgraph>=1.2.21",
     "langgraph-checkpoint-postgres>=3.2.0",
 ]
@@ -69,6 +70,8 @@ include_external_packages = true
 name = "Layers"
 type = "layers"
 layers = [
+    # Evals run the real system; nothing in the app may import them.
+    "sobreplano.evals",
     "sobreplano.interface",
     "sobreplano.application | sobreplano.infrastructure",
     "sobreplano.domain",
@@ -93,4 +96,5 @@ forbidden_modules = [
     "langgraph",
     "langchain_core",
     "langchain_openai",
+    "langfuse",
 ]

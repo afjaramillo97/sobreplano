@@ -112,3 +112,57 @@ def test_same_developer_in_two_projects_must_match() -> None:
     data["projects"].append(second)
     with pytest.raises(ValidationError):
         parse(data)
+
+
+def observation(observed_at: str, price_cop: int = 300_000_000) -> dict[str, Any]:
+    return {
+        "price_cop": price_cop,
+        "observed_at": observed_at,
+        "source_url": "https://example.com/proyecto",
+    }
+
+
+def test_history_comes_before_the_latest_observation() -> None:
+    data = with_change(
+        ["unit_types", 0, "history"],
+        [observation("2026-09-07T10:00:00-05:00"), observation("2026-10-05T10:00:00-05:00")],
+    )
+    unit_type = parse(data).projects[0].unit_types[0]
+    assert [o.observed_at.month for o in unit_type.observations()] == [9, 10, 10]
+    assert unit_type.observations()[-1].observed_at.day == 28
+
+
+@pytest.mark.parametrize(
+    "history",
+    [
+        pytest.param(["2026-10-28T10:00:00-05:00"], id="same-date-as-latest"),
+        pytest.param(["2026-11-01T10:00:00-05:00"], id="after-latest"),
+        pytest.param(["2026-10-05T10:00:00-05:00", "2026-09-07T10:00:00-05:00"], id="not-in-order"),
+    ],
+)
+def test_history_out_of_order_is_rejected(history: list[str]) -> None:
+    with pytest.raises(ValidationError, match="date order"):
+        parse(with_change(["unit_types", 0, "history"], [observation(d) for d in history]))
+
+
+def test_unit_type_without_price_has_no_observations() -> None:
+    data = with_change(["unit_types", 0, "observation"], _DELETE)
+    assert parse(data).projects[0].unit_types[0].observations() == []
+
+
+def test_history_without_latest_observation_is_rejected() -> None:
+    data = with_change(["unit_types", 0, "observation"], _DELETE)
+    data["projects"][0]["unit_types"][0]["history"] = [observation("2026-09-07T10:00:00-05:00")]
+    with pytest.raises(ValidationError, match="no observation"):
+        parse(data)
+
+
+def test_project_without_coordinates_has_no_location() -> None:
+    data = with_change(["lat"], _DELETE)
+    del data["projects"][0]["lon"]
+    assert parse(data).projects[0].location() is None
+
+
+def test_only_one_coordinate_is_rejected() -> None:
+    with pytest.raises(ValidationError, match="both lat and lon"):
+        parse(with_change(["lon"], _DELETE))

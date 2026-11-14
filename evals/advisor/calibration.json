@@ -1,0 +1,77 @@
+{
+  "judge_model": "openai:gpt-6.1-terra",
+  "judge_prompt_version": "75d053a91f88",
+  "report": "advisor-2026-11-14-openai_gpt-6-luna.json",
+  "rubrics": [
+    {
+      "rubric": "asks_rate",
+      "labels": 3,
+      "agreement": 1.0,
+      "kappa": null,
+      "both_pass": 3,
+      "judge_pass_human_fail": 0,
+      "judge_fail_human_pass": 0,
+      "both_fail": 0
+    },
+    {
+      "rubric": "helpful",
+      "labels": 9,
+      "agreement": 0.8888888888888888,
+      "kappa": 0.0,
+      "both_pass": 8,
+      "judge_pass_human_fail": 1,
+      "judge_fail_human_pass": 0,
+      "both_fail": 0
+    },
+    {
+      "rubric": "no_false_claims",
+      "labels": 3,
+      "agreement": 1.0,
+      "kappa": null,
+      "both_pass": 3,
+      "judge_pass_human_fail": 0,
+      "judge_fail_human_pass": 0,
+      "both_fail": 0
+    },
+    {
+      "rubric": "price_citation",
+      "labels": 46,
+      "agreement": 1.0,
+      "kappa": 1.0,
+      "both_pass": 45,
+      "judge_pass_human_fail": 0,
+      "judge_fail_human_pass": 0,
+      "both_fail": 1
+    },
+    {
+      "rubric": "privacy",
+      "labels": 3,
+      "agreement": 1.0,
+      "kappa": null,
+      "both_pass": 3,
+      "judge_pass_human_fail": 0,
+      "judge_fail_human_pass": 0,
+      "both_fail": 0
+    },
+    {
+      "rubric": "scope",
+      "labels": 3,
+      "agreement": 1.0,
+      "kappa": null,
+      "both_pass": 3,
+      "judge_pass_human_fail": 0,
+      "judge_fail_human_pass": 0,
+      "both_fail": 0
+    },
+    {
+      "rubric": "simulation_caveat",
+      "labels": 6,
+      "agreement": 1.0,
+      "kappa": null,
+      "both_pass": 6,
+      "judge_pass_human_fail": 0,
+      "judge_fail_human_pass": 0,
+      "both_fail": 0
+    }
+  ]
+}

@@ -17,6 +17,7 @@ from sobreplano.domain.errors import (
     AdvisorUnavailableError,
 )
 from sobreplano.infrastructure.advisor.checkpointer import open_checkpointer
+from sobreplano.infrastructure.advisor.tracing import shutdown_tracing
 from sobreplano.infrastructure.db.engine import create_db_engine, create_session_factory
 from sobreplano.infrastructure.settings import load_settings
 from sobreplano.interface.advisor_composition import build_ask_advisor, today_in_bogota
@@ -64,7 +65,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 break
             # One session per message, as the API opens one per request.
             with session_factory() as session:
-                ask = build_ask_advisor(settings, session, checkpointer)
+                ask = build_ask_advisor(settings, session, checkpointer, source="cli")
                 try:
                     answer = ask(thread_id, message, today_in_bogota().date())
                 except AdvisorLimitError:
@@ -86,6 +87,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             thread_id = answer.thread_id
             print(format_answer(answer))
 
+    # Pending traces would be lost when the process exits.
+    shutdown_tracing(settings)
     if thread_id is not None:
         print(f"\nthread_id: {thread_id}")
     return 0

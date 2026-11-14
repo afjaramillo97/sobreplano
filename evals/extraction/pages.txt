@@ -1,0 +1,24 @@
+# Extraction golden set v1 (SPEC 09): public project pages, 8 per developer.
+# Only the URLs live in the repo; texts and labels are in S3 (evals/extraction/v1/).
+#
+# Londoño Gómez: many unit types, blocks without a price, repeated names, Ezzenti,
+# no bedrooms on the page, a project with no priced unit type.
+https://londonogomez.com/proyectos-vivienda/antioquia/bello/atlantica
+https://londonogomez.com/proyectos-vivienda/antioquia/medellin/poblado-central
+https://londonogomez.com/proyectos-vivienda/antioquia/medellin/parc-avignon
+https://londonogomez.com/proyectos-vivienda/antioquia/medellin/linz-del-rio
+https://londonogomez.com/proyectos-vivienda/antioquia/bello/verdeventura
+https://londonogomez.com/proyectos-vivienda/antioquia/medellin/ezzenti
+https://londonogomez.com/proyectos-vivienda/antioquia/bello/primavela
+https://londonogomez.com/proyectos-vivienda/antioquia/la-estrella/costa-azul-apartamentos
+#
+# Constructora Capital: comma separators and the dollar reference on every page, six unit
+# types, no price at all, mostly sold out, 1 to 3 bedrooms.
+https://www.constructoracapital.com/proyecto/1/medellin-y-alrededores/envigado/262/axis
+https://www.constructoracapital.com/proyecto/1/medellin-y-alrededores/itagui/261/bambu
+https://www.constructoracapital.com/proyecto/1/medellin-y-alrededores/la-estrella/259/pinaria
+https://www.constructoracapital.com/proyecto/1/medellin-y-alrededores/camino-verde/216/verde-olivo
+https://www.constructoracapital.com/proyecto/1/medellin-y-alrededores/envigado/235/acento
+https://www.constructoracapital.com/proyecto/1/medellin-y-alrededores/envigado/193/artiko
+https://www.constructoracapital.com/proyecto/1/medellin-y-alrededores/itagui/204/velvet
+https://www.constructoracapital.com/proyecto/1/medellin-y-alrededores/san-antonio-de-prado/264/tropico

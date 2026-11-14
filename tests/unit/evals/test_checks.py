@@ -1,6 +1,7 @@
 """Unit tests for the deterministic checks, over hand-made traces (no LLM)."""
 
 import json
+from decimal import Decimal
 from typing import Any
 
 import pytest
@@ -314,3 +315,18 @@ def test_case_tools_exist() -> None:
                 *turn.expect.tool_args,
             }
             assert named <= known, case.id
+
+
+def test_tool_call_arguments_are_sources() -> None:
+    turn = trace(
+        "Con una cuota inicial del 20 %, la cuota es $2.710.000.",
+        call("simulate_mortgage", '{"monthly_payment_cop":2710000}', down_payment_pct=20),
+    )
+    assert check_grounded(turn, []).passed
+
+
+def test_known_numbers_of_the_tool_definitions_are_sources() -> None:
+    turn = trace("¿Qué tasa quieres usar? Si no me dices otra, asumo una cuota inicial del 30 %.")
+    assert not check_grounded(turn, []).passed
+    assert check_grounded(turn, [], known=[Decimal(30)]).passed
+    assert run_checks(expect(), turn, [], known=[Decimal(30)])[1].passed

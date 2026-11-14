@@ -42,6 +42,8 @@ PROVIDERS: dict[str, Provider] = {
 # Prices as stated in SPEC 04 (2026-10-30); update when a price or the default model changes.
 MODEL_PRICES_USD_PER_MILLION: dict[str, tuple[float, float]] = {
     "openai:gpt-6-luna": (0.10, 0.50),
+    # Judge of the advisor evals (SPEC 09); checked on developers.openai.com on 2026-11-13.
+    "openai:gpt-6.1-terra": (1.00, 5.00),
 }
 
 

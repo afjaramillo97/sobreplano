@@ -43,7 +43,7 @@ def get_ask_advisor(request: Request, session: SessionDep) -> Iterator[AskAdviso
     """
     settings: Settings = request.app.state.settings
     with open_checkpointer(settings.database_url) as checkpointer:
-        yield build_ask_advisor(settings, session, checkpointer)
+        yield build_ask_advisor(settings, session, checkpointer, source="api")
 
 
 AskAdvisorDep = Annotated[AskAdvisor, Depends(get_ask_advisor)]

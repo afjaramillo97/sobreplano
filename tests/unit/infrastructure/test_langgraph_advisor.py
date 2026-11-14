@@ -7,6 +7,7 @@ from uuid import uuid4
 
 import httpx2
 import pytest
+from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.outputs import ChatGeneration, ChatResult, LLMResult
@@ -194,6 +195,39 @@ def test_orphan_tool_call_is_closed_so_the_thread_keeps_answering() -> None:
     closing = [m for m in sent if isinstance(m, ToolMessage) and "round limit" in m.text]
     assert len(closing) == 1
     assert closing[0].text == '{"error": "tool round limit reached"}'
+
+
+class MetadataRecorder(BaseCallbackHandler):
+    """Records the metadata of every chain run, as the Langfuse handler would read it."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.metadata: list[dict[str, Any]] = []
+
+    def on_chain_start(self, serialized: dict[str, Any] | None, inputs: Any, **kwargs: Any) -> None:
+        self.metadata.append(dict(kwargs.get("metadata") or {}))
+
+
+def test_extra_callbacks_get_the_session_tags_and_prompt_version() -> None:
+    recorder = MetadataRecorder()
+    model = ScriptedChatModel(script=[answer("Hola.")])
+    thread_id = uuid4()
+    advisor = LangGraphAdvisor(
+        chat_model=lambda: model,
+        model_name=MODEL,
+        tools=build_tools(EmptyQuery()),
+        checkpointer=InMemorySaver(),
+        callbacks=[recorder],
+        tags=["cli"],
+    )
+
+    advisor.reply(thread_id, "Hola")
+
+    root = recorder.metadata[0]
+    assert root["langfuse_session_id"] == str(thread_id)
+    assert root["langfuse_tags"] == ["cli"]
+    assert root["prompt_version"] == SYSTEM_PROMPT.version
+    assert root["model"] == MODEL
 
 
 def test_provider_error_makes_the_advisor_unavailable() -> None:

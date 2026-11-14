@@ -242,7 +242,7 @@ Cada turno produce un `TurnTrace` (mensaje, respuesta, `tool_calls` con argument
 | `tools` | aparecen todas las requeridas (en orden si `tools_ordered`) y ninguna prohibida |
 | `tool_args` | para cada herramienta con expectativas, al menos una de sus llamadas cumple todas |
 | `mentions` | cada `must_mention` aparece y ningún `must_not_mention` aparece (sin tildes ni mayúsculas) |
-| `grounded` | cada monto en COP y cada porcentaje de la respuesta está, con tolerancia del 0,5 %, en algún resultado de herramienta de la conversación o en algún mensaje del usuario. Se evalúa en **todos** los turnos |
+| `grounded` | cada monto en COP y cada porcentaje de la respuesta está, con tolerancia del 0,5 %, en algún resultado de herramienta de la conversación, en algún mensaje del usuario, en algún argumento de una llamada a herramienta o en las definiciones de las herramientas que ve el modelo (descripciones, valores por defecto y límites, sin los ejemplos "e.g."). Se evalúa en **todos** los turnos |
 | `cites_source` | si la respuesta trae un precio de un proyecto, trae también al menos un `source_url` de los resultados de herramientas |
 | `language` | el idioma detectado es el esperado (se evalúa en todos los turnos) |
 
@@ -415,6 +415,7 @@ Cada criterio se verifica pegando el comando y su salida en el PR (constitución
 - **Sí:** rúbricas binarias con la razón antes del veredicto. **No:** escalas de 1 a 10, que los jueces usan de forma inconsistente y que no dicen qué arreglar.
 - **Sí:** calibrar el juez contra etiquetas de Andrés antes de dejarlo bloquear el CI. Un juez sin calibrar puede aprobar justo los errores que importan.
 - **Sí:** un modelo juez distinto y más fuerte que el del asesor, para reducir la preferencia de un modelo por sus propias respuestas.
+- **Sí (ajuste del 13 nov, durante la implementación):** `grounded` acepta también los argumentos de las llamadas a herramientas y los números de las definiciones de las herramientas (por ejemplo, el 30 % de cuota inicial por defecto y el plazo de 5 a 30 años), sin los ejemplos "e.g.". La corrida de humo de F2 falló con "asumiré el 30 % predeterminado", una respuesta correcta. **No:** contar los ejemplos, porque así una tasa del 12 % inventada pasaría.
 - **Sí:** umbrales del 100 % para `grounded` y `privacy`. **No:** reintentos automáticos de los casos fallidos, porque una cifra inventada que aparece una de cada tres veces es un problema real, no ruido.
 - **Sí:** `--repeat` y la consistencia para elegir modelo. Un modelo que acierta en promedio pero no siempre es peor para un asesor que uno un poco menos certero pero estable.
 - **Sí:** la versión del prompt en la llave de reutilización de la extracción, aunque cueste una re-extracción de unos 0,02 USD. Sin eso, un prompt mejorado seguiría sirviendo extracciones del prompt anterior.

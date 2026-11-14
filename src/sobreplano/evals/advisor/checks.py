@@ -92,10 +92,16 @@ def check_mentions(expect: TurnExpectation, turn: TurnTrace) -> CheckResult:
     return CheckResult("mentions", not problems, "; ".join(problems))
 
 
-def check_grounded(turn: TurnTrace, history: Sequence[TurnTrace]) -> CheckResult:
-    """Every COP amount and percentage of the answer is, within 0.5 %, in a tool result or a
-    user message of the conversation so far."""
-    sources = _source_numbers([*history, turn])
+def check_grounded(
+    turn: TurnTrace, history: Sequence[TurnTrace], known: Sequence[Decimal] = ()
+) -> CheckResult:
+    """Every COP amount and percentage of the answer is, within 0.5 %, in a source.
+
+    Sources: user messages, tool call arguments and tool results of the conversation so
+    far, and `known`, the numbers in the tool definitions the model was given (defaults
+    and limits such as the 30 % down payment or the 30-year term).
+    """
+    sources = [*_source_numbers([*history, turn]), *known]
     ungrounded = [f.raw for f in find_figures(turn.answer) if not _near_any(f.value, sources)]
     if ungrounded:
         return CheckResult("grounded", False, f"figures with no source: {ungrounded}")
@@ -133,9 +139,14 @@ def check_language(expect: TurnExpectation, turn: TurnTrace) -> CheckResult:
 
 
 def run_checks(
-    expect: TurnExpectation, turn: TurnTrace, history: Sequence[TurnTrace]
+    expect: TurnExpectation,
+    turn: TurnTrace,
+    history: Sequence[TurnTrace],
+    known: Sequence[Decimal] = (),
 ) -> list[CheckResult]:
     """All checks that apply to the turn; history holds the earlier turns of the conversation.
+
+    known: numbers of the tool definitions, an extra source for `grounded`.
 
     A turn that did not complete only reports `completed`: the other checks would judge an
     answer that does not exist.
@@ -150,7 +161,7 @@ def run_checks(
         results.append(check_tool_args(expect, turn))
     if expect.must_mention or expect.must_not_mention:
         results.append(check_mentions(expect, turn))
-    results.append(check_grounded(turn, history))
+    results.append(check_grounded(turn, history, known))
     cites = check_cites_source(turn, history)
     if cites is not None:
         results.append(cites)
@@ -215,8 +226,17 @@ def _is_subsequence(wanted: list[str], called: list[str]) -> bool:
 
 
 def _source_numbers(turns: Sequence[TurnTrace]) -> list[Decimal]:
-    texts = [t.message for t in turns] + [call.output for t in turns for call in t.tool_calls]
-    return [number for text in texts for number in all_numbers(text)]
+    calls = [call for t in turns for call in t.tool_calls]
+    texts = [t.message for t in turns] + [call.output for call in calls]
+    numbers = [number for text in texts for number in all_numbers(text)]
+    # Arguments the advisor sent, such as down_payment_pct=20, are what the tool computed with.
+    numbers += [
+        Decimal(str(value))
+        for call in calls
+        for value in call.args.values()
+        if isinstance(value, int | float) and not isinstance(value, bool)
+    ]
+    return numbers
 
 
 def _near_any(value: Decimal, sources: Sequence[Decimal]) -> bool:

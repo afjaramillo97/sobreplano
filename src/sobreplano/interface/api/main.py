@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from sobreplano.infrastructure.advisor.tracing import shutdown_tracing
 from sobreplano.infrastructure.db.engine import create_db_engine, create_session_factory
 from sobreplano.infrastructure.settings import Settings, load_settings
 from sobreplano.interface.api.routes import advisor, developers, health, projects
@@ -26,6 +27,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.session_factory = create_session_factory(engine)
         yield
         engine.dispose()
+        # Send the advisor traces still buffered before the process exits.
+        shutdown_tracing(resolved)
 
     app = FastAPI(title="Sobreplano", lifespan=lifespan)
     app.include_router(health.router)

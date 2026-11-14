@@ -19,6 +19,11 @@ def test_prompt_versions_are_pinned(name: str, version: str) -> None:
     assert load_prompt(APP_PROMPTS, name).version == version
 
 
+def test_judge_prompt_version_is_pinned() -> None:
+    # The judge lives with the evals; its calibration is only valid for this version.
+    assert load_prompt("sobreplano.evals.prompts", "judge").version == "4a27f02f4e26"
+
+
 @pytest.mark.parametrize("name", PINNED_VERSIONS)
 def test_version_is_the_short_sha256_of_the_exact_text(name: str) -> None:
     prompt = load_prompt(APP_PROMPTS, name)

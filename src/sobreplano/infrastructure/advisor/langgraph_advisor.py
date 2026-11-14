@@ -4,6 +4,7 @@ from collections.abc import Callable, Sequence
 from typing import Any
 from uuid import UUID
 
+from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
@@ -37,6 +38,8 @@ class LangGraphAdvisor:
         model_name: str,
         tools: Sequence[BaseTool],
         checkpointer: BaseCheckpointSaver[Any],
+        callbacks: Sequence[BaseCallbackHandler] = (),
+        tags: Sequence[str] = (),
     ) -> None:
         # A factory, so a missing API key fails on the first message and not before the
         # use case has checked the budget.
@@ -44,6 +47,9 @@ class LangGraphAdvisor:
         self._model_name = model_name
         self._tools = tools
         self._checkpointer = checkpointer
+        # Tracing (Langfuse): extra callbacks, and tags that say where the turn came from.
+        self._callbacks = list(callbacks)
+        self._tags = list(tags)
 
     def reply(self, thread_id: UUID, message: str) -> AdvisorReply:
         """Run one turn of the conversation and return the last answer.
@@ -58,7 +64,14 @@ class LangGraphAdvisor:
         config: RunnableConfig = {
             "configurable": {"thread_id": str(thread_id)},
             "recursion_limit": RECURSION_LIMIT,
-            "callbacks": [usage],
+            "callbacks": [usage, *self._callbacks],
+            # Read by the Langfuse handler: the conversation is the session.
+            "metadata": {
+                "langfuse_session_id": str(thread_id),
+                "langfuse_tags": self._tags,
+                "prompt_version": SYSTEM_PROMPT.version,
+                "model": self._model_name,
+            },
         }
         before = len(graph.get_state(config).values.get("messages", []))
         try:

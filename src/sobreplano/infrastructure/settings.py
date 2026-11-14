@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     # 0.20 USD a day caps the worst month at 6 USD, inside the project's 20 USD budget.
     advisor_daily_budget_usd: Decimal = Decimal("0.20")
     advisor_max_turns: int = Field(default=20, gt=0)
+    # Langfuse Cloud (SPEC 09): optional; without both keys there are no traces.
+    langfuse_public_key: str | None = None
+    langfuse_secret_key: SecretStr | None = None
+    langfuse_base_url: str = "https://us.cloud.langfuse.com"
 
 
 def load_settings() -> Settings:

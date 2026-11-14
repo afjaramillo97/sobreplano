@@ -72,6 +72,17 @@ class UnitTypeListing:
         return round(change * 100, 1)
 
     @property
+    def change_since_first_cop(self) -> int | None:
+        """The same change as change_since_first_pct, in pesos (negative for a fall).
+
+        Given ready-made so that nobody, the advisor included, subtracts prices by hand.
+        """
+        if self.change_since_first_pct is None:
+            return None
+        assert self.latest_price is not None and self.first_price is not None
+        return self.latest_price.price_cop - self.first_price.price_cop
+
+    @property
     def price_per_m2_cop(self) -> int | None:
         """Latest price divided by the base area, rounded to whole pesos; None without a price."""
         if self.latest_price is None:

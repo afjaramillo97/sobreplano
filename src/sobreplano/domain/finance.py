@@ -40,6 +40,8 @@ class Affordability:
     max_price_by_savings_cop: int
     max_price_cop: int  # the lower of the two
     limited_by: Literal["income", "savings"]
+    down_payment_cop: int  # down payment of max_price_cop
+    loan_cop: int  # max_price_cop minus that down payment: the loan actually needed
 
 
 @dataclass(frozen=True)
@@ -153,13 +155,19 @@ def max_affordable_price(
         max_payment_cop = _round_cop(max_payment)
         max_loan_cop = _round_cop(max_loan)
     limited_by: Literal["income", "savings"] = "income" if by_income < by_savings else "savings"
+    max_price = min(by_income, by_savings)
+    with localcontext() as ctx:
+        ctx.prec = _PRECISION
+        down_payment = _round_cop(Decimal(max_price) * down_fraction)
     return Affordability(
         max_monthly_payment_cop=max_payment_cop,
         max_loan_cop=max_loan_cop,
         max_price_by_income_cop=by_income,
         max_price_by_savings_cop=by_savings,
-        max_price_cop=min(by_income, by_savings),
+        max_price_cop=max_price,
         limited_by=limited_by,
+        down_payment_cop=down_payment,
+        loan_cop=max_price - down_payment,
     )
 
 

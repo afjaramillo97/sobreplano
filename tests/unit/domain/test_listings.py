@@ -97,6 +97,16 @@ def test_change_since_first_is_zero_when_price_is_equal() -> None:
     assert make_with_prices(716_500_000, 716_500_000).change_since_first_pct == 0.0
 
 
+def test_change_since_first_in_pesos_is_given_ready_made() -> None:
+    assert make_with_prices(410_000_000, 445_000_000).change_since_first_cop == 35_000_000
+    assert make_with_prices(380_000_000, 360_000_000).change_since_first_cop == -20_000_000
+
+
+def test_change_since_first_in_pesos_is_none_without_a_change_to_report() -> None:
+    assert make_with_prices(300_000_000, 300_000_000).change_since_first_cop == 0
+    assert make_unit_type("50", None, None).change_since_first_cop is None
+
+
 def test_change_since_first_rounds_to_one_decimal() -> None:
     # 1 / 3 % -> 0.333... -> 0.3
     assert make_with_prices(300_000_000, 301_000_000).change_since_first_pct == 0.3

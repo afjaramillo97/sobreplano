@@ -262,6 +262,7 @@ def test_max_affordable_price_matches_the_domain_example(tools: dict[str, BaseTo
         years=20,
     )
     assert (result["max_price_cop"], result["limited_by"]) == (500_000_000, "savings")
+    assert (result["down_payment_cop"], result["loan_cop"]) == (150_000_000, 350_000_000)
 
 
 def test_down_payment_plan_matches_the_domain_example(tools: dict[str, BaseTool]) -> None:

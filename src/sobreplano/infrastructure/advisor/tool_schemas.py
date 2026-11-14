@@ -135,6 +135,7 @@ class UnitTypeOut(BaseModel):
     price_observed_on: date | None = None
     price_per_m2_cop: int | None = None
     change_since_first_pct: float | None = None
+    change_since_first_cop: int | None = None  # the same change in pesos, already computed
 
     @classmethod
     def from_domain(cls, unit: UnitTypeListing) -> "UnitTypeOut":
@@ -150,6 +151,7 @@ class UnitTypeOut(BaseModel):
             price_observed_on=latest.observed_on if latest else None,
             price_per_m2_cop=unit.price_per_m2_cop,
             change_since_first_pct=unit.change_since_first_pct,
+            change_since_first_cop=unit.change_since_first_cop,
         )
 
 
@@ -329,6 +331,8 @@ class AffordabilityOut(BaseModel):
     max_price_by_savings_cop: int
     max_price_cop: int
     limited_by: Literal["income", "savings"]
+    down_payment_cop: int  # down payment of max_price_cop
+    loan_cop: int  # loan needed at max_price_cop (max_loan_cop is what the income supports)
 
     @classmethod
     def from_domain(cls, result: Affordability) -> "AffordabilityOut":

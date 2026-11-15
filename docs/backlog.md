@@ -127,3 +127,20 @@ Raised during SPEC 10 (2026-11-15).
   rubrics already catch.
 - Reconsider it if the advisor gains tools that write, or if the adversarial evals start failing.
 
+## Check Infracost against a real infrastructure change
+
+Raised during SPEC 10 (2026-11-15).
+
+- The test PR (#20) only added the workflow and the usage file, so Infracost reported "1 project
+  has no cost estimate change" and no numbers: the comment proves that the job runs and that the
+  CLI v2 token authenticates, not that `infra/infracost-usage.yml` is read.
+- On the first PR that really changes `infra/` (SPEC 12 will add resources), look at the comment
+  and check that Lambda, S3 and CloudWatch Logs are not estimated at 0 USD. If they are, add an
+  `infracost.yml` with `usage_file: infra/infracost-usage.yml` (`diff@v5` has no input for it).
+  Then paste the comment in `docs/security.md`, in the "Infracost" section.
+- Also pending: after 2026-11-28, when the trial of Infracost Cloud ends, check that the comment
+  still appears with the free CI/CD plan. The API token (CLI v2) expires on 2027-11-15: renew it
+  before, or the job fails on PRs that touch `infra/`.
+- Known limit: `aws_scheduler_schedule` and `aws_ecr_lifecycle_policy` are not supported by
+  Infracost, so a PR that changes them shows no cost for them (both cost close to nothing).
+

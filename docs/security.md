@@ -182,8 +182,11 @@ Actions). Without it the job skips with a notice and does not fail, like `evals.
   file.
 - Runs: 1,000 a month is far above what a repository with a few `infra/` PRs uses.
 
-**Evidence: the comment of a test pull request.** Pending: open a pull request that touches
-`infra/` once the API key is saved in GitHub, and paste the comment here.
+**Evidence.** The test PR (#20) ran the job and Infracost commented "1 project has no cost
+estimate change" (31 resources detected, 22 estimated, 16 free, 3 not supported: 2
+`aws_scheduler_schedule` and 1 `aws_ecr_lifecycle_policy`), because it changed no Terraform. That
+proves the workflow and the token; that the usage file is read is **pending a real change to
+`infra/`** (see `docs/backlog.md`). Paste that comment here when it exists.
 
 ```
 (paste the Infracost comment here)

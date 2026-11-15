@@ -41,11 +41,7 @@ from sobreplano.evals.advisor.judge import (
     judge_model_name,
     judge_prompt,
 )
-from sobreplano.evals.advisor.runner import (
-    AdvisorRunReport,
-    run_advisor_evals,
-    tool_definition_numbers,
-)
+from sobreplano.evals.advisor.runner import AdvisorRunReport, run_advisor_evals
 from sobreplano.evals.report import (
     CostCap,
     UnknownPriceError,
@@ -56,6 +52,7 @@ from sobreplano.evals.report import (
 )
 from sobreplano.infrastructure.advisor.chat_models import build_chat_model
 from sobreplano.infrastructure.advisor.graph import SYSTEM_PROMPT
+from sobreplano.infrastructure.advisor.grounding import tool_definition_numbers
 from sobreplano.infrastructure.advisor.langgraph_advisor import LangGraphAdvisor
 from sobreplano.infrastructure.advisor.tools import build_tools
 from sobreplano.infrastructure.advisor.tracing import (

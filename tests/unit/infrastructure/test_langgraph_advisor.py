@@ -26,7 +26,7 @@ from sobreplano.domain.listings import (
 )
 from sobreplano.infrastructure.advisor.chat_models import build_chat_model
 from sobreplano.infrastructure.advisor.graph import MAX_TOOL_ROUNDS, SYSTEM_PROMPT, recent_messages
-from sobreplano.infrastructure.advisor.langgraph_advisor import LangGraphAdvisor
+from sobreplano.infrastructure.advisor.langgraph_advisor import UNVERIFIED_ANSWER, LangGraphAdvisor
 from sobreplano.infrastructure.advisor.tools import build_tools
 from sobreplano.infrastructure.advisor.usage_callback import UsageCallback
 from sobreplano.infrastructure.settings import Settings
@@ -381,3 +381,93 @@ def test_personal_data_in_the_answer_is_redacted_in_the_reply_and_the_thread() -
     stored = _thread_texts(saver, thread_id)
     assert stored[-1] == reply.text
     assert len(stored) == 2  # the question and one final answer, replaced and not duplicated
+
+
+def _final_answers(saver: InMemorySaver, thread_id: UUID) -> list[str]:
+    """The answers without tool calls after the last user message: exactly one per turn."""
+    checkpoint = saver.get_tuple({"configurable": {"thread_id": str(thread_id)}})
+    assert checkpoint is not None
+    messages = checkpoint.checkpoint["channel_values"]["messages"]
+    last_human = max(i for i, m in enumerate(messages) if isinstance(m, HumanMessage))
+    return [m.text for m in messages[last_human:] if isinstance(m, AIMessage) and not m.tool_calls]
+
+
+def test_an_answer_whose_figures_have_a_source_is_not_retried() -> None:
+    model = ScriptedChatModel(
+        script=[
+            tool_call(
+                "simulate_mortgage",
+                price_cop=400_000_000,
+                annual_rate_ea_pct=12,
+                years=20,
+                down_payment_pct=30,
+            ),
+            # 400 millones and 12 % come from the arguments; 30 % is also the tool's default.
+            answer("Para 400 millones al 12 % con 30 % de cuota inicial, mira la simulación."),
+        ]
+    )
+    reply = make_advisor(model).reply(uuid4(), "¿Cuánto pagaría al mes?")
+    assert reply.guardrails == []
+    assert len(model.seen) == 2
+
+
+def test_an_ungrounded_answer_is_rewritten_once() -> None:
+    saver = InMemorySaver()
+    model = ScriptedChatModel(
+        script=[
+            tool_call("search_projects", municipality="sabaneta"),
+            answer("Hay uno desde 999 millones."),
+            answer("No encontré proyectos en Sabaneta."),
+        ]
+    )
+    thread_id = uuid4()
+    reply = make_advisor(model, saver).reply(thread_id, "¿Qué hay en Sabaneta?")
+
+    assert reply.text == "No encontré proyectos en Sabaneta."
+    assert reply.guardrails == ["ungrounded_retry"]
+    assert len(reply.llm_calls) == 3  # the rewrite is recorded like any call
+    rewrite_prompt = model.seen[-1]
+    assert isinstance(rewrite_prompt[-1], SystemMessage)
+    assert "999 millones" in rewrite_prompt[-1].text
+    assert _final_answers(saver, thread_id) == [reply.text]
+
+
+def test_a_rewrite_that_is_still_ungrounded_leaves_the_fixed_answer() -> None:
+    saver = InMemorySaver()
+    model = ScriptedChatModel(
+        script=[answer("Cuesta 999 millones."), answer("Mejor dicho, 888 millones.")]
+    )
+    thread_id = uuid4()
+    reply = make_advisor(model, saver).reply(thread_id, "¿Cuánto cuesta Torres Demo?")
+
+    assert reply.text == UNVERIFIED_ANSWER["es"]
+    assert reply.guardrails == ["ungrounded_retry", "ungrounded_fallback"]
+    assert _final_answers(saver, thread_id) == [UNVERIFIED_ANSWER["es"]]
+
+
+def test_the_fixed_answer_follows_the_user_language() -> None:
+    model = ScriptedChatModel(script=[answer("It costs 999 million."), answer("Say 888 million.")])
+    reply = make_advisor(model).reply(uuid4(), "What is the price of Torres Demo?")
+    assert reply.text == UNVERIFIED_ANSWER["en"]
+
+
+def test_a_provider_error_in_the_rewrite_leaves_the_fixed_answer() -> None:
+    def boom() -> AIMessage:
+        raise APIConnectionError(request=httpx2.Request("POST", "https://api.openai.com"))
+
+    model = ScriptedChatModel(script=[answer("Cuesta 999 millones."), boom])
+    reply = make_advisor(model).reply(uuid4(), "¿Cuánto cuesta Torres Demo?")
+    assert reply.text == UNVERIFIED_ANSWER["es"]
+    assert reply.guardrails == ["ungrounded_retry", "ungrounded_fallback"]
+
+
+def test_an_earlier_invented_figure_does_not_ground_a_later_one() -> None:
+    saver = InMemorySaver()
+    thread_id = uuid4()
+    model = ScriptedChatModel(script=[answer("Cuesta 999 millones."), answer("No lo sé.")])
+    make_advisor(model, saver).reply(thread_id, "¿Cuánto cuesta?")
+
+    model.script = [answer("Como te dije, 999 millones."), answer("No tengo ese dato.")]
+    reply = make_advisor(model, saver).reply(thread_id, "¿Seguro?")
+    assert reply.text == "No tengo ese dato."
+    assert reply.guardrails == ["ungrounded_retry"]

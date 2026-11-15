@@ -1,7 +1,5 @@
 """Runs the advisor cases against a real AdvisorAgent and builds the report with its thresholds."""
 
-import json
-import re
 import time
 from collections import defaultdict
 from collections.abc import Callable, Sequence
@@ -11,12 +9,10 @@ from decimal import Decimal
 from typing import Protocol
 from uuid import UUID, uuid4
 
-from langchain_core.tools import BaseTool
 from pydantic import BaseModel
 
 from sobreplano.domain.advisor import LlmCall
 from sobreplano.domain.errors import AdvisorLimitError, AdvisorUnavailableError
-from sobreplano.domain.figures import all_numbers
 from sobreplano.domain.ports import AdvisorAgent
 from sobreplano.evals.advisor.cases import Category, EvalCase, RubricId, TurnExpectation
 from sobreplano.evals.advisor.checks import CheckResult, TurnTrace, run_checks
@@ -455,21 +451,3 @@ def _judge_turn(
             )
         )
     return results
-
-
-# "e.g. 12 for 12 %" is an example, not a fact: an invented 12 % rate must not pass.
-_EXAMPLE = re.compile(r"e\.g\.[^.]*")
-
-
-def tool_definition_numbers(tools: Sequence[BaseTool]) -> list[Decimal]:
-    """Numbers in what the model is told about each tool: description, defaults and limits.
-
-    Examples ("e.g. ...") are left out.
-    """
-    numbers: list[Decimal] = []
-    for tool in tools:
-        texts = [tool.description]
-        if isinstance(tool.args_schema, type) and issubclass(tool.args_schema, BaseModel):
-            texts.append(json.dumps(tool.args_schema.model_json_schema()))
-        numbers += [n for text in texts for n in all_numbers(_EXAMPLE.sub("", text))]
-    return numbers

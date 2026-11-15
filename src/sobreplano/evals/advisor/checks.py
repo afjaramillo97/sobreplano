@@ -9,8 +9,8 @@ from decimal import Decimal
 
 from sobreplano.domain.advisor import LlmCall, ToolCallRecord
 from sobreplano.domain.figures import all_numbers, find_figures, near_any, ungrounded_figures
+from sobreplano.domain.language import detect_language
 from sobreplano.evals.advisor.cases import ArgExpectation, TurnExpectation
-from sobreplano.evals.language import detect_language
 
 # Tools whose results carry project prices and source URLs.
 PROJECT_TOOLS = frozenset({"search_projects", "get_project", "compare_projects"})

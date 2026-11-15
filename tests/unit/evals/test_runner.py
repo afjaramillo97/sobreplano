@@ -28,7 +28,6 @@ from sobreplano.evals.advisor.runner import (
     AdvisorRunReport,
     TurnTracer,
     run_advisor_evals,
-    tool_definition_numbers,
 )
 from sobreplano.evals.report import CostCap, report_stem, write_report
 from sobreplano.infrastructure.advisor.langgraph_advisor import LangGraphAdvisor
@@ -351,11 +350,3 @@ def test_each_turn_is_traced_and_scored_by_its_checks_and_rubrics() -> None:
     assert names["rubric.helpful"] and not names["rubric.scope"]
     assert {trace_id for trace_id, _, _ in tracer.scores} == {"trace-S9-1"}
     assert report.run_id == "run-test"
-
-
-def test_tool_definition_numbers_keep_limits_and_drop_examples() -> None:
-    numbers = set(tool_definition_numbers(build_tools(EmptyQuery())))
-    # 30 % default down payment, 5 to 30 years, payment at most 40 % of income.
-    assert {Decimal(30), Decimal(5), Decimal(40)} <= numbers
-    # "e.g. 12 for 12 %" is only an example of a rate.
-    assert Decimal(12) not in numbers

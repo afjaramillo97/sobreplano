@@ -2,7 +2,7 @@
 
 import pytest
 
-from sobreplano.evals.language import detect_language
+from sobreplano.domain.language import detect_language
 
 
 @pytest.mark.parametrize(

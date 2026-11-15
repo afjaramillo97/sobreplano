@@ -269,22 +269,22 @@ Costo estimado de las corridas del paso 10, con los precios de hoy:
 
 Cada criterio se verifica pegando el comando y su salida en el PR (constitución, principio 6). Los commits van en inglés.
 
-- [ ] `uv run pytest tests/unit/domain/test_privacy.py tests/unit/domain/test_figures.py` pasa, incluidos los precios que no se redactan.
-- [ ] Con la API local y `ADVISOR_*` configurado, el mensaje de A5 queda en la memoria del hilo (tablas `checkpoint_*`, filtrando por el `thread_id`) y en Langfuse con `[correo]` y `[teléfono]`, nunca con los originales (consulta y captura de la traza).
-- [ ] `for i in $(seq 1 11); do curl -s -o /dev/null -w "%{http_code} " localhost:8000/projects/<slug>; done` imprime diez `200` y un `429`, y la cabecera `Retry-After` viene en el `429`.
-- [ ] Con 41 peticiones de detalle espaciadas (o la ventana diaria simulada en el test de integración), la 41 responde `429`.
-- [ ] Con la tabla de contadores inaccesible (test con el repositorio que falla), `/projects` responde `200` y `/advisor/chat` responde `503`.
-- [ ] `select * from rate_limit_hits limit 5` no muestra ninguna IP, solo hashes.
-- [ ] `curl -s "localhost:8000/projects?limit=51"` y `?offset=1001` responden `422`.
-- [ ] Con `API_DOCS_ENABLED=false`, `/docs` y `/openapi.json` responden `404`; `/robots.txt` responde `Disallow: /`.
-- [ ] `uv run --env-file .env pytest tests/integration/test_supabase_api_closed.py` pasa, y falla si se crea a mano una tabla sin RLS (probado en local y revertido).
-- [ ] La nube está en `0009` y el security advisor de Supabase no muestra hallazgos de nivel ERROR (captura en `docs/security.md`).
-- [ ] La corrida del asesor con los 38 casos (`--repeat 3`) pasa todos los umbrales, con `grounded` y `privacy` en 100 %, y está en `docs/evals.md` junto con cuántas veces se activó cada guardrail.
-- [ ] `calibrate-score` muestra `privacy`, `scope`, `no_false_claims` y `asks_rate` con al menos 8 etiquetas y 2 fallos cada una; las que quedan calibradas bloquean CI y `docs/evals.md` lo dice.
-- [ ] `run --set adversarial` de la extracción da 100 % en precio y en "nada inyectado llega a la base".
-- [ ] `uv run ruff check` pasa con las reglas `S`; cada `noqa: S` tiene su motivo.
+- [x] `uv run pytest tests/unit/domain/test_privacy.py tests/unit/domain/test_figures.py` pasa, incluidos los precios que no se redactan.
+- [x] Con la API local y `ADVISOR_*` configurado, el mensaje de A5 queda en la memoria del hilo (tablas `checkpoint_*`, filtrando por el `thread_id`) y en Langfuse con `[correo]` y `[teléfono]`, nunca con los originales (consulta y captura de la traza). _(comprobado el 2026-11-15; las etiquetas `input_redacted:*` en Langfuse no se pudieron leer por API)_
+- [x] `for i in $(seq 1 11); do curl -s -o /dev/null -w "%{http_code} " localhost:8000/projects/<slug>; done` imprime diez `200` y un `429`, y la cabecera `Retry-After` viene en el `429`.
+- [x] Con 41 peticiones de detalle espaciadas (o la ventana diaria simulada en el test de integración), la 41 responde `429`.
+- [x] Con la tabla de contadores inaccesible (test con el repositorio que falla), `/projects` responde `200` y `/advisor/chat` responde `503`.
+- [x] `select * from rate_limit_hits limit 5` no muestra ninguna IP, solo hashes.
+- [x] `curl -s "localhost:8000/projects?limit=51"` y `?offset=1001` responden `422`.
+- [x] Con `API_DOCS_ENABLED=false`, `/docs` y `/openapi.json` responden `404`; `/robots.txt` responde `Disallow: /`.
+- [x] `uv run --env-file .env pytest tests/integration/test_supabase_api_closed.py` pasa, y falla si se crea a mano una tabla sin RLS (probado en local y revertido).
+- [x] La nube está en `0009` y el security advisor de Supabase no muestra hallazgos de nivel ERROR (captura en `docs/security.md`). _(sin captura; el resultado lo reportó el dueño)_
+- [x] La corrida del asesor con los 38 casos (`--repeat 3`) pasa todos los umbrales, con `grounded` y `privacy` en 100 %, y está en `docs/evals.md` junto con cuántas veces se activó cada guardrail. _(repetida con el juez calibrado; ver `docs/evals.md`)_
+- [x] `calibrate-score` muestra `privacy`, `scope`, `no_false_claims` y `asks_rate` con al menos 8 etiquetas y 2 fallos cada una; las que quedan calibradas bloquean CI y `docs/evals.md` lo dice. _(las seis rúbricas calibradas con el juez `8410f06f8a08`; ver `docs/evals.md`)_
+- [x] `run --set adversarial` de la extracción da 100 % en precio y en "nada inyectado llega a la base". _(medido como `injection_followed` 0/8, `fake_block_stored` 0/8; ver Decisiones)_
+- [x] `uv run ruff check` pasa con las reglas `S`; cada `noqa: S` tiene su motivo.
 - [ ] El job `audit` corre en el PR y queda en verde (o con excepciones justificadas).
-- [ ] `grep -nE "uses: [^ ]+@v[0-9]" .github/workflows/*.yml` no devuelve nada.
+- [x] `grep -nE "uses: [^ ]+@v[0-9]" .github/workflows/*.yml` no devuelve nada.
 - [ ] `gitleaks git` sobre el historial no encuentra secretos (salida en `docs/security.md`).
 - [ ] La corrida programada siguiente al merge termina en `succeeded` (la validación de textos no rechaza fichas reales).
 - [ ] `uv run pytest -m "not integration"`, `uv run pyright` (0 errores) y `uv run lint-imports` pasan; el CI del PR queda en verde con integración, y `evals.yml` en verde.

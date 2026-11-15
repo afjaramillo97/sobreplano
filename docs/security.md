@@ -125,7 +125,7 @@ labels (`docs/evals.md`):
 | Dependabot | Done, not yet seen in action. `.github/dependabot.yml`: `uv` and `github-actions`, weekly, one grouped PR each | The first Dependabot PR |
 | Actions pinned by commit | Done. All 13 `uses:` carry the full SHA and the version in a comment (for example `actions/checkout@11d5960… # v4.4.0`). Dependabot keeps them current, so pinning does not stop security patches | `grep -nE "uses: [^ ]+@v[0-9]" .github/workflows/*.yml` returns nothing |
 | Secret scanning | **Pending, by hand**: turn on secret scanning and push protection in GitHub (Settings > Code security) and run `brew install gitleaks && gitleaks git` once over the whole history; paste the summary here | |
-| Supabase security advisor | **Pending, by hand**: Dashboard > Advisors > Security on the cloud project, after migration `0009` is applied there; no ERROR-level finding. Paste a screenshot or the list here | |
+| Supabase security advisor | Done (2026-11-15). Migration `0009` applied in the cloud (`alembic current`: `0009 (head)`); Dashboard > Advisors > Security shows **no ERROR-level finding** (reported by the owner; no screenshot attached) | `alembic current` on `.env.cloud` |
 | Infracost on `infra/` PRs | **Pending, not installed.** The free plan could not be confirmed from the official page: third-party reviews agree that the GitHub Action comments the cost diff on a PR with a free API key, but disagree on plan names and run limits (some say 1,000 runs a month). Check infracost.io/pricing; if the free plan does not allow it, move it to `docs/backlog.md`. Today's infrastructure costs cents, so it is worth only as a visible practice | A comment on a test PR |
 
 ### IAM review (privilege of each role)

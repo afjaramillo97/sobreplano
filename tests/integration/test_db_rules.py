@@ -33,6 +33,7 @@ TABLES = {
     "checkpoints",
     "checkpoint_blobs",
     "checkpoint_writes",
+    "rate_limit_hits",
 }
 
 

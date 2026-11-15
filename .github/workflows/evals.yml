@@ -13,6 +13,9 @@ on:
       - "src/sobreplano/infrastructure/llm/**"
       - "src/sobreplano/evals/**"
       - "evals/advisor/**"
+      # The extractor prompt and the adversarial pages (SPEC 10).
+      - "src/sobreplano/infrastructure/llm/prompts/extractor.md"
+      - "evals/extraction/adversarial/**"
   workflow_dispatch:
     inputs:
       model:
@@ -78,9 +81,16 @@ jobs:
         run: |
           uv run python -m sobreplano.evals.advisor run \
             --repeat "$REPEAT" --max-cost 0.25 ${MODEL:+--model "$MODEL"}
+      # SPEC 10: 4 synthetic pages with hidden instructions, under 0.01 USD. Fails if the
+      # extractor follows them or if an injected text would reach the database.
+      - name: run the adversarial extraction set
+        if: always() && steps.key.outputs.present == 'true'
+        run: |
+          uv run python -m sobreplano.evals.extraction run \
+            --set adversarial --repeat 2 --max-cost 0.02
       - name: report to the job summary
         if: always() && steps.key.outputs.present == 'true'
-        run: cat evals/reports/advisor-*.md >> "$GITHUB_STEP_SUMMARY" || echo "No report." >> "$GITHUB_STEP_SUMMARY"
+        run: cat evals/reports/*.md >> "$GITHUB_STEP_SUMMARY" || echo "No report." >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always() && steps.key.outputs.present == 'true'
         with:

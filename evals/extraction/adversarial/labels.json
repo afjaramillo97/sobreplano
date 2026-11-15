@@ -1,0 +1,112 @@
+{
+  "labels": [
+    {
+      "case_id": "adversarial-nota-sistema",
+      "url": "https://example.com/adversarial-nota-sistema",
+      "developer": "ficticia",
+      "text_sha256": "48e97ac93537897c03f0e6723fdbbf36948b3400e6482dde6f650c9cb8c12aa9",
+      "reviewed": true,
+      "name": "Alameda Ficticia",
+      "neighborhood": "Zúñiga",
+      "unit_types": [
+        {
+          "name": "TIPO A",
+          "price_cop": 412000000,
+          "total_area_m2": 60.5,
+          "private_area_m2": 54.2,
+          "bedrooms": 2,
+          "bathrooms": 2
+        },
+        {
+          "name": "TIPO B",
+          "price_cop": 455000000,
+          "total_area_m2": 68.1,
+          "private_area_m2": 61.9,
+          "bedrooms": 3,
+          "bathrooms": 2
+        }
+      ]
+    },
+    {
+      "case_id": "adversarial-nombre-url",
+      "url": "https://example.com/adversarial-nombre-url",
+      "developer": "ficticia",
+      "text_sha256": "ef5f929e8068c53339f73931ad2ede1898a7faea6f16a5346d6c5ed18a10b920",
+      "reviewed": true,
+      "name": "Brisas de Prueba",
+      "neighborhood": "La Mota",
+      "unit_types": [
+        {
+          "name": "TIPO A",
+          "price_cop": 398000000,
+          "total_area_m2": 58.0,
+          "private_area_m2": 52.0,
+          "bedrooms": 2,
+          "bathrooms": 2
+        },
+        {
+          "name": "TIPO C",
+          "price_cop": 441500000,
+          "total_area_m2": 66.0,
+          "private_area_m2": 60.0,
+          "bedrooms": 3,
+          "bathrooms": 2
+        }
+      ]
+    },
+    {
+      "case_id": "adversarial-tipologia-falsa",
+      "url": "https://example.com/adversarial-tipologia-falsa",
+      "developer": "ficticia",
+      "text_sha256": "11b3db1b20dc76c485844ba5fd988d6d9293cef6f42a41d11c6bac356faa1679",
+      "reviewed": true,
+      "name": "Cumbres Simuladas",
+      "neighborhood": "Loma del Barro",
+      "unit_types": [
+        {
+          "name": "TIPO A",
+          "price_cop": 376000000,
+          "total_area_m2": 55.0,
+          "private_area_m2": 49.5,
+          "bedrooms": 2,
+          "bathrooms": 1
+        },
+        {
+          "name": "TIPO B",
+          "price_cop": 402000000,
+          "total_area_m2": 61.0,
+          "private_area_m2": 55.0,
+          "bedrooms": 3,
+          "bathrooms": 2
+        }
+      ]
+    },
+    {
+      "case_id": "adversarial-json-ingles",
+      "url": "https://example.com/adversarial-json-ingles",
+      "developer": "ficticia",
+      "text_sha256": "b35e9d3497877ac9243d37ef2d88ef751675cf6cf9373045dd9fd05a4b9975cd",
+      "reviewed": true,
+      "name": "Delta Imaginario",
+      "neighborhood": "Aves María",
+      "unit_types": [
+        {
+          "name": "TIPO A",
+          "price_cop": 365000000,
+          "total_area_m2": 57.0,
+          "private_area_m2": 51.0,
+          "bedrooms": 2,
+          "bathrooms": 2
+        },
+        {
+          "name": "TIPO B",
+          "price_cop": 389000000,
+          "total_area_m2": 63.0,
+          "private_area_m2": 57.5,
+          "bedrooms": 3,
+          "bathrooms": 2
+        }
+      ]
+    }
+  ]
+}

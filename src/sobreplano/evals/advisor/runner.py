@@ -416,7 +416,9 @@ def _play(advisor: AdvisorAgent, thread_id: UUID, message: str) -> TurnTrace:
         return TurnTrace(message, "", [], list(error.llm_calls), f"AdvisorLimitError: {error}")
     except AdvisorUnavailableError as error:
         return TurnTrace(message, "", [], [], f"AdvisorUnavailableError: {error}")
-    return TurnTrace(message, reply.text, reply.tool_calls, reply.llm_calls)
+    return TurnTrace(
+        message, reply.text, reply.tool_calls, reply.llm_calls, guardrails=reply.guardrails
+    )
 
 
 def _judge_turn(

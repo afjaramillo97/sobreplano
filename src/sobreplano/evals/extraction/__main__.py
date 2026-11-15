@@ -12,6 +12,10 @@ import boto3
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
+from sobreplano.evals.extraction.adversarial import (
+    ADVERSARIAL_DIR,
+    load_injections,
+)
 from sobreplano.evals.extraction.golden import (
     CACHE_DIR,
     PAGES_PATH,
@@ -62,6 +66,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         commands.add_parser(name, help=text).add_argument("--bucket", help=bucket_help)
 
     run_parser = commands.add_parser("run", help="run a model over the reviewed golden set")
+    run_parser.add_argument(
+        "--set",
+        dest="page_set",
+        choices=["golden", "adversarial"],
+        default="golden",
+        help="golden: the real pages (local cache); adversarial: synthetic pages with hidden "
+        "instructions, in the repo",
+    )
     run_parser.add_argument("--model", help='"provider:model"; default EXTRACTION_MODEL')
     run_parser.add_argument("--repeat", type=int, default=1)
     run_parser.add_argument("--max-cost", type=Decimal, default=DEFAULT_MAX_COST_USD)
@@ -125,14 +137,16 @@ def _run(args: argparse.Namespace) -> int:
     if args.model:
         settings = settings.model_copy(update={"extraction_model": args.model})
     try:
-        labels, texts = load_cache()
+        adversarial = args.page_set == "adversarial"
+        labels, texts = load_cache(ADVERSARIAL_DIR if adversarial else CACHE_DIR)
+        injections = load_injections() if adversarial else None
         require_prices([settings.extraction_model], allow_unknown=args.allow_unknown_cost)
         extractor = build_extractor(settings)
     except (OSError, ValidationError, ValueError, UnknownPriceError) as error:
         print(f"cannot run: {error}")
         return 2
     if not labels:
-        print(f"no golden set in {CACHE_DIR}: run pull (or build) first")
+        print(f"no {args.page_set} set: for golden run pull (or build) first")
         return 2
     if isinstance(extractor, UnavailableExtractor):
         print(f"cannot run: no API key for {settings.extraction_model}")
@@ -145,11 +159,13 @@ def _run(args: argparse.Namespace) -> int:
             commit=git_commit(),
             repeat=args.repeat,
             cost_cap=CostCap(args.max_cost),
+            injections=injections,
         )
     except ValueError as error:
         print(f"cannot run: {error}")
         return 2
-    stem = report_stem("extraction", report.model, datetime.now(UTC).date())
+    kind = "extraction-adversarial" if adversarial else "extraction"
+    stem = report_stem(kind, report.model, datetime.now(UTC).date())
     path = write_report(stem, report.model_dump_json(indent=2), report.to_markdown())
     print(report.to_markdown())
     print(f"report: {path} (and .md)")

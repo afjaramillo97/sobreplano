@@ -183,3 +183,41 @@ def test_developers_matches_the_contract(client: TestClient) -> None:
             "projects": 25,
         }
     ]
+
+
+@pytest.mark.parametrize(
+    "params",
+    [{"limit": 0}, {"limit": 51}, {"offset": -1}, {"offset": 1001}],
+)
+def test_pagination_out_of_bounds_gives_422(client: TestClient, params: dict[str, int]) -> None:
+    assert client.get("/projects", params=params).status_code == 422
+
+
+def test_pagination_edges_are_accepted_and_the_default_page_is_20(
+    client: TestClient, fake: FakeQuery
+) -> None:
+    assert client.get("/projects", params={"limit": 50, "offset": 1000}).status_code == 200
+    assert client.get("/projects").json()["limit"] == 20
+
+
+def test_docs_are_on_by_default(client: TestClient) -> None:
+    for path in ("/docs", "/redoc", "/openapi.json"):
+        assert client.get(path).status_code == 200
+
+
+def test_docs_can_be_turned_off() -> None:
+    settings = Settings(
+        database_url="postgresql+psycopg://unused@127.0.0.1:1/unused", api_docs_enabled=False
+    )
+    with TestClient(create_app(settings)) as off:
+        for path in ("/docs", "/redoc", "/openapi.json"):
+            assert off.get(path).status_code == 404
+        assert off.get("/robots.txt").status_code == 200  # not part of the docs
+
+
+def test_robots_txt_disallows_everything(client: TestClient) -> None:
+    response = client.get("/robots.txt")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/plain")
+    assert response.text == "User-agent: *\nDisallow: /\n"
+    assert "/robots.txt" not in client.get("/openapi.json").json()["paths"]

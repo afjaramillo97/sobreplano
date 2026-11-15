@@ -8,11 +8,10 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from sobreplano.domain.advisor import LlmCall, ToolCallRecord
+from sobreplano.domain.figures import all_numbers, find_figures, near_any, ungrounded_figures
 from sobreplano.evals.advisor.cases import ArgExpectation, TurnExpectation
 from sobreplano.evals.language import detect_language
-from sobreplano.evals.numbers import all_numbers, find_figures
 
-TOLERANCE = Decimal("0.005")  # 0.5 % of the source value
 # Tools whose results carry project prices and source URLs.
 PROJECT_TOOLS = frozenset({"search_projects", "get_project", "compare_projects"})
 _URL = re.compile(r"https?://[^\s\"'<>)\]]+")
@@ -106,7 +105,7 @@ def check_grounded(
     and limits such as the 30 % down payment or the 30-year term).
     """
     sources = [*_source_numbers([*history, turn]), *known]
-    ungrounded = [f.raw for f in find_figures(turn.answer) if not _near_any(f.value, sources)]
+    ungrounded = [f.raw for f in ungrounded_figures(turn.answer, sources)]
     if ungrounded:
         return CheckResult("grounded", False, f"figures with no source: {ungrounded}")
     return CheckResult("grounded", True)
@@ -122,7 +121,7 @@ def check_cites_source(turn: TurnTrace, history: Sequence[TurnTrace]) -> CheckRe
     ]
     prices = [n for output in project_outputs for n in all_numbers(output)]
     quoted = [
-        f for f in find_figures(turn.answer) if f.kind == "amount" and _near_any(f.value, prices)
+        f for f in find_figures(turn.answer) if f.kind == "amount" and near_any(f.value, prices)
     ]
     if not quoted:
         return None
@@ -259,7 +258,3 @@ def _source_numbers(turns: Sequence[TurnTrace]) -> list[Decimal]:
         if isinstance(value, int | float) and not isinstance(value, bool)
     ]
     return numbers
-
-
-def _near_any(value: Decimal, sources: Sequence[Decimal]) -> bool:
-    return any(abs(value - source) <= abs(source) * TOLERANCE for source in sources)

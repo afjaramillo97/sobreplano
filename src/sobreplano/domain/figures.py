@@ -1,11 +1,13 @@
-"""Amounts in COP and percentages written in an answer, in Spanish or English number formats."""
+"""Amounts in COP and percentages written in an answer, and whether each has a source."""
 
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Literal
 
 MIN_AMOUNT_COP = Decimal(1_000_000)
+TOLERANCE = Decimal("0.005")  # 0.5 % of the source value
 
 # A number with optional thousands separators and decimals, then an optional unit. The unit
 # "M" is case-sensitive so "58 m²" is never read as millions.
@@ -80,6 +82,22 @@ def all_numbers(text: str) -> list[Decimal]:
     Used on tool results and user messages, the sources an answer's figures must come from.
     """
     return [_read(match)[0] for match in _FIGURE.finditer(text)]
+
+
+def near_any(value: Decimal, sources: Sequence[Decimal], tolerance: Decimal = TOLERANCE) -> bool:
+    """True if value is within tolerance (a fraction of the source) of some source."""
+    return any(abs(value - source) <= abs(source) * tolerance for source in sources)
+
+
+def ungrounded_figures(
+    reply: str, sources: Sequence[Decimal], tolerance: Decimal = TOLERANCE
+) -> list[Figure]:
+    """The figures of reply that are not, within tolerance, any of the source numbers.
+
+    sources are the numbers of the tool results, user messages and tool arguments of the
+    conversation (see all_numbers); an empty result means every figure has a source.
+    """
+    return [f for f in find_figures(reply) if not near_any(f.value, sources, tolerance)]
 
 
 def _read(match: re.Match[str]) -> tuple[Decimal, str]:

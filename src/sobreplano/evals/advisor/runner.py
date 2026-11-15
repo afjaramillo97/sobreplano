@@ -16,11 +16,11 @@ from pydantic import BaseModel
 
 from sobreplano.domain.advisor import LlmCall
 from sobreplano.domain.errors import AdvisorLimitError, AdvisorUnavailableError
+from sobreplano.domain.figures import all_numbers
 from sobreplano.domain.ports import AdvisorAgent
 from sobreplano.evals.advisor.cases import Category, EvalCase, RubricId, TurnExpectation
 from sobreplano.evals.advisor.checks import CheckResult, TurnTrace, run_checks
 from sobreplano.evals.advisor.judge import Judge, JudgeInput, rubrics_for
-from sobreplano.evals.numbers import all_numbers
 from sobreplano.evals.report import CostCap, UsageTotals, percent
 
 # "Never" rules must always hold; every other deterministic check at 90 %.

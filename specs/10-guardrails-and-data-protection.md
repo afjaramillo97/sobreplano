@@ -117,8 +117,9 @@ Ventanas fijas por minuto y por día (día de `America/Bogota`), por cliente y p
 
 ### 4. Tope de detalles en el asesor (`infrastructure/advisor/tools.py`)
 
-- `build_tools` crea un contador por mensaje (las herramientas ya se construyen en cada petición).
+- `build_tools` crea un contador por mensaje. Para que valga también en las evals (que reutilizaban las herramientas entre turnos), `LangGraphAdvisor` recibe una fábrica de herramientas (`tools: Callable[[], Sequence[BaseTool]]`) y construye herramientas nuevas en cada `reply`.
 - `get_project` suma 1 y `compare_projects` suma uno por slug.
+- Una llamada que pasaría el tope se rechaza entera (sin consultar nada); `compare_projects` cuenta los slugs distintos. El adaptador reporta el evento `detail_limit` si alguna herramienta devolvió el error.
 - Con más de `MAX_DETAILS_PER_MESSAGE = 6`, la herramienta devuelve `{"error": "detail limit for this message reached; summarize what you have"}` sin consultar la base.
 
 Junto con el límite `advisor` y los 20 mensajes por conversación, pedir "el histórico de todos los proyectos" por el chat cuesta tantos mensajes como por la API.

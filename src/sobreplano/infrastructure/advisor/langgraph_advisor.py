@@ -33,6 +33,7 @@ from sobreplano.infrastructure.advisor.grounding import (
     thread_source_numbers,
     tool_definition_numbers,
 )
+from sobreplano.infrastructure.advisor.tools import DETAIL_LIMIT_RESULT
 from sobreplano.infrastructure.advisor.usage_callback import UsageCallback
 
 ORPHAN_TOOL_RESULT = '{"error": "tool round limit reached"}'
@@ -60,7 +61,7 @@ class LangGraphAdvisor:
         self,
         chat_model: Callable[[], BaseChatModel],
         model_name: str,
-        tools: Sequence[BaseTool],
+        tools: Callable[[], Sequence[BaseTool]],
         checkpointer: BaseCheckpointSaver[Any],
         callbacks: Sequence[BaseCallbackHandler] = (),
         tags: Sequence[str] = (),
@@ -70,8 +71,10 @@ class LangGraphAdvisor:
         self._chat_model = chat_model
         self._model_name = model_name
         self._tools = tools
+        # A factory: each message gets fresh tools, so their per-message detail limit starts
+        # at zero whoever calls the advisor (API, terminal or evals).
         # Defaults and limits the model is told about, such as the 30 % down payment.
-        self._known_numbers = tool_definition_numbers(tools)
+        self._known_numbers = tool_definition_numbers(tools())
         self._checkpointer = checkpointer
         # Tracing (Langfuse): extra callbacks, and tags that say where the turn came from.
         self._callbacks = list(callbacks)
@@ -97,7 +100,8 @@ class LangGraphAdvisor:
         redacted = redact_personal_data(message)
         guardrails = _events("input_redacted", redacted.kinds)
         chat_model = self._chat_model()
-        graph = build_advisor_graph(chat_model, self._tools, self._checkpointer)
+        tools = self._tools()
+        graph = build_advisor_graph(chat_model, tools, self._checkpointer)
         usage = UsageCallback(self._model_name, SYSTEM_PROMPT.version)
         config: RunnableConfig = {
             "configurable": {"thread_id": str(thread_id)},
@@ -150,7 +154,7 @@ class LangGraphAdvisor:
         output = redact_personal_data(answer.text if isinstance(answer, AIMessage) else "")
         text, kinds = output.text, output.kinds
         if isinstance(answer, AIMessage):
-            text, events = self._grounded_text(chat_model, config, result["messages"], text)
+            text, events = self._grounded_text(chat_model, tools, config, result["messages"], text)
             rewrite = redact_personal_data(text)  # the rewrite may rebuild personal data
             text, kinds = rewrite.text, [*kinds, *rewrite.kinds]
             guardrails += events
@@ -158,6 +162,8 @@ class LangGraphAdvisor:
                 # A rewritten or redacted answer replaces the original in the thread too.
                 _replace_message(graph, config, answer, text)
         guardrails += _events("output_redacted", kinds)
+        if any(call.output == DETAIL_LIMIT_RESULT for call in tool_calls):
+            guardrails.append("detail_limit")
         return AdvisorReply(
             text=text,
             tools_used=tools_used,
@@ -169,6 +175,7 @@ class LangGraphAdvisor:
     def _grounded_text(
         self,
         chat_model: BaseChatModel,
+        tools: Sequence[BaseTool],
         config: RunnableConfig,
         messages: Sequence[AnyMessage],
         text: str,
@@ -186,7 +193,7 @@ class LangGraphAdvisor:
         # Tools stay declared, because some providers reject a history with tool calls and
         # no tools, but tool_choice="none" forbids calling them: the rewrite can only use
         # what the thread already has. The config's UsageCallback records the call.
-        model = chat_model.bind_tools(self._tools, tool_choice="none")
+        model = chat_model.bind_tools(tools, tool_choice="none")
         try:
             rewrite = model.invoke(
                 [SystemMessage(SYSTEM_PROMPT.text), *context, SystemMessage(note)], config

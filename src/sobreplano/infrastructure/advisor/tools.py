@@ -79,6 +79,12 @@ DOWN_PAYMENT_DESCRIPTION = (
 )
 
 
+# Full project details (price history included) one message may pull: summarizing is the
+# answer to "give me everything".
+MAX_DETAILS_PER_MESSAGE = 6
+DETAIL_LIMIT_RESULT = '{"error": "detail limit for this message reached; summarize what you have"}'
+
+
 def handle_tool_error(error: DomainValidationError | ToolInvocationError) -> str:
     """Turn a bad argument into a message the model can read and correct.
 
@@ -111,7 +117,17 @@ def build_tools(query: ProjectListingQuery) -> list[BaseTool]:
     """Build the seven tools over a ProjectListingQuery (the request's session).
 
     Each tool's arguments are validated by its Pydantic schema before the function runs.
+    Tools are built per request, so the detail counter below is per message: get_project
+    and compare_projects together serve at most MAX_DETAILS_PER_MESSAGE projects.
     """
+    details_served = 0
+
+    def detail_budget_allows(count: int) -> bool:
+        nonlocal details_served
+        if details_served + count > MAX_DETAILS_PER_MESSAGE:
+            return False
+        details_served += count
+        return True
 
     def search_projects(
         name: str | None = None,
@@ -143,12 +159,16 @@ def build_tools(query: ProjectListingQuery) -> list[BaseTool]:
         )
 
     def get_project(slug: str) -> str:
+        if not detail_budget_allows(1):
+            return DETAIL_LIMIT_RESULT
         detail = query.get_project(slug)
         if detail is None:
             return _json(GetProjectOut(found=False))
         return _json(GetProjectOut(found=True, project=ProjectDetailOut.from_detail(detail)))
 
     def compare_projects(slugs: list[str]) -> str:
+        if not detail_budget_allows(len(set(slugs))):
+            return DETAIL_LIMIT_RESULT
         rows: list[ComparisonRowOut] = []
         not_found: list[str] = []
         best: BestPricePerM2Out | None = None

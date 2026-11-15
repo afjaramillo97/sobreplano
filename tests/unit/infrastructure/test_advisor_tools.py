@@ -29,7 +29,12 @@ from sobreplano.domain.listings import (
 )
 from sobreplano.domain.pricing import ObservationSource
 from sobreplano.infrastructure.advisor.tool_schemas import MAX_PRICE_CHANGES
-from sobreplano.infrastructure.advisor.tools import build_tools, handle_tool_error
+from sobreplano.infrastructure.advisor.tools import (
+    DETAIL_LIMIT_RESULT,
+    MAX_DETAILS_PER_MESSAGE,
+    build_tools,
+    handle_tool_error,
+)
 
 SRC = ObservationSource.SCRAPER
 
@@ -77,6 +82,7 @@ class FakeQuery:
     def __init__(self, details: list[ProjectDetail]) -> None:
         self.details = {detail.project.slug: detail for detail in details}
         self.calls: list[dict[str, Any]] = []
+        self.gets: list[str] = []
 
     def list_projects(
         self, *, filters: ProjectFilters, sort: ProjectSort, limit: int, offset: int
@@ -86,6 +92,7 @@ class FakeQuery:
         return ProjectPage(items=items[:limit], total=len(items))
 
     def get_project(self, slug: str) -> ProjectDetail | None:
+        self.gets.append(slug)
         return self.details.get(slug)
 
     def list_developers(self) -> list[DeveloperSummary]:
@@ -230,6 +237,54 @@ def test_compare_reports_unknown_slugs(tools: dict[str, BaseTool]) -> None:
     result = call(tools, "compare_projects", slugs=["alpha", "nope"])
     assert result["not_found"] == ["nope"]
     assert {row["project_slug"] for row in result["rows"]} == {"alpha"}
+
+
+def test_get_project_stops_after_the_detail_limit_without_querying(
+    tools: dict[str, BaseTool], query: FakeQuery
+) -> None:
+    for _ in range(MAX_DETAILS_PER_MESSAGE):
+        assert call(tools, "get_project", slug="alpha")["found"]
+    assert tools["get_project"].invoke({"slug": "beta"}) == DETAIL_LIMIT_RESULT
+    assert len(query.gets) == MAX_DETAILS_PER_MESSAGE
+    assert "beta" not in query.gets
+
+
+def test_compare_counts_one_detail_per_distinct_slug(
+    tools: dict[str, BaseTool], query: FakeQuery
+) -> None:
+    for _ in range(2):  # 2 + 2 distinct slugs = 4 of 6
+        call(tools, "compare_projects", slugs=["alpha", "beta"])
+    call(tools, "get_project", slug="alpha")  # 5
+    gets_before = len(query.gets)
+    # Three more would make 8: refused whole, nothing is queried.
+    assert (
+        tools["compare_projects"].invoke({"slugs": ["alpha", "beta", "c"]}) == DETAIL_LIMIT_RESULT
+    )
+    assert len(query.gets) == gets_before
+    assert call(tools, "get_project", slug="beta")["found"]  # 6 still fits
+    assert tools["get_project"].invoke({"slug": "beta"}) == DETAIL_LIMIT_RESULT
+
+
+def test_repeated_slugs_in_one_compare_count_once(tools: dict[str, BaseTool]) -> None:
+    for _ in range(MAX_DETAILS_PER_MESSAGE):
+        assert "error" not in call(tools, "compare_projects", slugs=["alpha", "alpha"])
+
+
+def test_the_detail_limit_does_not_block_search_or_simulations(
+    tools: dict[str, BaseTool],
+) -> None:
+    for _ in range(MAX_DETAILS_PER_MESSAGE + 1):
+        tools["get_project"].invoke({"slug": "alpha"})
+    assert "projects" in call(tools, "search_projects")
+    assert "developers" in call(tools, "list_developers")
+
+
+def test_each_build_has_its_own_detail_counter(query: FakeQuery) -> None:
+    first = {tool.name: tool for tool in build_tools(query)}
+    for _ in range(MAX_DETAILS_PER_MESSAGE):
+        first["get_project"].invoke({"slug": "alpha"})
+    second = {tool.name: tool for tool in build_tools(query)}
+    assert call(second, "get_project", slug="alpha")["found"]
 
 
 @pytest.mark.parametrize("slugs", [["alpha"], ["a", "b", "c", "d"]])

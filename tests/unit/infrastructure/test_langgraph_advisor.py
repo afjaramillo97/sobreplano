@@ -96,7 +96,7 @@ def make_advisor(model: ScriptedChatModel, saver: InMemorySaver | None = None) -
     return LangGraphAdvisor(
         chat_model=lambda: model,
         model_name=MODEL,
-        tools=build_tools(EmptyQuery()),
+        tools=lambda: build_tools(EmptyQuery()),
         checkpointer=saver or InMemorySaver(),
     )
 
@@ -215,7 +215,7 @@ def test_extra_callbacks_get_the_session_tags_and_prompt_version() -> None:
     advisor = LangGraphAdvisor(
         chat_model=lambda: model,
         model_name=MODEL,
-        tools=build_tools(EmptyQuery()),
+        tools=lambda: build_tools(EmptyQuery()),
         checkpointer=InMemorySaver(),
         callbacks=[recorder],
         tags=["cli"],
@@ -471,3 +471,25 @@ def test_an_earlier_invented_figure_does_not_ground_a_later_one() -> None:
     reply = make_advisor(model, saver).reply(thread_id, "¿Seguro?")
     assert reply.text == "No tengo ese dato."
     assert reply.guardrails == ["ungrounded_retry"]
+
+
+def test_the_detail_limit_is_reported_and_each_message_starts_at_zero() -> None:
+    def four_details() -> AIMessage:
+        return AIMessage(
+            content="",
+            tool_calls=[
+                {"id": f"c{uuid4().hex[:6]}", "name": "get_project", "args": {"slug": f"p{i}"}}
+                for i in range(4)
+            ],
+            usage_metadata=USAGE,  # type: ignore[arg-type]
+        )
+
+    model = ScriptedChatModel(script=[four_details, four_details, answer("Resumen.")])
+    advisor = make_advisor(model)
+    thread_id = uuid4()
+    first = advisor.reply(thread_id, "Dame todo")
+    assert first.tools_used.count("get_project") == 8  # 8 asked, 6 served
+    assert first.guardrails == ["detail_limit"]
+
+    model.script = [four_details, answer("Hola.")]
+    assert advisor.reply(thread_id, "Gracias").guardrails == []  # a new message, a new count

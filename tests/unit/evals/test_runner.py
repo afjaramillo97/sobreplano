@@ -130,7 +130,7 @@ def run(
     advisor = LangGraphAdvisor(
         chat_model=lambda: model,
         model_name=MODEL,
-        tools=build_tools(EmptyQuery()),
+        tools=lambda: build_tools(EmptyQuery()),
         checkpointer=InMemorySaver(),
     )
     return run_advisor_evals(

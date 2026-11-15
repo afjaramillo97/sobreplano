@@ -76,7 +76,7 @@ def ask_once(model: RecordingChatModel, thread: UUID, message: str) -> None:
     # A new connection and a new compiled graph each time, as two API processes would have.
     with open_checkpointer(get_database_url()) as saver:
         LangGraphAdvisor(
-            lambda: model, "openai:gpt-6-luna", build_tools(EmptyQuery()), saver
+            lambda: model, "openai:gpt-6-luna", lambda: build_tools(EmptyQuery()), saver
         ).reply(thread, message)
 
 

@@ -9,7 +9,7 @@ from sobreplano.infrastructure.llm.prompt_store import APP_PROMPTS, load_prompt
 # Changing a prompt changes its version: update the value here in the same PR, so the change
 # shows up in review (SPEC 09).
 PINNED_VERSIONS = {
-    "advisor_system": "d86c2ea4b1b9",
+    "advisor_system": "e66cca80616c",
     "extractor": "6682e7fa8220",
 }
 

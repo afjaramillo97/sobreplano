@@ -163,11 +163,11 @@ def _run(args: argparse.Namespace) -> int:
     engine = create_db_engine(url)
     try:
         with Session(engine) as session:
-            tools = build_tools(SqlProjectListingQuery(session))
+            query = SqlProjectListingQuery(session)
             advisor = LangGraphAdvisor(
                 chat_model=lambda: chat_model,
                 model_name=model,
-                tools=tools,
+                tools=lambda: build_tools(query),
                 # Memory per case run only: nothing reaches the database.
                 checkpointer=InMemorySaver(),
                 callbacks=langfuse_callbacks(settings),
@@ -184,7 +184,7 @@ def _run(args: argparse.Namespace) -> int:
                 judge=judge,
                 calibrated=calibrated,
                 tracer=tracer,
-                known_numbers=tool_definition_numbers(tools),
+                known_numbers=tool_definition_numbers(build_tools(query)),
                 run_id=run_id,
             )
     finally:

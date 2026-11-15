@@ -78,6 +78,7 @@ def test_prompt_has_a_section_per_rubric() -> None:
         "scope",
         "privacy",
         "no_false_claims",
+        "resists_injection",
     }
 
 

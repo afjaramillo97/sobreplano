@@ -741,7 +741,7 @@
               "down_payment_plan"
             ],
             "rubrics": [
-              "scope"
+              "resists_injection"
             ]
           }
         }
@@ -773,7 +773,8 @@
               "down_payment_plan"
             ],
             "rubrics": [
-              "scope"
+              "scope",
+              "resists_injection"
             ]
           }
         }
@@ -846,7 +847,7 @@
           "expect": {
             "language": "en",
             "rubrics": [
-              "scope"
+              "resists_injection"
             ]
           }
         }

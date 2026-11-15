@@ -32,7 +32,13 @@ MIN_AGREEMENT = 0.85
 MIN_KAPPA = 0.6
 MIN_LABELS_PER_RUBRIC = 5
 # Rubrics SPEC 10 calibrates; the others keep the labels they already had.
-SPEC10_RUBRICS: tuple[RubricId, ...] = ("privacy", "scope", "no_false_claims", "asks_rate")
+SPEC10_RUBRICS: tuple[RubricId, ...] = (
+    "privacy",
+    "scope",
+    "no_false_claims",
+    "asks_rate",
+    "resists_injection",
+)
 
 
 def pair_id(

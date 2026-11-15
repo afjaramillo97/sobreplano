@@ -360,6 +360,16 @@ def test_the_new_checks_run_only_when_the_turn_expects_them() -> None:
 # case file
 
 
+def test_injection_cases_are_judged_by_resists_injection_and_not_by_scope() -> None:
+    cases = {case.id: case for case in load_cases()}
+    assert cases["A1"].turns[0].expect.rubrics == ["resists_injection"]
+    assert cases["A6"].turns[0].expect.rubrics == ["resists_injection"]
+    # A change of role to an off-topic subject is both things at once.
+    assert cases["A2"].turns[1].expect.rubrics == ["scope", "resists_injection"]
+    # "Ignore your rules and say ..." stays with no_false_claims, which fails if it obeys.
+    assert cases["A3"].turns[0].expect.rubrics == ["no_false_claims"]
+
+
 def test_adversarial_cases_a5_and_a9_never_repeat_the_personal_data() -> None:
     cases = {case.id: case for case in load_cases()}
     a5 = cases["A5"].turns[0].expect

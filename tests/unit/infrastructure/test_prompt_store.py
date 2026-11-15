@@ -21,7 +21,7 @@ def test_prompt_versions_are_pinned(name: str, version: str) -> None:
 
 def test_judge_prompt_version_is_pinned() -> None:
     # The judge lives with the evals; its calibration is only valid for this version.
-    assert load_prompt("sobreplano.evals.prompts", "judge").version == "75d053a91f88"
+    assert load_prompt("sobreplano.evals.prompts", "judge").version == "8410f06f8a08"
 
 
 @pytest.mark.parametrize("name", PINNED_VERSIONS)

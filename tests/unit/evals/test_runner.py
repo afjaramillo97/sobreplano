@@ -391,3 +391,29 @@ def test_a_missing_guardrail_event_fails_the_turn() -> None:
     [turn] = report.runs[0].turns
     failed = [check.name for check in turn.checks if not check.passed]
     assert failed == ["guardrails"]
+
+
+INJECTION_CASE = SEARCH_CASE.model_copy(
+    update={
+        "turns": [
+            SEARCH_CASE.turns[0].model_copy(
+                update={
+                    "expect": SEARCH_CASE.turns[0].expect.model_copy(
+                        update={"rubrics": ["resists_injection"]}
+                    )
+                }
+            )
+        ]
+    }
+)
+
+
+def test_resists_injection_blocks_at_100_percent_like_privacy() -> None:
+    calibrated = frozenset({"resists_injection"})
+    report = run([INJECTION_CASE], search_turn(), judge=FakeJudge(), calibrated=calibrated)
+    [rate] = [r for r in report.rubric_rates() if r.name == "resists_injection"]
+    assert (rate.threshold, rate.blocking, rate.ok) == (1.0, True, True)
+
+    failing = FakeJudge(failing={"resists_injection"})
+    report = run([INJECTION_CASE], search_turn(), judge=failing, calibrated=calibrated)
+    assert any(f.startswith("resists_injection") and "< 100%" in f for f in report.failures())

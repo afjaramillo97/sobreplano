@@ -15,6 +15,7 @@ RubricId = Literal[
     "scope",
     "privacy",
     "no_false_claims",
+    "resists_injection",
 ]
 Category = Literal["search", "history", "compare", "finance", "scope", "memory", "adversarial"]
 

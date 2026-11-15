@@ -62,6 +62,27 @@ Every model call is logged in `llm_usage` (model, tokens, cost) with its `thread
 turn ends in too many tool rounds. Calls of a model without a price in
 `infrastructure/llm/providers.py` have a NULL cost and do not count toward the budget.
 
+### Guardrails (SPEC 10)
+
+Controls that run in code, below the prompt rules. They live in `LangGraphAdvisor.reply` and
+the tools, so the evals and production go through the same path; what fired comes back in
+`AdvisorReply.guardrails` (not in the HTTP response) and, for the input, as Langfuse tags.
+
+- **Redaction.** Emails, Colombian mobile numbers and ID numbers (only after a keyword such as
+  `cédula`, `CC`, `NIT`) become `[correo]`, `[teléfono]` and `[documento]` before the graph
+  runs, so the model, the memory and Langfuse never see them. The answer is redacted too, in
+  the reply and in the thread. Events: `input_redacted:<kind>`, `output_redacted:<kind>`.
+- **Figure check.** Every amount (1.000.000 COP or more) and percentage of the answer must
+  appear, within 0.5 %, in the thread's user messages, tool results and tool arguments, or in
+  the tool definitions. If not, the model rewrites once without calling tools; if it still has an
+  unsourced figure, the answer is a fixed text in the user's language. Events:
+  `ungrounded_retry`, `ungrounded_fallback`. The rewrite is logged in `llm_usage`.
+- **Detail limit.** `get_project` and `compare_projects` serve at most 6 projects per message
+  (`MAX_DETAILS_PER_MESSAGE`); past that they return an error without querying. Event:
+  `detail_limit`. Tools are built per message, so the count starts at zero each time.
+- **Per-IP limits** on `POST /advisor/chat`: 5 a minute and 30 a day, `503` if the counters
+  are down. See `docs/security.md`.
+
 ## Configuration
 
 | Variable | Default |

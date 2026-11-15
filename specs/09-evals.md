@@ -1,6 +1,6 @@
 # SPEC 09 — Evals: golden sets del asesor y de la extracción, juez LLM, Langfuse y elección de modelos
 
-> **Estado:** aprobado
+> **Estado:** implementado
 > **Depende de:** SPEC 06, SPEC 08
 > **Fecha:** 2026-11-13
 > **Objetivo:** Medir con números, y no con impresiones, si el asesor y la extracción hacen bien su trabajo: un golden set del asesor sobre un catálogo ficticio que corre en CI con chequeos deterministas y un juez LLM calibrado contra etiquetas de Andrés, un golden set de extracción guardado fuera del repo, versiones de los prompts registradas en cada llamada, trazas en Langfuse y la elección del modelo más barato que pase en cada caso.
@@ -394,22 +394,22 @@ Costo estimado de las corridas del paso 11, con los precios de hoy:
 
 Cada criterio se verifica pegando el comando y su salida en el PR (constitución, principio 6).
 
-- [ ] `uv run pytest tests/unit/infrastructure/test_langgraph_advisor.py -k orphan` pasa: después de `AdvisorLimitError`, el siguiente mensaje del mismo hilo responde.
-- [ ] `uv run pytest tests/unit/infrastructure/test_prompt_store.py` pasa con las versiones fijas, y `git diff d6da221 -- src/sobreplano/infrastructure/llm/prompts/` muestra los textos idénticos a las constantes que reemplazan.
-- [ ] `alembic upgrade head`, `downgrade -1` y `upgrade head` en local; `alembic check` limpio; una sola cabeza; la nube en `0008`, migrada antes del merge y fuera de 5:45–6:45.
+- [x] `uv run pytest tests/unit/infrastructure/test_langgraph_advisor.py -k orphan` pasa: después de `AdvisorLimitError`, el siguiente mensaje del mismo hilo responde.
+- [x] `uv run pytest tests/unit/infrastructure/test_prompt_store.py` pasa con las versiones fijas, y `git diff d6da221 -- src/sobreplano/infrastructure/llm/prompts/` muestra los textos idénticos a las constantes que reemplazan. (14 nov: el texto del asesor cambió después, a propósito, en la iteración sobre Luna; `d86c2ea4b1b9`.)
+- [ ] `alembic upgrade head`, `downgrade -1` y `upgrade head` en local; `alembic check` limpio; una sola cabeza; la nube en `0008`, migrada antes del merge y fuera de 5:45–6:45. (14 nov: verificado todo menos el `downgrade -1` local, que borraría extracciones locales; la nube se migró a las 9:31 y `alembic check` salió limpio.)
 - [ ] La corrida programada siguiente al merge termina en `succeeded`, y `select prompt_version, count(*) from page_extractions group by 1` muestra filas con la versión nueva.
-- [ ] `uv run lint-imports` cumple los contratos con `sobreplano.evals` como capa más alta.
-- [ ] Con `EVAL_DATABASE_URL` apuntando a un host que no es local, `prepare` termina con error sin tocar nada.
-- [ ] `prepare` crea `sobreplano_evals` con los 9 proyectos ficticios y no cambia el número de proyectos de la base `postgres` local (`select count(*) from projects` antes y después).
-- [ ] `uv run pytest tests/unit/evals` pasa (números, idioma, chequeos, métricas, acuerdo y kappa), sin llamadas a LLM.
-- [ ] La línea base con Luna (`run --repeat 3`) está en `docs/evals.md` con la tasa por chequeo y por rúbrica, la consistencia, los turnos fallidos y el costo.
-- [ ] `calibrate-score` sobre al menos 40 etiquetas está en `docs/evals.md` con acuerdo y kappa por rúbrica, y qué rúbricas quedaron calibradas.
-- [ ] La comparación del asesor (Luna contra Terra) y la de la extracción (Luna contra Qwen3.7-Flash) están en `docs/evals.md` en una tabla con calidad, costo y latencia, y la decisión dice cuál es el modelo más barato que pasa los umbrales.
-- [ ] Las 16 etiquetas de extracción tienen `reviewed: true` y están en S3 (`aws s3 ls s3://<bucket>/evals/extraction/v1/` muestra 16 textos y `labels.json`); `git ls-files | grep -c "evals/extraction"` muestra solo `pages.txt`.
+- [x] `uv run lint-imports` cumple los contratos con `sobreplano.evals` como capa más alta.
+- [x] Con `EVAL_DATABASE_URL` apuntando a un host que no es local, `prepare` termina con error sin tocar nada.
+- [x] `prepare` crea `sobreplano_evals` con los 9 proyectos ficticios y no cambia el número de proyectos de la base `postgres` local (`select count(*) from projects` antes y después).
+- [x] `uv run pytest tests/unit/evals` pasa (números, idioma, chequeos, métricas, acuerdo y kappa), sin llamadas a LLM.
+- [x] La línea base con Luna (`run --repeat 3`) está en `docs/evals.md` con la tasa por chequeo y por rúbrica, la consistencia, los turnos fallidos y el costo.
+- [x] `calibrate-score` sobre al menos 40 etiquetas está en `docs/evals.md` con acuerdo y kappa por rúbrica, y qué rúbricas quedaron calibradas.
+- [x] La comparación del asesor (Luna contra Terra) y la de la extracción (Luna contra Qwen3.7-Flash) están en `docs/evals.md` en una tabla con calidad, costo y latencia, y la decisión dice cuál es el modelo más barato que pasa los umbrales.
+- [x] Las 16 etiquetas de extracción tienen `reviewed: true` y están en S3 (`aws s3 ls s3://<bucket>/evals/extraction/v1/` muestra 16 textos y `labels.json`); `git ls-files | grep -c "evals/extraction"` muestra solo `pages.txt`. (14 nov: 16 textos y `labels.json` en S3; en git solo `pages.txt` como dato, el resto son los módulos de `src/sobreplano/evals/extraction/`.)
 - [ ] Con las claves de Langfuse, una conversación desde la consola aparece en Langfuse como una sesión con el `thread_id`, y una corrida de evals aparece con la etiqueta `eval` y sus scores (captura en `docs/evals.md`).
-- [ ] Un PR que toca `src/sobreplano/infrastructure/advisor/` dispara `evals.yml`, el resumen aparece en la pestaña del job y el costo reportado queda por debajo de 0,25 USD.
-- [ ] Un cambio de prueba que rompe el prompt del asesor (por ejemplo, quitar la regla de las cifras) hace fallar `evals.yml` en un PR borrador, que luego se cierra sin merge.
-- [ ] `uv run pytest -m "not integration"`, `uv run pyright` (0 errores), `uv run ruff check` y `uv run ruff format --check` pasan; el CI del PR queda en verde con los tests de integración.
+- [x] Un PR que toca `src/sobreplano/infrastructure/advisor/` dispara `evals.yml`, el resumen aparece en la pestaña del job y el costo reportado queda por debajo de 0,25 USD. (14 nov: PR #16, costo 0,053 USD.)
+- [x] Un cambio de prueba que rompe el prompt del asesor (por ejemplo, quitar la regla de las cifras) hace fallar `evals.yml` en un PR borrador, que luego se cierra sin merge. (14 nov: PR borrador #15, cerrado sin merge.)
+- [x] `uv run pytest -m "not integration"`, `uv run pyright` (0 errores), `uv run ruff check` y `uv run ruff format --check` pasan; el CI del PR queda en verde con los tests de integración.
 
 ## Decisiones tomadas y descartadas
 

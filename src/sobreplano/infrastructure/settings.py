@@ -30,6 +30,21 @@ class Settings(BaseSettings):
     langfuse_public_key: str | None = None
     langfuse_secret_key: SecretStr | None = None
     langfuse_base_url: str = "https://us.cloud.langfuse.com"
+    # Rate limits per client IP (SPEC 10). The key turns the IP into an HMAC, so the IP is
+    # never stored; without it a fixed development key is used and a warning is logged.
+    rate_limit_key: SecretStr | None = None
+    # Proxies in front of the API that append to X-Forwarded-For; 0 trusts no header.
+    trusted_proxy_hops: int = Field(default=0, ge=0)
+    rate_limits_enabled: bool = True
+    # /docs, /redoc and /openapi.json; the deployment turns them off (SPEC 12).
+    api_docs_enabled: bool = True
+    rate_limit_list_per_minute: int = Field(default=30, gt=0)
+    rate_limit_list_per_day: int = Field(default=600, gt=0)
+    # 40 a day is below the catalog's size: copying every history needs several IPs.
+    rate_limit_detail_per_minute: int = Field(default=10, gt=0)
+    rate_limit_detail_per_day: int = Field(default=40, gt=0)
+    rate_limit_advisor_per_minute: int = Field(default=5, gt=0)
+    rate_limit_advisor_per_day: int = Field(default=30, gt=0)
 
 
 def load_settings() -> Settings:

@@ -40,7 +40,7 @@ def test_sabaneta_question_searches_and_names_a_real_project() -> None:
         advisor = LangGraphAdvisor(
             chat_model=lambda: build_chat_model(settings),
             model_name=settings.advisor_model,
-            tools=build_tools(query),
+            tools=lambda: build_tools(query),
             checkpointer=InMemorySaver(),
         )
         reply = advisor.reply(uuid4(), "¿Qué proyectos hay en Sabaneta?")

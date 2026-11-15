@@ -30,7 +30,8 @@ def langfuse_client(settings: Settings) -> Langfuse | None:
     """The process' Langfuse client, or None when tracing is off."""
     if not tracing_enabled(settings):
         return None
-    assert settings.langfuse_public_key is not None and settings.langfuse_secret_key is not None
+    # Narrowing for the type checker: tracing_enabled just checked both keys.
+    assert settings.langfuse_public_key is not None and settings.langfuse_secret_key is not None  # noqa: S101
     return _client(
         settings.langfuse_public_key,
         settings.langfuse_secret_key.get_secret_value(),

@@ -33,7 +33,7 @@ def test_listing_matches_the_contract(
 
     assert response.status_code == 200
     body = response.json()
-    assert (body["total"], body["limit"], body["offset"]) == (1, 50, 0)
+    assert (body["total"], body["limit"], body["offset"]) == (1, 20, 0)
     [item] = body["items"]
     assert item["slug"] == project.slug
     assert item["developer"] == {"name": developer.name, "slug": developer.slug}
@@ -104,7 +104,8 @@ def test_pagination_echoes_limit_and_offset(
     [
         {"municipality": "nope"},
         {"limit": 0},
-        {"limit": 101},
+        {"limit": 51},
+        {"offset": 1001},
         {"offset": -1},
     ],
 )

@@ -1,0 +1,8 @@
+# False positives of gitleaks (SPEC 10), one fingerprint per line.
+# generic-api-key read the "key" field of the old judge-calibration label format
+# ("key":"O2/r3/t1/privacy", entropy 3.58) as a secret. It is the id of a synthetic
+# eval pair, not a credential. Those files no longer use that format (to_label.jsonl was
+# deleted and labels.jsonl migrated in SPEC 10); the history keeps them.
+9482f7540faec633bdab84b6f810dd689e79a609:evals/advisor/to_label.jsonl:generic-api-key:67
+f0ab1d341446bbec267d69d4fb8f21011df74fe9:evals/advisor/to_label.jsonl:generic-api-key:70
+9482f7540faec633bdab84b6f810dd689e79a609:evals/advisor/labels.jsonl:generic-api-key:64

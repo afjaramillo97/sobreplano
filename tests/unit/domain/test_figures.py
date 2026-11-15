@@ -4,7 +4,13 @@ from decimal import Decimal
 
 import pytest
 
-from sobreplano.evals.numbers import Figure, all_numbers, find_figures, parse_number
+from sobreplano.domain.figures import (
+    Figure,
+    all_numbers,
+    find_figures,
+    parse_number,
+    ungrounded_figures,
+)
 
 
 @pytest.mark.parametrize(
@@ -91,3 +97,16 @@ def test_all_numbers_reads_json_tool_results_and_user_messages() -> None:
         Decimal(12_000_000),
         Decimal(150),
     ]
+
+
+def test_ungrounded_figures_returns_only_figures_without_a_source() -> None:
+    sources = all_numbers('{"price": 445000000}')
+    reply = "Cuesta $445.000.000 y subió 12 %."
+    assert [f.raw for f in ungrounded_figures(reply, sources)] == ["12 %"]
+
+
+def test_ungrounded_figures_accepts_a_rounded_amount_within_tolerance() -> None:
+    sources = [Decimal(445_000_000)]
+    assert ungrounded_figures("Unos 445,5 millones", sources) == []
+    assert ungrounded_figures("Unos 450 millones", sources) != []
+    assert ungrounded_figures("Unos 450 millones", sources, tolerance=Decimal("0.02")) == []

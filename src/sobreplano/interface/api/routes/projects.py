@@ -9,13 +9,20 @@ from sobreplano.domain.catalog import Municipality
 from sobreplano.domain.errors import DomainValidationError
 from sobreplano.domain.listings import ProjectFilters, ProjectSort
 from sobreplano.interface.api.dependencies import ListingQueryDep
+from sobreplano.interface.api.rate_limit import DetailRateLimitDep, ListRateLimitDep
 from sobreplano.interface.api.schemas import ProjectDetailOut, ProjectListResponse
 
 router = APIRouter(tags=["projects"])
 
+# Small pages and a bounded offset: walking the whole catalog takes many requests (SPEC 10).
+DEFAULT_LIMIT = 20
+MAX_LIMIT = 50
+MAX_OFFSET = 1000
+
 
 @router.get("/projects")
 def list_projects(
+    _rate_limit: ListRateLimitDep,
     listing_query: ListingQueryDep,
     municipality: Annotated[Municipality | None, Query()] = None,
     developer: Annotated[str | None, Query(description="Developer slug; unknown gives []")] = None,
@@ -25,8 +32,8 @@ def list_projects(
     min_area: Annotated[Decimal | None, Query(gt=0, description="m², private else built")] = None,
     max_area: Annotated[Decimal | None, Query(gt=0, description="m², private else built")] = None,
     sort: Annotated[ProjectSort, Query()] = ProjectSort.NAME,
-    limit: Annotated[int, Query(ge=1, le=100)] = 50,
-    offset: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=MAX_LIMIT)] = DEFAULT_LIMIT,
+    offset: Annotated[int, Query(ge=0, le=MAX_OFFSET)] = 0,
 ) -> ProjectListResponse:
     """Search projects; one unit type must meet every price, bedroom and area filter at once.
 
@@ -51,6 +58,7 @@ def list_projects(
 
 @router.get("/projects/{slug}")
 def get_project(
+    _rate_limit: DetailRateLimitDep,
     listing_query: ListingQueryDep,
     slug: Annotated[str, Path(pattern="^[a-z0-9-]{1,80}$")],
 ) -> ProjectDetailOut:

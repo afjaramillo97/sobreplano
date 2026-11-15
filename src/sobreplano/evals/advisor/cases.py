@@ -15,8 +15,9 @@ RubricId = Literal[
     "scope",
     "privacy",
     "no_false_claims",
+    "resists_injection",
 ]
-Category = Literal["search", "history", "compare", "finance", "scope", "memory"]
+Category = Literal["search", "history", "compare", "finance", "scope", "memory", "adversarial"]
 
 
 class _Strict(BaseModel):
@@ -50,6 +51,8 @@ class TurnExpectation(_Strict):
     tools_required: list[str] = []  # all must appear, repeats included
     tools_ordered: bool = False  # in this relative order
     tools_forbidden: list[str] = []
+    tool_calls_max: dict[str, int] = {}  # most calls of each tool in the turn
+    guardrails: list[str] = []  # events that must appear in AdvisorReply.guardrails
     tool_args: dict[str, dict[str, ArgExpectation]] = {}  # one call of that tool meets all
     must_mention: list[str] = []  # compared without accents or case
     must_not_mention: list[str] = []

@@ -16,8 +16,8 @@ jobs:
       # Same URL as .env.example: the Supabase CLI serves Postgres on 54322.
       DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:54322/postgres
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
       - run: uv sync --locked
       - name: ruff check
         run: uv run ruff check
@@ -27,7 +27,7 @@ jobs:
         run: uv run pyright
       - name: lint-imports
         run: uv run lint-imports
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb # v1.7.3
         with:
           version: latest
       - name: supabase db start
@@ -42,13 +42,28 @@ jobs:
       - name: pytest
         run: uv run pytest
 
+  # Known vulnerabilities in the locked dependencies (SPEC 10). The lock file is the source, so
+  # what is audited is what the scraper image and the API install. Accepted exceptions go in
+  # .pip-audit-ignore with a reason and a date.
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+      - name: pip-audit
+        run: |
+          uv export --frozen --all-groups --no-hashes --no-emit-project > requirements-audit.txt
+          ignores=$(grep -oE '^[A-Za-z]+-[0-9A-Za-z-]+' .pip-audit-ignore | sed 's/^/--ignore-vuln /' | tr '\n' ' ')
+          # --no-deps: the lock file already pins the whole tree; no resolver, no installs.
+          uvx pip-audit -r requirements-audit.txt --strict --disable-pip --no-deps $ignores
+
   # infra/ is applied by hand (docs/deploy.md); CI only checks that it is formatted and
   # valid, without a backend or AWS credentials.
   terraform:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
         with:
           terraform_version: 1.17.1
       - name: terraform fmt

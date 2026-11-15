@@ -1,6 +1,6 @@
 """Advisor value types: one LLM call's usage and the advisor's reply to a message."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 from uuid import UUID
 
@@ -43,6 +43,8 @@ class AdvisorReply:
     tools_used: list[str]  # in call order, repeats included
     llm_calls: list[LlmCall]
     tool_calls: list[ToolCallRecord]  # in call order, with their arguments and results
+    # Guardrails that fired, e.g. "input_redacted:email"; empty on a plain turn.
+    guardrails: list[str] = field(default_factory=list[str])
 
 
 @dataclass(frozen=True)

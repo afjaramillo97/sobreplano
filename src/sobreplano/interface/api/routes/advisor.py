@@ -15,6 +15,7 @@ from sobreplano.domain.errors import (
 )
 from sobreplano.interface.advisor_composition import today_in_bogota
 from sobreplano.interface.api.dependencies import AskAdvisorDep, SessionDep
+from sobreplano.interface.api.rate_limit import AdvisorRateLimitDep
 
 MAX_MESSAGE_LENGTH = 1000
 
@@ -39,7 +40,9 @@ class ChatOut(BaseModel):
 
 
 @router.post("/advisor/chat")
-def chat(body: ChatIn, ask: AskAdvisorDep, session: SessionDep) -> ChatOut:
+def chat(
+    _rate_limit: AdvisorRateLimitDep, body: ChatIn, ask: AskAdvisorDep, session: SessionDep
+) -> ChatOut:
     """Answer one message with Sobreplano's data.
 
     The only route that writes: it commits the conversation and the token log, also before

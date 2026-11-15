@@ -79,7 +79,8 @@ class UnitTypeListing:
         """
         if self.change_since_first_pct is None:
             return None
-        assert self.latest_price is not None and self.first_price is not None
+        # Narrowing for the type checker: the pct above is only set with both prices.
+        assert self.latest_price is not None and self.first_price is not None  # noqa: S101
         return self.latest_price.price_cop - self.first_price.price_cop
 
     @property

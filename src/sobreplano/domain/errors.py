@@ -52,3 +52,7 @@ class AdvisorLimitError(Exception):
     def __init__(self, message: str, llm_calls: "list[LlmCall]") -> None:
         super().__init__(message)
         self.llm_calls = llm_calls
+
+
+class RateLimitStoreError(Exception):
+    """Raised when the rate limit counters cannot be read or written."""

@@ -3,7 +3,7 @@
 from collections.abc import Callable, Sequence
 from decimal import Decimal
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import httpx2
 import pytest
@@ -26,7 +26,7 @@ from sobreplano.domain.listings import (
 )
 from sobreplano.infrastructure.advisor.chat_models import build_chat_model
 from sobreplano.infrastructure.advisor.graph import MAX_TOOL_ROUNDS, SYSTEM_PROMPT, recent_messages
-from sobreplano.infrastructure.advisor.langgraph_advisor import LangGraphAdvisor
+from sobreplano.infrastructure.advisor.langgraph_advisor import UNVERIFIED_ANSWER, LangGraphAdvisor
 from sobreplano.infrastructure.advisor.tools import build_tools
 from sobreplano.infrastructure.advisor.usage_callback import UsageCallback
 from sobreplano.infrastructure.settings import Settings
@@ -96,7 +96,7 @@ def make_advisor(model: ScriptedChatModel, saver: InMemorySaver | None = None) -
     return LangGraphAdvisor(
         chat_model=lambda: model,
         model_name=MODEL,
-        tools=build_tools(EmptyQuery()),
+        tools=lambda: build_tools(EmptyQuery()),
         checkpointer=saver or InMemorySaver(),
     )
 
@@ -215,7 +215,7 @@ def test_extra_callbacks_get_the_session_tags_and_prompt_version() -> None:
     advisor = LangGraphAdvisor(
         chat_model=lambda: model,
         model_name=MODEL,
-        tools=build_tools(EmptyQuery()),
+        tools=lambda: build_tools(EmptyQuery()),
         checkpointer=InMemorySaver(),
         callbacks=[recorder],
         tags=["cli"],
@@ -331,3 +331,165 @@ def test_chat_model_caps_tokens_and_sends_no_temperature() -> None:
     assert chat.max_tokens == 1024
     assert chat.reasoning_effort == "medium"
     assert chat.temperature is None
+
+
+def _thread_texts(saver: InMemorySaver, thread_id: UUID) -> list[str]:
+    checkpoint = saver.get_tuple({"configurable": {"thread_id": str(thread_id)}})
+    assert checkpoint is not None
+    return [m.text for m in checkpoint.checkpoint["channel_values"]["messages"]]
+
+
+def test_personal_data_never_reaches_the_model_or_the_checkpoint() -> None:
+    saver = InMemorySaver()
+    model = ScriptedChatModel(script=[answer("Te mando opciones en Envigado.")])
+    thread_id = uuid4()
+    reply = make_advisor(model, saver).reply(
+        thread_id,
+        "Soy juan@example.com, mi celular es 300 123 4567 y mi cédula 43.123.456. "
+        "¿Qué hay en Envigado?",
+    )
+
+    sent = " ".join(m.text for call in model.seen for m in call)
+    stored = " ".join(_thread_texts(saver, thread_id))
+    for original in ("juan@example.com", "300 123 4567", "43.123.456"):
+        assert original not in sent
+        assert original not in stored
+    assert "[correo]" in sent and "[teléfono]" in sent and "[documento]" in sent
+    assert "[correo]" in stored
+    assert reply.guardrails == [
+        "input_redacted:email",
+        "input_redacted:phone",
+        "input_redacted:id_number",
+    ]
+
+
+def test_a_message_without_personal_data_fires_no_guardrail() -> None:
+    reply = make_advisor(ScriptedChatModel(script=[answer("Ok.")])).reply(
+        uuid4(), "Busco algo de $450.000.000 en Sabaneta"
+    )
+    assert reply.guardrails == []
+
+
+def test_personal_data_in_the_answer_is_redacted_in_the_reply_and_the_thread() -> None:
+    saver = InMemorySaver()
+    model = ScriptedChatModel(script=[answer("Escribe a ventas@constructora.co o al 3109876543.")])
+    thread_id = uuid4()
+    reply = make_advisor(model, saver).reply(thread_id, "¿Cómo contacto a la constructora?")
+
+    assert reply.text == "Escribe a [correo] o al [teléfono]."
+    assert reply.guardrails == ["output_redacted:email", "output_redacted:phone"]
+    stored = _thread_texts(saver, thread_id)
+    assert stored[-1] == reply.text
+    assert len(stored) == 2  # the question and one final answer, replaced and not duplicated
+
+
+def _final_answers(saver: InMemorySaver, thread_id: UUID) -> list[str]:
+    """The answers without tool calls after the last user message: exactly one per turn."""
+    checkpoint = saver.get_tuple({"configurable": {"thread_id": str(thread_id)}})
+    assert checkpoint is not None
+    messages = checkpoint.checkpoint["channel_values"]["messages"]
+    last_human = max(i for i, m in enumerate(messages) if isinstance(m, HumanMessage))
+    return [m.text for m in messages[last_human:] if isinstance(m, AIMessage) and not m.tool_calls]
+
+
+def test_an_answer_whose_figures_have_a_source_is_not_retried() -> None:
+    model = ScriptedChatModel(
+        script=[
+            tool_call(
+                "simulate_mortgage",
+                price_cop=400_000_000,
+                annual_rate_ea_pct=12,
+                years=20,
+                down_payment_pct=30,
+            ),
+            # 400 millones and 12 % come from the arguments; 30 % is also the tool's default.
+            answer("Para 400 millones al 12 % con 30 % de cuota inicial, mira la simulación."),
+        ]
+    )
+    reply = make_advisor(model).reply(uuid4(), "¿Cuánto pagaría al mes?")
+    assert reply.guardrails == []
+    assert len(model.seen) == 2
+
+
+def test_an_ungrounded_answer_is_rewritten_once() -> None:
+    saver = InMemorySaver()
+    model = ScriptedChatModel(
+        script=[
+            tool_call("search_projects", municipality="sabaneta"),
+            answer("Hay uno desde 999 millones."),
+            answer("No encontré proyectos en Sabaneta."),
+        ]
+    )
+    thread_id = uuid4()
+    reply = make_advisor(model, saver).reply(thread_id, "¿Qué hay en Sabaneta?")
+
+    assert reply.text == "No encontré proyectos en Sabaneta."
+    assert reply.guardrails == ["ungrounded_retry"]
+    assert len(reply.llm_calls) == 3  # the rewrite is recorded like any call
+    rewrite_prompt = model.seen[-1]
+    assert isinstance(rewrite_prompt[-1], SystemMessage)
+    assert "999 millones" in rewrite_prompt[-1].text
+    assert _final_answers(saver, thread_id) == [reply.text]
+
+
+def test_a_rewrite_that_is_still_ungrounded_leaves_the_fixed_answer() -> None:
+    saver = InMemorySaver()
+    model = ScriptedChatModel(
+        script=[answer("Cuesta 999 millones."), answer("Mejor dicho, 888 millones.")]
+    )
+    thread_id = uuid4()
+    reply = make_advisor(model, saver).reply(thread_id, "¿Cuánto cuesta Torres Demo?")
+
+    assert reply.text == UNVERIFIED_ANSWER["es"]
+    assert reply.guardrails == ["ungrounded_retry", "ungrounded_fallback"]
+    assert _final_answers(saver, thread_id) == [UNVERIFIED_ANSWER["es"]]
+
+
+def test_the_fixed_answer_follows_the_user_language() -> None:
+    model = ScriptedChatModel(script=[answer("It costs 999 million."), answer("Say 888 million.")])
+    reply = make_advisor(model).reply(uuid4(), "What is the price of Torres Demo?")
+    assert reply.text == UNVERIFIED_ANSWER["en"]
+
+
+def test_a_provider_error_in_the_rewrite_leaves_the_fixed_answer() -> None:
+    def boom() -> AIMessage:
+        raise APIConnectionError(request=httpx2.Request("POST", "https://api.openai.com"))
+
+    model = ScriptedChatModel(script=[answer("Cuesta 999 millones."), boom])
+    reply = make_advisor(model).reply(uuid4(), "¿Cuánto cuesta Torres Demo?")
+    assert reply.text == UNVERIFIED_ANSWER["es"]
+    assert reply.guardrails == ["ungrounded_retry", "ungrounded_fallback"]
+
+
+def test_an_earlier_invented_figure_does_not_ground_a_later_one() -> None:
+    saver = InMemorySaver()
+    thread_id = uuid4()
+    model = ScriptedChatModel(script=[answer("Cuesta 999 millones."), answer("No lo sé.")])
+    make_advisor(model, saver).reply(thread_id, "¿Cuánto cuesta?")
+
+    model.script = [answer("Como te dije, 999 millones."), answer("No tengo ese dato.")]
+    reply = make_advisor(model, saver).reply(thread_id, "¿Seguro?")
+    assert reply.text == "No tengo ese dato."
+    assert reply.guardrails == ["ungrounded_retry"]
+
+
+def test_the_detail_limit_is_reported_and_each_message_starts_at_zero() -> None:
+    def four_details() -> AIMessage:
+        return AIMessage(
+            content="",
+            tool_calls=[
+                {"id": f"c{uuid4().hex[:6]}", "name": "get_project", "args": {"slug": f"p{i}"}}
+                for i in range(4)
+            ],
+            usage_metadata=USAGE,  # type: ignore[arg-type]
+        )
+
+    model = ScriptedChatModel(script=[four_details, four_details, answer("Resumen.")])
+    advisor = make_advisor(model)
+    thread_id = uuid4()
+    first = advisor.reply(thread_id, "Dame todo")
+    assert first.tools_used.count("get_project") == 8  # 8 asked, 6 served
+    assert first.guardrails == ["detail_limit"]
+
+    model.script = [four_details, answer("Hola.")]
+    assert advisor.reply(thread_id, "Gracias").guardrails == []  # a new message, a new count

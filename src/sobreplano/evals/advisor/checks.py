@@ -4,15 +4,14 @@ import re
 import unicodedata
 from collections import Counter
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 
 from sobreplano.domain.advisor import LlmCall, ToolCallRecord
+from sobreplano.domain.figures import all_numbers, find_figures, near_any, ungrounded_figures
+from sobreplano.domain.language import detect_language
 from sobreplano.evals.advisor.cases import ArgExpectation, TurnExpectation
-from sobreplano.evals.language import detect_language
-from sobreplano.evals.numbers import all_numbers, find_figures
 
-TOLERANCE = Decimal("0.005")  # 0.5 % of the source value
 # Tools whose results carry project prices and source URLs.
 PROJECT_TOOLS = frozenset({"search_projects", "get_project", "compare_projects"})
 _URL = re.compile(r"https?://[^\s\"'<>)\]]+")
@@ -27,6 +26,7 @@ class TurnTrace:
     tool_calls: list[ToolCallRecord]
     llm_calls: list[LlmCall]
     error: str | None = None  # AdvisorLimitError or AdvisorUnavailableError, as text
+    guardrails: list[str] = field(default_factory=list[str])  # AdvisorReply.guardrails
 
 
 @dataclass(frozen=True)
@@ -73,6 +73,28 @@ def check_tools(expect: TurnExpectation, turn: TurnTrace) -> CheckResult:
     return CheckResult("tools", not problems, detail)
 
 
+def check_tool_calls_max(expect: TurnExpectation, turn: TurnTrace) -> CheckResult:
+    """No tool was called more often than its maximum in the turn.
+
+    Counts the calls the model made, also the ones a tool refused: asking for more than the
+    limit is what an "everything" prompt makes the model try.
+    """
+    calls = Counter(call.name for call in turn.tool_calls)
+    over = {
+        name: f"{calls[name]} > {maximum}"
+        for name, maximum in expect.tool_calls_max.items()
+        if calls[name] > maximum
+    }
+    return CheckResult("tool_calls_max", not over, f"over the maximum: {over}" if over else "")
+
+
+def check_guardrails(expect: TurnExpectation, turn: TurnTrace) -> CheckResult:
+    """Every expected guardrail event appears in the reply's guardrails."""
+    missing = [event for event in expect.guardrails if event not in turn.guardrails]
+    detail = f"missing {missing} (fired {turn.guardrails})" if missing else ""
+    return CheckResult("guardrails", not missing, detail)
+
+
 def check_tool_args(expect: TurnExpectation, turn: TurnTrace) -> CheckResult:
     """For each tool with expectations, at least one of its calls meets all of them."""
     problems: list[str] = []
@@ -106,7 +128,7 @@ def check_grounded(
     and limits such as the 30 % down payment or the 30-year term).
     """
     sources = [*_source_numbers([*history, turn]), *known]
-    ungrounded = [f.raw for f in find_figures(turn.answer) if not _near_any(f.value, sources)]
+    ungrounded = [f.raw for f in ungrounded_figures(turn.answer, sources)]
     if ungrounded:
         return CheckResult("grounded", False, f"figures with no source: {ungrounded}")
     return CheckResult("grounded", True)
@@ -122,7 +144,7 @@ def check_cites_source(turn: TurnTrace, history: Sequence[TurnTrace]) -> CheckRe
     ]
     prices = [n for output in project_outputs for n in all_numbers(output)]
     quoted = [
-        f for f in find_figures(turn.answer) if f.kind == "amount" and _near_any(f.value, prices)
+        f for f in find_figures(turn.answer) if f.kind == "amount" and near_any(f.value, prices)
     ]
     if not quoted:
         return None
@@ -161,6 +183,8 @@ def run_checks(
     results = [completed]
     if expect.tools_required or expect.tools_forbidden:
         results.append(check_tools(expect, turn))
+    if expect.tool_calls_max:
+        results.append(check_tool_calls_max(expect, turn))
     if expect.tool_args:
         results.append(check_tool_args(expect, turn))
     if expect.must_mention or expect.must_not_mention:
@@ -170,6 +194,8 @@ def run_checks(
     if cites is not None:
         results.append(cites)
     results.append(check_language(expect, turn))
+    if expect.guardrails:
+        results.append(check_guardrails(expect, turn))
     return results
 
 
@@ -259,7 +285,3 @@ def _source_numbers(turns: Sequence[TurnTrace]) -> list[Decimal]:
         if isinstance(value, int | float) and not isinstance(value, bool)
     ]
     return numbers
-
-
-def _near_any(value: Decimal, sources: Sequence[Decimal]) -> bool:
-    return any(abs(value - source) <= abs(source) * TOLERANCE for source in sources)

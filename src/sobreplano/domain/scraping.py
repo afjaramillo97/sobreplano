@@ -4,11 +4,12 @@ import hashlib
 import re
 import unicodedata
 from collections import Counter
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, replace
 from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
+from statistics import median
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
@@ -20,6 +21,29 @@ MIN_AREA_M2 = Decimal(15)
 MAX_AREA_M2 = Decimal(1000)
 MAX_ROOMS = 10
 CENT = Decimal("0.01")
+MAX_PROJECT_NAME_LENGTH = 80
+MAX_NEIGHBORHOOD_LENGTH = 60
+MAX_UNIT_TYPE_NAME_LENGTH = 60
+# A page with at least this many unit types that have a price and an area can say which of
+# them is out of line with the others (SPEC 10).
+MIN_UNIT_TYPES_FOR_OUTLIER_RULE = 3
+OUTLIER_LOW_RATIO = Decimal("0.5")  # below half the others' median price per m²
+OUTLIER_HIGH_RATIO = Decimal(2)  # above double it
+
+# Text from a scraped page reaches the advisor through the database, so what looks like an
+# instruction, markup or a link is refused (SPEC 10). Compared without accents or case.
+_INJECTION_WORDS = (
+    "ignora",
+    "ignore",
+    "instruc",
+    "prompt",
+    "sistema",
+    "system",
+    "asistente",
+    "assistant",
+)
+_FORBIDDEN_CHARS = frozenset("<>{}`\n\r")
+_URL_OR_EMAIL = re.compile(r"https?|www\.|\S@\S", re.IGNORECASE)
 
 
 class ScrapeRunStatus(StrEnum):
@@ -137,13 +161,40 @@ class RejectedUnitType:
     reason: str
 
 
+def validate_text(value: str, max_length: int) -> str | None:
+    """The text without surrounding spaces if it is safe to store, else None.
+
+    None when the text is empty, longer than max_length, has a line break, one of < > { } `,
+    a URL or an email, or one of the words ignora, ignore, instruc, prompt, sistema, system,
+    asistente, assistant (without accents or case). The caller decides what a refusal costs
+    and logs it; the rules are conservative on purpose: a false positive loses one field
+    with a warning, a false negative puts a stranger's text in front of the advisor.
+    """
+    text = value.strip()
+    if not text or len(text) > max_length:
+        return None
+    if any(char in _FORBIDDEN_CHARS for char in text) or _URL_OR_EMAIL.search(text):
+        return None
+    plain = "".join(
+        c for c in unicodedata.normalize("NFKD", text.casefold()) if not unicodedata.combining(c)
+    )
+    if any(word in plain for word in _INJECTION_WORDS):
+        return None
+    return text
+
+
 def validate_unit_type(unit_type: ExtractedUnitType) -> ValidUnitType | RejectedUnitType:
     """Apply the range rules before anything reaches the append-only history.
 
-    Rejects a unit type without a price in range or without at least one area in range.
-    An area or room count out of range is dropped to None and reported in `warnings`.
+    Rejects a unit type without a price in range, without at least one area in range, or
+    whose name fails validate_text. An area or room count out of range is dropped to None and
+    reported in `warnings`.
     """
     # First line of defence against model mistakes and injected text: the history cannot be fixed.
+    name = validate_text(unit_type.name, MAX_UNIT_TYPE_NAME_LENGTH)
+    if name is None:
+        # The rejected name is the suspicious text: it is logged shortened, never stored.
+        return RejectedUnitType(unit_type.name[:MAX_UNIT_TYPE_NAME_LENGTH], "name not accepted")
     price = unit_type.price_cop
     if price is None:
         return RejectedUnitType(unit_type.name, "no price")
@@ -157,7 +208,7 @@ def validate_unit_type(unit_type: ExtractedUnitType) -> ValidUnitType | Rejected
         return RejectedUnitType(unit_type.name, "no area in range")
 
     return ValidUnitType(
-        name=unit_type.name,
+        name=name,
         price_cop=price,
         built_area_m2=built,
         private_area_m2=private,
@@ -165,6 +216,76 @@ def validate_unit_type(unit_type: ExtractedUnitType) -> ValidUnitType | Rejected
         bathrooms=_rooms_in_range("bathrooms", unit_type.bathrooms, warnings),
         warnings=tuple(warnings),
     )
+
+
+@dataclass(frozen=True)
+class UnitTypeScreening:
+    """What a page's extracted unit types become: the ones to record and the ones refused."""
+
+    accepted: list[ValidUnitType]
+    rejected: list[RejectedUnitType]
+    merged_duplicates: int  # unit types the page listed twice, kept once
+
+
+def screen_unit_types(extracted: Iterable[ExtractedUnitType]) -> UnitTypeScreening:
+    """Validate each unit type, collapse duplicates, then drop price per m² outliers.
+
+    The one place that decides what a page's unit types are worth storing, so the scraper
+    and the evals cannot disagree. Order is kept; rejected lists every refusal, in the order
+    each rule applied.
+    """
+    accepted: list[ValidUnitType] = []
+    rejected: list[RejectedUnitType] = []
+    for unit_type in extracted:
+        checked = validate_unit_type(unit_type)
+        if isinstance(checked, RejectedUnitType):
+            rejected.append(checked)
+        else:
+            accepted.append(checked)
+    # Before the outlier rule: a unit type listed twice must not weigh twice in the median.
+    deduped = dedupe_unit_types(accepted)
+    kept, outliers = reject_price_outliers(deduped)
+    return UnitTypeScreening(kept, [*rejected, *outliers], len(accepted) - len(deduped))
+
+
+def reject_price_outliers(
+    valid: Sequence[ValidUnitType],
+) -> tuple[list[ValidUnitType], list[RejectedUnitType]]:
+    """Split off the unit types whose price per m² is far from their page's other unit types.
+
+    Applies only when at least 3 unit types have a price and an area. A unit type is refused
+    when its price per m² (private area, else built, as the read API) is below 50 % or above
+    200 % of the median of the others' on the same page. This is the control against a
+    forged block with a believable shape: a model cannot tell it from a real one, but its
+    price rarely fits the rest of the page. A fake priced like the real ones still gets in.
+    """
+    per_m2 = {i: _price_per_m2(unit) for i, unit in enumerate(valid)}
+    comparable = {i: value for i, value in per_m2.items() if value is not None}
+    if len(comparable) < MIN_UNIT_TYPES_FOR_OUTLIER_RULE:
+        return list(valid), []
+    kept: list[ValidUnitType] = []
+    outliers: list[RejectedUnitType] = []
+    for i, unit in enumerate(valid):
+        value = comparable.get(i)
+        if value is None:
+            kept.append(unit)  # without an area it neither counts nor is judged
+            continue
+        others = median([other for j, other in comparable.items() if j != i])
+        ratio = value / others
+        if OUTLIER_LOW_RATIO <= ratio <= OUTLIER_HIGH_RATIO:
+            kept.append(unit)
+        else:
+            reason = (
+                f"price per m² outlier: {round(value)} is {ratio:.0%} of the median "
+                f"{round(others)} of the page's other unit types"
+            )
+            outliers.append(RejectedUnitType(unit.name, reason))
+    return kept, outliers
+
+
+def _price_per_m2(unit: ValidUnitType) -> Decimal | None:
+    area = unit.private_area_m2 if unit.private_area_m2 is not None else unit.built_area_m2
+    return None if area is None else Decimal(unit.price_cop) / area
 
 
 def content_sha256(html: str) -> str:

@@ -234,3 +234,22 @@ class AdvisorThreadRow(IdMixin, CreatedAtMixin, Base):
         DateTime(timezone=True), server_default=func.now()
     )
     turns: Mapped[int] = mapped_column(Integer, server_default="0")
+
+
+class RateLimitHitRow(Base):
+    """Row of `rate_limit_hits`: requests of one client in one window (migration 0009).
+
+    client_key is a keyed hash of the IP, never the IP itself.
+    """
+
+    __tablename__ = "rate_limit_hits"
+    __table_args__ = (
+        CheckConstraint("window_kind IN ('minute', 'day')", name="window_kind_known"),
+        CheckConstraint("hits > 0", name="hits_positive"),
+    )
+
+    bucket: Mapped[str] = mapped_column(Text, primary_key=True)
+    window_kind: Mapped[str] = mapped_column(Text, primary_key=True)
+    client_key: Mapped[str] = mapped_column(Text, primary_key=True)
+    window_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
+    hits: Mapped[int] = mapped_column(Integer)

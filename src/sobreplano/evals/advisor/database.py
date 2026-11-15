@@ -89,7 +89,8 @@ def prepare(url: str, catalog: Path = CATALOG_PATH) -> SeedReport:
 def _migrate(url: str) -> None:
     # A subprocess, because env.py reads DATABASE_URL and its fileConfig disables every
     # logger already created in this process.
-    subprocess.run(
+    # Fixed command line; only the database URL (checked as local) goes in the environment.
+    subprocess.run(  # noqa: S603
         [sys.executable, "-m", "alembic", "-c", str(ALEMBIC_INI), "upgrade", "head"],
         env={**os.environ, "DATABASE_URL": url},
         check=True,

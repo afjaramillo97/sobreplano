@@ -38,7 +38,7 @@ def build_ask_advisor(
     agent = LangGraphAdvisor(
         chat_model=lambda: build_chat_model(settings),
         model_name=settings.advisor_model,
-        tools=build_tools(SqlProjectListingQuery(session)),
+        tools=lambda: build_tools(SqlProjectListingQuery(session)),
         checkpointer=checkpointer,
         callbacks=langfuse_callbacks(settings),
         tags=[source],

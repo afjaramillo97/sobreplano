@@ -89,10 +89,13 @@ def git_commit() -> str | None:
     """The current commit (with "-dirty" if there are local changes), or None outside git."""
     try:
         commit = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, check=True
+            ["git", "rev-parse", "--short", "HEAD"],  # noqa: S607  (git from PATH, fixed arguments)
+            capture_output=True,
+            text=True,
+            check=True,
         ).stdout.strip()
         dirty = subprocess.run(
-            ["git", "status", "--porcelain", "--untracked-files=no"],
+            ["git", "status", "--porcelain", "--untracked-files=no"],  # noqa: S607  (same as above)
             capture_output=True,
             text=True,
             check=True,

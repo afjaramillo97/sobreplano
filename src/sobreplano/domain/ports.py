@@ -15,6 +15,7 @@ from sobreplano.domain.listings import (
     ProjectSort,
 )
 from sobreplano.domain.pricing import PriceObservation
+from sobreplano.domain.rate_limit import ClientUsage, WindowCounts
 from sobreplano.domain.scraping import (
     ExtractionResult,
     FetchedPage,
@@ -141,3 +142,24 @@ class AdvisorThreadRepository(Protocol):
     def record_turn(self, thread_id: UUID) -> None: ...  # turns + 1, last_message_at = now()
     def list_inactive_since(self, cutoff: datetime) -> list[UUID]: ...
     def delete(self, thread_id: UUID) -> None: ...
+
+
+class RateLimitRepository(Protocol):
+    """Request counters per group of routes, client and window. Commits on its own.
+
+    Every method raises RateLimitStoreError if the counters cannot be reached.
+    """
+
+    def hit(
+        self, bucket: str, client_key: str, minute_start: datetime, day_start: datetime
+    ) -> WindowCounts:
+        """Count one request in both windows and return the counts with it included."""
+        ...
+
+    def prune(self, before: datetime) -> int:
+        """Delete windows that started before `before`; returns how many."""
+        ...
+
+    def usage_since(self, since: datetime) -> list[ClientUsage]:
+        """Each client's usage per group in the windows started at or after since."""
+        ...

@@ -25,6 +25,7 @@ from sobreplano.domain.pricing import ObservationSource
 from sobreplano.infrastructure.settings import Settings
 from sobreplano.interface.api.dependencies import get_project_listing_query
 from sobreplano.interface.api.main import create_app
+from sobreplano.interface.api.rate_limit import limit_detail, limit_list
 
 FIRST = PricePoint(date(2026, 10, 28), 716_500_000, ObservationSource.MANUAL)
 LAST = PricePoint(date(2026, 11, 3), 716_500_000, ObservationSource.SCRAPER)
@@ -83,6 +84,9 @@ def fake() -> FakeQuery:
 def client(fake: FakeQuery) -> Iterator[TestClient]:
     app = create_app(Settings(database_url="postgresql+psycopg://unused@127.0.0.1:1/unused"))
     app.dependency_overrides[get_project_listing_query] = lambda: fake
+    # Rate limits have their own tests (test_rate_limit.py).
+    app.dependency_overrides[limit_list] = lambda: None
+    app.dependency_overrides[limit_detail] = lambda: None
     with TestClient(app) as client:
         yield client
 

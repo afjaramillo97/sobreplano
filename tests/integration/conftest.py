@@ -18,6 +18,7 @@ from sobreplano.infrastructure.db.price_observation_repository import (
 from sobreplano.infrastructure.settings import load_settings
 from sobreplano.interface.api.dependencies import get_session
 from sobreplano.interface.api.main import create_app
+from sobreplano.interface.api.rate_limit import limit_advisor, limit_detail, limit_list
 
 
 @pytest.fixture(scope="session")
@@ -47,6 +48,10 @@ def client(session: Session) -> Iterator[TestClient]:
     """API client whose requests use the test's transactional session."""
     app = create_app(load_settings())
     app.dependency_overrides[get_session] = lambda: session
+    # The counters commit on their own connection, outside the rolled-back transaction;
+    # test_rate_limit_repository.py tests them against Postgres.
+    for limit in (limit_list, limit_detail, limit_advisor):
+        app.dependency_overrides[limit] = lambda: None
     with TestClient(app) as client:
         yield client
 

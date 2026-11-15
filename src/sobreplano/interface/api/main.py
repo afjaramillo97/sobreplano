@@ -7,7 +7,9 @@ from fastapi import FastAPI
 
 from sobreplano.infrastructure.advisor.tracing import shutdown_tracing
 from sobreplano.infrastructure.db.engine import create_db_engine, create_session_factory
+from sobreplano.infrastructure.db.rate_limit_repository import SqlRateLimitRepository
 from sobreplano.infrastructure.settings import Settings, load_settings
+from sobreplano.interface.api.rate_limit import RateLimiter
 from sobreplano.interface.api.routes import advisor, developers, health, projects
 
 
@@ -25,6 +27,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         engine = create_db_engine(resolved.database_url)
         app.state.settings = resolved
         app.state.session_factory = create_session_factory(engine)
+        # Its own sessions from the same factory: counters commit apart from the request.
+        app.state.rate_limiter = RateLimiter(
+            SqlRateLimitRepository(app.state.session_factory), resolved
+        )
         yield
         engine.dispose()
         # Send the advisor traces still buffered before the process exits.

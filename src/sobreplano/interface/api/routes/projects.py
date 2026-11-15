@@ -9,6 +9,7 @@ from sobreplano.domain.catalog import Municipality
 from sobreplano.domain.errors import DomainValidationError
 from sobreplano.domain.listings import ProjectFilters, ProjectSort
 from sobreplano.interface.api.dependencies import ListingQueryDep
+from sobreplano.interface.api.rate_limit import DetailRateLimitDep, ListRateLimitDep
 from sobreplano.interface.api.schemas import ProjectDetailOut, ProjectListResponse
 
 router = APIRouter(tags=["projects"])
@@ -16,6 +17,7 @@ router = APIRouter(tags=["projects"])
 
 @router.get("/projects")
 def list_projects(
+    _rate_limit: ListRateLimitDep,
     listing_query: ListingQueryDep,
     municipality: Annotated[Municipality | None, Query()] = None,
     developer: Annotated[str | None, Query(description="Developer slug; unknown gives []")] = None,
@@ -51,6 +53,7 @@ def list_projects(
 
 @router.get("/projects/{slug}")
 def get_project(
+    _rate_limit: DetailRateLimitDep,
     listing_query: ListingQueryDep,
     slug: Annotated[str, Path(pattern="^[a-z0-9-]{1,80}$")],
 ) -> ProjectDetailOut:

@@ -14,6 +14,7 @@ from sobreplano.domain.errors import AdvisorLimitError, AdvisorUnavailableError
 from sobreplano.infrastructure.settings import Settings
 from sobreplano.interface.api.dependencies import get_ask_advisor, get_session
 from sobreplano.interface.api.main import create_app
+from sobreplano.interface.api.rate_limit import limit_advisor
 
 CALL = LlmCall(
     model="openai:gpt-6-luna",
@@ -106,6 +107,7 @@ def client(world: World) -> Iterator[TestClient]:
     app = create_app(Settings(database_url="postgresql+psycopg://unused@127.0.0.1:1/unused"))
     app.dependency_overrides[get_ask_advisor] = lambda: world.ask
     app.dependency_overrides[get_session] = lambda: world.session
+    app.dependency_overrides[limit_advisor] = lambda: None  # see test_rate_limit.py
     with TestClient(app) as client:
         yield client
 

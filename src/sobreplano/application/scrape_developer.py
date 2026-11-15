@@ -28,6 +28,8 @@ from sobreplano.domain.ports import (
 )
 from sobreplano.domain.pricing import ObservationSource
 from sobreplano.domain.scraping import (
+    MAX_NEIGHBORHOOD_LENGTH,
+    MAX_PROJECT_NAME_LENGTH,
     ExtractionResult,
     FetchedPage,
     ParsedProjectPage,
@@ -40,6 +42,7 @@ from sobreplano.domain.scraping import (
     normalize_unit_type_name,
     text_sha256,
     unit_types_with_same_area,
+    validate_text,
     validate_unit_type,
 )
 
@@ -235,13 +238,22 @@ class ScrapeDeveloper:
             # A hand-loaded seed project has its own slug but the page's URL.
             project = self.catalog.get_project_by_source_url(parsed.canonical_url)
         if project is None:
+            name = validate_text(extraction.project.name, MAX_PROJECT_NAME_LENGTH)
+            if name is None:
+                # The name is required: the page fails, and the run goes on with the others.
+                raise DomainValidationError(f"project name not accepted: {parsed.canonical_url}")
+            neighborhood = extraction.project.neighborhood
+            if neighborhood is not None:
+                neighborhood = validate_text(neighborhood, MAX_NEIGHBORHOOD_LENGTH)
+                if neighborhood is None:
+                    logger.warning("neighborhood not accepted for %s", parsed.canonical_url)
             project = Project(
                 id=uuid4(),
                 developer_id=developer.id,
-                name=extraction.project.name,
+                name=name,
                 slug=parsed.slug,
                 municipality=parsed.municipality,
-                neighborhood=extraction.project.neighborhood,
+                neighborhood=neighborhood,
                 location=parsed.location,
                 source_url=parsed.canonical_url,
             )

@@ -20,6 +20,24 @@ MIN_AREA_M2 = Decimal(15)
 MAX_AREA_M2 = Decimal(1000)
 MAX_ROOMS = 10
 CENT = Decimal("0.01")
+MAX_PROJECT_NAME_LENGTH = 80
+MAX_NEIGHBORHOOD_LENGTH = 60
+MAX_UNIT_TYPE_NAME_LENGTH = 60
+
+# Text from a scraped page reaches the advisor through the database, so what looks like an
+# instruction, markup or a link is refused (SPEC 10). Compared without accents or case.
+_INJECTION_WORDS = (
+    "ignora",
+    "ignore",
+    "instruc",
+    "prompt",
+    "sistema",
+    "system",
+    "asistente",
+    "assistant",
+)
+_FORBIDDEN_CHARS = frozenset("<>{}`\n\r")
+_URL_OR_EMAIL = re.compile(r"https?|www\.|\S@\S", re.IGNORECASE)
 
 
 class ScrapeRunStatus(StrEnum):
@@ -137,13 +155,40 @@ class RejectedUnitType:
     reason: str
 
 
+def validate_text(value: str, max_length: int) -> str | None:
+    """The text without surrounding spaces if it is safe to store, else None.
+
+    None when the text is empty, longer than max_length, has a line break, one of < > { } `,
+    a URL or an email, or one of the words ignora, ignore, instruc, prompt, sistema, system,
+    asistente, assistant (without accents or case). The caller decides what a refusal costs
+    and logs it; the rules are conservative on purpose: a false positive loses one field
+    with a warning, a false negative puts a stranger's text in front of the advisor.
+    """
+    text = value.strip()
+    if not text or len(text) > max_length:
+        return None
+    if any(char in _FORBIDDEN_CHARS for char in text) or _URL_OR_EMAIL.search(text):
+        return None
+    plain = "".join(
+        c for c in unicodedata.normalize("NFKD", text.casefold()) if not unicodedata.combining(c)
+    )
+    if any(word in plain for word in _INJECTION_WORDS):
+        return None
+    return text
+
+
 def validate_unit_type(unit_type: ExtractedUnitType) -> ValidUnitType | RejectedUnitType:
     """Apply the range rules before anything reaches the append-only history.
 
-    Rejects a unit type without a price in range or without at least one area in range.
-    An area or room count out of range is dropped to None and reported in `warnings`.
+    Rejects a unit type without a price in range, without at least one area in range, or
+    whose name fails validate_text. An area or room count out of range is dropped to None and
+    reported in `warnings`.
     """
     # First line of defence against model mistakes and injected text: the history cannot be fixed.
+    name = validate_text(unit_type.name, MAX_UNIT_TYPE_NAME_LENGTH)
+    if name is None:
+        # The rejected name is the suspicious text: it is logged shortened, never stored.
+        return RejectedUnitType(unit_type.name[:MAX_UNIT_TYPE_NAME_LENGTH], "name not accepted")
     price = unit_type.price_cop
     if price is None:
         return RejectedUnitType(unit_type.name, "no price")
@@ -157,7 +202,7 @@ def validate_unit_type(unit_type: ExtractedUnitType) -> ValidUnitType | Rejected
         return RejectedUnitType(unit_type.name, "no area in range")
 
     return ValidUnitType(
-        name=unit_type.name,
+        name=name,
         price_cop=price,
         built_area_m2=built,
         private_area_m2=private,

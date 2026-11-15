@@ -124,9 +124,9 @@ labels (`docs/evals.md`):
 | Known vulnerabilities | Done. Job `audit` in `ci.yml` runs `pip-audit --strict` on `uv export --frozen`; exceptions in `.pip-audit-ignore` with reason and date (empty). It found 2 (`dnspython` 2.9.1, CVE-2026-128089; `soupsieve` 3.0.4, CVE-2026-126190); both had a fixed version, so they were upgraded in `uv.lock` (2.9.2 and 4.1.1) and the audit now reports none | `uvx pip-audit` before and after; unit tests pass |
 | Dependabot | Done, not yet seen in action. `.github/dependabot.yml`: `uv` and `github-actions`, weekly, one grouped PR each | The first Dependabot PR |
 | Actions pinned by commit | Done. All 13 `uses:` carry the full SHA and the version in a comment (for example `actions/checkout@11d5960… # v4.4.0`). Dependabot keeps them current, so pinning does not stop security patches | `grep -nE "uses: [^ ]+@v[0-9]" .github/workflows/*.yml` returns nothing |
-| Secret scanning | **Pending, by hand**: turn on secret scanning and push protection in GitHub (Settings > Code security) and run `brew install gitleaks && gitleaks git` once over the whole history; paste the summary here | |
+| Secret scanning | `gitleaks git --redact` over the whole history (148 commits, 2026-11-15): **no leaks found** after documenting 3 false positives in `.gitleaksignore` (`generic-api-key` read the `"key":"O2/r3/t1/privacy"` id of a synthetic eval pair in the old label format; not a credential). A scan of the working tree only finds keys in git-ignored files (`.env`, `.env.ci`, `.evals/`), none tracked. **Pending, by hand**: turn on secret scanning and push protection in GitHub (Settings > Code security) | `gitleaks git --redact -v` |
 | Supabase security advisor | Done (2026-11-15). Migration `0009` applied in the cloud (`alembic current`: `0009 (head)`); Dashboard > Advisors > Security shows **no ERROR-level finding** (reported by the owner; no screenshot attached) | `alembic current` on `.env.cloud` |
-| Infracost on `infra/` PRs | **Pending, not installed.** The free plan could not be confirmed from the official page: third-party reviews agree that the GitHub Action comments the cost diff on a PR with a free API key, but disagree on plan names and run limits (some say 1,000 runs a month). Check infracost.io/pricing; if the free plan does not allow it, move it to `docs/backlog.md`. Today's infrastructure costs cents, so it is worth only as a visible practice | A comment on a test PR |
+| Infracost on `infra/` PRs | Workflow written (`.github/workflows/infracost.yml`), **not active until the API key exists**: see "Infracost" below | A comment on a test PR (space below) |
 
 ### IAM review (privilege of each role)
 
@@ -145,3 +145,46 @@ To watch, none urgent:
 - The ECR repository policy allows any Lambda function of the account to pull the image (`function:*`). Narrowing it to the scraper function creates a dependency cycle in Terraform; the image holds no secrets (they come from SSM), so the risk is low.
 - `infra/tfplan` exists locally (git-ignored). A saved plan can contain sensitive values: delete it after each apply.
 - The database URL the scraper uses connects as the owner role (`postgres`), not as `anon`; migration `0009` revokes the API roles on every table, so it does not matter for the public Supabase API.
+
+## Infracost (cost of `infra/` before the merge)
+
+**What it is for.** Today the infrastructure costs cents, so the estimate itself is small. The
+value is catching a resource with a **fixed monthly cost** before it merges, above all in SPEC 12
+(an edge layer such as a WAF or a load balancer, a NAT gateway, a database) where one line of
+Terraform can add tens of USD to a project with a 20 USD a month budget. It also shows the
+practice on the pull request.
+
+**How it works.** `.github/workflows/infracost.yml` runs `infracost/actions/diff@v5.0.1`
+(pinned by SHA) only on pull requests to `main` that change `infra/**`. It reads the Terraform
+code of `main` and of the PR, with no AWS credentials and no plan, and comments the cost
+difference. Permissions: `contents: read` and `pull-requests: write`. The dashboard upload is
+turned off (`INFRACOST_CI_DISABLE_DASHBOARD`), so nothing about the repository is sent to the
+Infracost dashboard; the comment is posted with the job's own token. Terraform is still never
+applied from CI.
+
+**On and off.** The secret `INFRACOST_API_KEY` (GitHub: Settings > Secrets and variables >
+Actions). Without it the job skips with a notice and does not fail, like `evals.yml` without
+`RUN_ADVISOR_EVALS`. Forks and Dependabot get no secrets, so they skip too.
+
+**To review (not confirmed).**
+- **The free plan after the trial.** On 2026-11-15 the dashboard says the trial of Infracost
+  Cloud ends in 13 days (2026-11-28) and "our CI/CD plan starts free". Third-party sources and
+  the FAQ say that plan has comments on pull requests and 1,000 runs a month, and the API key
+  does not need Cloud. A community post of 2026-07-14 says that with the 2.x CLI, `scan` may
+  require a connection to an Infracost Cloud organization; no official answer was found.
+  **After 2026-11-28, open a pull request that touches `infra/` and check that the comment
+  still appears.** If it does not, the options are the GitHub App or moving this to the backlog.
+- **The usage file.** `infra/infracost-usage.yml` holds the real approximate usage (see the
+  comments in the file for where each number comes from), so the estimate is not 0 USD for
+  Lambda, S3 and CloudWatch Logs. `diff@v5` has no input for a usage file, and the 2.x
+  documentation wires it through a config file (`infracost.yml` with `usage_file`), which was
+  not verified. If the first comment shows the usage-based resources at 0 USD, add that config
+  file.
+- Runs: 1,000 a month is far above what a repository with a few `infra/` PRs uses.
+
+**Evidence: the comment of a test pull request.** Pending: open a pull request that touches
+`infra/` once the API key is saved in GitHub, and paste the comment here.
+
+```
+(paste the Infracost comment here)
+```

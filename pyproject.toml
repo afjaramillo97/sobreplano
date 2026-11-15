@@ -48,7 +48,11 @@ extend-exclude = [".claude"]
 force-exclude = true
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "ASYNC"]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "ASYNC", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+# pytest is built on assert.
+"tests/**" = ["S101"]
 
 [tool.pytest.ini_options]
 markers = [

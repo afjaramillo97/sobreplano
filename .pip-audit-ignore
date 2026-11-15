@@ -1,0 +1,3 @@
+# Vulnerabilities that the audit job of ci.yml accepts, one ID per line.
+# Format: <ID>  # <why it does not apply or cannot be fixed yet> (<date accepted>, review by <date>)
+# Empty on purpose: every finding so far had a fixed version, so it was upgraded instead.

@@ -46,7 +46,8 @@ def downgrade() -> None:
     collide on the previous unique.
     """
     op.drop_column("llm_usage", "prompt_version")
-    op.execute(f"DELETE FROM page_extractions WHERE prompt_version <> '{LEGACY}'")
+    # LEGACY is a constant of this file, not input.
+    op.execute(f"DELETE FROM page_extractions WHERE prompt_version <> '{LEGACY}'")  # noqa: S608
     op.drop_constraint(NEW_UNIQUE, "page_extractions", type_="unique")
     op.create_unique_constraint(OLD_UNIQUE, "page_extractions", ["text_sha256", "model"])
     op.drop_column("page_extractions", "prompt_version")

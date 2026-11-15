@@ -40,7 +40,8 @@ def test_api_roles_cannot_select_from_any_public_table(session: Session, role: s
         # The savepoint lets the session go on after the expected permission error.
         with pytest.raises(DBAPIError, match="permission denied"), session.begin_nested():
             session.execute(text(f"SET LOCAL ROLE {role}"))
-            session.execute(text(f'SELECT 1 FROM public."{name}" LIMIT 1'))
+            # name comes from pg_class, not from input.
+            session.execute(text(f'SELECT 1 FROM public."{name}" LIMIT 1'))  # noqa: S608
 
 
 @pytest.mark.parametrize("role", API_ROLES)

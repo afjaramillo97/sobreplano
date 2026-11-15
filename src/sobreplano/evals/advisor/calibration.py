@@ -270,7 +270,8 @@ def render_sheet(items: Sequence[LabelItem], seed: int) -> str:
     The shuffle is seeded, so the same labels file gives the same sheet.
     """
     pending = [item for item in items if item.human_passed is None]
-    random.Random(seed).shuffle(pending)
+    # Only to shuffle a labeling sheet reproducibly; nothing here needs to be unpredictable.
+    random.Random(seed).shuffle(pending)  # noqa: S311
     lines = [
         "# Hoja de etiquetado del juez",
         "",
@@ -475,7 +476,7 @@ def _agreement(
     real = [(judge, human) for judge, human, synthetic in rows if not synthetic]
     synthetic = [(judge, human) for judge, human, synthetic in rows if synthetic]
     agreement = _rate(pairs)
-    assert agreement is not None  # a rubric only appears with at least one pair
+    assert agreement is not None  # noqa: S101  (a rubric only appears with at least one pair)
     return RubricAgreement(
         rubric=rubric,
         judge_model=judge_model,

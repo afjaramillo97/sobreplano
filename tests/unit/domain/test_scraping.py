@@ -12,10 +12,14 @@ from sobreplano.domain.scraping import (
     ValidUnitType,
     dedupe_unit_types,
     normalize_unit_type_name,
+    reject_price_outliers,
+    screen_unit_types,
     unit_types_with_same_area,
     validate_text,
     validate_unit_type,
 )
+from sobreplano.evals.extraction.adversarial import ADVERSARIAL_DIR
+from sobreplano.evals.extraction.golden import load_cache
 
 
 def make_extracted(
@@ -271,3 +275,156 @@ def test_unit_type_name_is_stored_stripped() -> None:
     result = validate_unit_type(make_extracted(name=" TIPO B "))
     assert isinstance(result, ValidUnitType)
     assert result.name == "TIPO B"
+
+
+# price per m² outliers
+
+
+def sized(name: str, price: int, private: str | None = "50", total: str | None = None):  # type: ignore[no-untyped-def]
+    """A unit type with a price and an area; its price per m² is price / area."""
+    return ExtractedUnitType(
+        name=name,
+        price_cop=price,
+        total_area_m2=None if total is None else Decimal(total),
+        private_area_m2=None if private is None else Decimal(private),
+        bedrooms=2,
+        bathrooms=2,
+    )
+
+
+def test_a_fake_block_priced_far_below_the_page_is_refused() -> None:
+    # The adversarial page: A and B at about 7.4M/m², the fake TIPO Z at 2M/m².
+    screening = screen_unit_types(
+        [
+            sized("TIPO A", 376_000_000, private="49.50"),
+            sized("TIPO B", 402_000_000, private="55.00"),
+            sized("TIPO Z", 100_000_000, private="50"),
+        ]
+    )
+    assert [u.name for u in screening.accepted] == ["TIPO A", "TIPO B"]
+    [refused] = screening.rejected
+    assert refused.name == "TIPO Z"
+    assert refused.reason.startswith("price per m² outlier: 2000000 is 27% of the median")
+
+
+def test_the_adversarial_page_loses_its_fake_type_end_to_end() -> None:
+    labels, _ = load_cache(ADVERSARIAL_DIR)
+    label = next(x for x in labels if x.case_id == "adversarial-tipologia-falsa")
+    page_units = [
+        sized(u.name, u.price_cop or 0, private=str(u.private_area_m2)) for u in label.unit_types
+    ]
+    # What the model returned in the real run: the two real types and the cleaned fake one.
+    fake = sized("TIPO Z", 100_000_000, private="50")
+    screening = screen_unit_types([*page_units, fake])
+    assert "TIPO Z" not in [u.name for u in screening.accepted]
+    assert [u.name for u in screening.accepted] == [u.name for u in label.unit_types]
+
+
+def test_a_unit_type_priced_far_above_the_page_is_refused() -> None:
+    screening = screen_unit_types(
+        [
+            sized("TIPO A", 400_000_000),
+            sized("TIPO B", 410_000_000),
+            sized("TIPO C", 1_000_000_000),  # 2.5x the others
+        ]
+    )
+    assert [u.name for u in screening.accepted] == ["TIPO A", "TIPO B"]
+    assert screening.rejected[0].name == "TIPO C"
+
+
+def test_with_exactly_three_an_extreme_outlier_also_takes_a_real_unit_type_with_it() -> None:
+    # Known limit of "the median of the others": with 3 types the median of the other two is
+    # their mean, so a 3x outlier drags it up and TIPO A (8M/m²) falls under 50 % of it.
+    # No real page of the golden set is anywhere near this (ratios between 0.84 and 1.12).
+    screening = screen_unit_types(
+        [
+            sized("TIPO A", 400_000_000),
+            sized("TIPO B", 410_000_000),
+            sized("TIPO C", 1_200_000_000),
+        ]
+    )
+    assert [u.name for u in screening.accepted] == ["TIPO B"]
+    assert {r.name for r in screening.rejected} == {"TIPO A", "TIPO C"}
+
+
+def test_the_limits_are_inclusive() -> None:
+    # Others at 8M/m²; 4M is exactly 50 % and 16M exactly 200 %.
+    units = [
+        sized("TIPO A", 400_000_000),
+        sized("TIPO B", 400_000_000),
+        sized("TIPO LOW", 200_000_000),
+        sized("TIPO HIGH", 800_000_000),
+    ]
+    # With four types each one is judged against the other three's median.
+    low = reject_price_outliers([screen_valid(u) for u in units[:2] + units[2:3]])
+    assert [u.name for u in low[0]] == ["TIPO A", "TIPO B", "TIPO LOW"]
+    high = reject_price_outliers([screen_valid(u) for u in units[:2] + units[3:]])
+    assert [u.name for u in high[0]] == ["TIPO A", "TIPO B", "TIPO HIGH"]
+
+
+def screen_valid(unit: ExtractedUnitType) -> ValidUnitType:
+    checked = validate_unit_type(unit)
+    assert isinstance(checked, ValidUnitType)
+    return checked
+
+
+def test_just_past_the_limits_is_refused() -> None:
+    base = [sized("TIPO A", 400_000_000), sized("TIPO B", 400_000_000)]
+    below = screen_unit_types([*base, sized("TIPO LOW", 199_000_000)])  # 49.75 %
+    above = screen_unit_types([*base, sized("TIPO HIGH", 801_000_000)])  # 200.25 %
+    assert [r.name for r in below.rejected] == ["TIPO LOW"]
+    assert [r.name for r in above.rejected] == ["TIPO HIGH"]
+
+
+def test_with_two_unit_types_the_rule_does_not_apply() -> None:
+    screening = screen_unit_types([sized("TIPO A", 400_000_000), sized("TIPO Z", 100_000_000)])
+    assert [u.name for u in screening.accepted] == ["TIPO A", "TIPO Z"]
+    assert screening.rejected == []
+
+
+def test_unit_types_without_an_area_do_not_count_toward_the_three() -> None:
+    # Only two have an area; the unit type without one is neither judged nor counted.
+    no_area = ExtractedUnitType("TIPO N", 100_000_000, None, None, 2, 2)
+    screening = screen_unit_types(
+        [sized("TIPO A", 400_000_000), sized("TIPO B", 100_000_000), no_area]
+    )
+    # validate_unit_type already refuses a unit type with no area at all.
+    assert [u.name for u in screening.accepted] == ["TIPO A", "TIPO B"]
+    assert [r.reason for r in screening.rejected] == ["no area in range"]
+
+
+def test_the_built_area_is_used_when_there_is_no_private_area() -> None:
+    units = [
+        sized("TIPO A", 400_000_000, private=None, total="50"),
+        sized("TIPO B", 408_000_000, private=None, total="51"),
+        sized("TIPO C", 100_000_000, private=None, total="50"),
+    ]
+    assert [r.name for r in screen_unit_types(units).rejected] == ["TIPO C"]
+
+
+def test_a_duplicate_does_not_weigh_twice_in_the_median() -> None:
+    # TIPO A listed twice (a summary and a card) plus TIPO B: two unit types, so no rule.
+    screening = screen_unit_types(
+        [
+            sized("TIPO A", 400_000_000),
+            sized("TIPO A", 400_000_000),
+            sized("TIPO B", 150_000_000),
+        ]
+    )
+    assert screening.merged_duplicates == 1
+    assert screening.rejected == []
+    assert len(screening.accepted) == 2
+
+
+def test_other_rejections_come_first_and_the_rest_keep_their_order() -> None:
+    screening = screen_unit_types(
+        [
+            sized("TIPO A", 400_000_000),
+            sized("SIN PRECIO", 1),  # refused by the price range
+            sized("TIPO B", 410_000_000),
+            sized("TIPO C", 405_000_000),
+            sized("TIPO Z", 90_000_000),
+        ]
+    )
+    assert [u.name for u in screening.accepted] == ["TIPO A", "TIPO B", "TIPO C"]
+    assert [r.name for r in screening.rejected] == ["SIN PRECIO", "TIPO Z"]

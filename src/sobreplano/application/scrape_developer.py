@@ -33,17 +33,15 @@ from sobreplano.domain.scraping import (
     ExtractionResult,
     FetchedPage,
     ParsedProjectPage,
-    RejectedUnitType,
     ScrapedPage,
     ScrapeRunStatus,
     ValidUnitType,
     content_sha256,
-    dedupe_unit_types,
     normalize_unit_type_name,
+    screen_unit_types,
     text_sha256,
     unit_types_with_same_area,
     validate_text,
-    validate_unit_type,
 )
 
 logger = logging.getLogger(__name__)
@@ -289,27 +287,22 @@ class ScrapeDeveloper:
         report: ScrapeReport,
     ) -> bool:
         """Record one price per valid unit type; True if the page has any price for today."""
-        accepted: list[ValidUnitType] = []
-        for extracted in extraction.project.unit_types:
-            checked = validate_unit_type(extracted)
-            if isinstance(checked, RejectedUnitType):
-                report.unit_types_rejected += 1
-                logger.info(
-                    "unit type rejected: %s %r: %s",
-                    parsed.canonical_url,
-                    checked.name,
-                    checked.reason,
-                )
-            else:
-                accepted.append(checked)
-        # Before counting: a unit type the page lists twice is one unit type, not two.
-        deduped = dedupe_unit_types(accepted)
-        if len(deduped) < len(accepted):
+        screening = screen_unit_types(extraction.project.unit_types)
+        for rejected in screening.rejected:
+            report.unit_types_rejected += 1
+            logger.info(
+                "unit type rejected: %s %r: %s",
+                parsed.canonical_url,
+                rejected.name,
+                rejected.reason,
+            )
+        if screening.merged_duplicates:
             logger.info(
                 "%s: %d unit types listed twice, kept once",
                 parsed.canonical_url,
-                len(accepted) - len(deduped),
+                screening.merged_duplicates,
             )
+        deduped = screening.accepted
 
         unit_types = self._unit_types(project, deduped, parsed.canonical_url, report)
         priced = False

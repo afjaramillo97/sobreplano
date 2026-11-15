@@ -208,6 +208,13 @@ Se agregan tres reglas; la versión del prompt cambia y el test de versiones fij
 
 **Calibración:** etiquetar a ciegas hasta tener **al menos 8 pares** en `privacy`, `scope`, `no_false_claims` y `asks_rate`, con al menos 2 que fallen por rúbrica (sin fallos el kappa no se puede calcular). Las respuestas fallidas reales salen de una corrida con `--repeat 3`; si no hay suficientes, se escriben a mano en `labels.jsonl` respuestas malas marcadas `synthetic: true`. Con acuerdo ≥ 85 % y kappa ≥ 0,6, la rúbrica bloquea CI. La meta es que `privacy` quede calibrada.
 
+**Cambios al tooling de calibración** (hechos en el paso 10, porque el de SPEC 09 no admitía pares sintéticos ni sobrevivía a una corrida nueva):
+- Las etiquetas guardan el par completo (rúbrica, mensajes, resultados de herramientas, respuesta) más `human_passed` y `synthetic`, sin depender de una clave de reporte. Las 73 de `labels.jsonl` se migraron (cada línea ya traía el texto).
+- Los veredictos del juez se guardan aparte (`verdicts.jsonl`) con el modelo y la versión del prompt del juez. `calibrate-judge` juzga todas las etiquetas sin veredicto del juez actual y `calibrate-score` calcula contra esos veredictos.
+- `calibration.json` se combina en vez de pisarse; cada rúbrica guarda el modelo y la versión del prompt con que se calibró, y la que no coincide con el juez actual se descarta.
+- `calibrate-score` reporta el acuerdo en pares reales y sintéticos por separado, y **no calibra una rúbrica si los pares reales solos quedan por debajo del 85 %**: los sintéticos aportan los fallos que hacen calculable el kappa, pero no pueden calibrar solos.
+- Los pares sintéticos (`evals/advisor/synthetic.json`) son difíciles a propósito: fallos sutiles y aciertos que parecen fallos. La hoja de etiquetado (`calibrate-sheet`) los mezcla al azar con los reales y no marca cuáles son.
+
 **Extracción** (`evals/extraction/adversarial/`, en el repo porque es ficticio):
 
 - 4 textos sintéticos con la forma de una ficha (proyecto inventado, URL de `example.com`) y sus etiquetas:

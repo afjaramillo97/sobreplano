@@ -330,9 +330,42 @@ has to control a developer's site, and then the real prices are theirs too. With
 types, an extreme outlier (3×) also drags the median and takes one real unit type with it;
 the golden pages are nowhere near that.
 
-### Calibration of the four missing rubrics (SPEC 10)
+### Calibrating the judge (SPEC 10)
 
-Pending: it needs blind labels by hand (see `docs/evals.md` section "Judge calibration"). In the
-run above `privacy`, `no_false_claims` and `asks_rate` had no failed pair, so kappa cannot be
-computed for them; `scope` has 3 real failures (A1). Until then they report and do not block;
-`privacy` keeps its 100 % target.
+A label is a whole pair: rubric, user messages, tool results and answer, plus `human_passed`
+and `synthetic`. It does not depend on any report, so a label stays valid when the advisor is
+run again. The 73 labels of SPEC 09 were migrated to this format (each line already carried its
+text, so the old report was not needed); `origin` keeps their old key.
+
+```
+# 1. Add the pairs to label: the real ones of a report (default: privacy, scope,
+#    no_false_claims, asks_rate) and the hand-written hard ones (evals/advisor/synthetic.json)
+uv run --env-file .env python -m sobreplano.evals.advisor calibrate-add --report evals/reports/advisor-<date>-<model>.json
+# 2. A Markdown sheet with the unlabeled pairs shuffled and nothing that tells real from synthetic
+uv run --env-file .env python -m sobreplano.evals.advisor calibrate-sheet --out .evals/hoja_spec10.md
+#    ... write SI or NO after "human_passed:" of each pair, without opening synthetic.json ...
+# 3. Read the sheet into evals/advisor/labels.jsonl
+uv run --env-file .env python -m sobreplano.evals.advisor calibrate-import --sheet .evals/hoja_spec10.md
+# 4. Paid: the judge judges every labeled pair it has no verdict for (model and prompt version)
+uv run --env-file .env python -m sobreplano.evals.advisor calibrate-judge --max-cost 0.50
+# 5. Agreement of the current judge's verdicts with the labels; merges calibration.json
+uv run --env-file .env python -m sobreplano.evals.advisor calibrate-score
+```
+
+- Verdicts are saved in `evals/advisor/verdicts.jsonl` with the judge model and prompt version.
+  Changing either one means judging again (only the labeled pairs, about 0.001 USD each).
+- `calibrate-score` prints agreement and kappa for all pairs and, apart, for real and for
+  synthetic ones. A rubric is calibrated, and blocks CI, only if all of these hold: at least 5
+  labels, agreement ≥ 85 %, kappa ≥ 0.6, **and the real pairs alone agree ≥ 85 %**. Synthetic
+  pairs bring the failures that make kappa computable; they cannot calibrate a rubric by
+  themselves.
+- `calibration.json` is merged, not overwritten. Each rubric stores the judge model and prompt
+  version it was calibrated with, and a rubric that does not match the current judge is dropped
+  when scoring and does not block when running the evals.
+- The synthetic pairs are written to be hard: subtle failures (repeating part of a datum, an
+  "approximate" figure with no source, simulating with an assumed rate, answering an off-topic
+  question halfway) and passes that look like failures. `synthetic.json` also holds what each
+  one tests and the verdict its author had in mind, which is why it must stay closed while
+  labeling.
+
+Status: the sheet for the four SPEC 10 rubrics is generated; labeling and scoring are pending.

@@ -15,15 +15,28 @@ from sobreplano.domain.errors import AdvisorUnavailableError
 from sobreplano.evals.advisor.calibration import (
     CALIBRATION_PATH,
     LABELS_PATH,
-    TO_LABEL_PATH,
-    CalibrationState,
+    SPEC10_RUBRICS,
+    SYNTHETIC_PATH,
+    VERDICTS_PATH,
+    LabelItem,
+    add_new,
+    append_verdicts,
+    apply_sheet,
     calibrated_rubrics,
     export_for_labeling,
+    judge_labeled,
+    labeled,
     load_calibration,
-    load_labels,
+    load_items,
+    load_synthetic,
+    load_verdicts,
+    merge_calibration,
+    parse_sheet,
+    render_sheet,
     save_calibration,
     score,
     to_markdown,
+    verdicts_of,
     write_jsonl,
 )
 from sobreplano.evals.advisor.cases import CASES_PATH, EvalCase, load_cases
@@ -88,16 +101,48 @@ def main(argv: Sequence[str] | None = None) -> int:
     run_parser.add_argument("--cases-file", type=Path, default=CASES_PATH)
     run_parser.add_argument("--no-judge", action="store_true", help="deterministic checks only")
 
-    export_parser = commands.add_parser(
-        "calibrate-export", help="write the judged pairs of a report to label, without verdicts"
+    # Judge calibration (SPEC 10): labeled pairs live in one file, apart from any report.
+    add_parser = commands.add_parser(
+        "calibrate-add",
+        help="add unlabeled pairs to the labels file: a report's real ones and the synthetic ones",
     )
-    export_parser.add_argument("--report", type=Path, required=True)
-    export_parser.add_argument("--out", type=Path, default=TO_LABEL_PATH)
+    add_parser.add_argument(
+        "--report", type=Path, help="advisor report; omit to add only synthetic"
+    )
+    add_parser.add_argument(
+        "--rubrics",
+        default=",".join(SPEC10_RUBRICS),
+        help="rubrics to take from the report (default: the four of SPEC 10)",
+    )
+    add_parser.add_argument("--synthetic", type=Path, default=SYNTHETIC_PATH)
+    add_parser.add_argument("--no-synthetic", action="store_true")
+    add_parser.add_argument("--labels", type=Path, default=LABELS_PATH)
+
+    sheet_parser = commands.add_parser(
+        "calibrate-sheet", help="write the Markdown sheet of the unlabeled pairs, shuffled"
+    )
+    sheet_parser.add_argument("--out", type=Path, required=True)
+    sheet_parser.add_argument("--seed", type=int, default=10)
+    sheet_parser.add_argument("--labels", type=Path, default=LABELS_PATH)
+
+    import_parser = commands.add_parser(
+        "calibrate-import", help="read a filled sheet into the labels file"
+    )
+    import_parser.add_argument("--sheet", type=Path, required=True)
+    import_parser.add_argument("--labels", type=Path, default=LABELS_PATH)
+
+    judge_parser = commands.add_parser(
+        "calibrate-judge",
+        help="judge every labeled pair that the current judge has no verdict for (paid)",
+    )
+    judge_parser.add_argument("--labels", type=Path, default=LABELS_PATH)
+    judge_parser.add_argument("--max-cost", type=Decimal, default=Decimal("0.50"))
+    judge_parser.add_argument("--allow-unknown-cost", action="store_true")
 
     score_parser = commands.add_parser(
-        "calibrate-score", help="compare labels with a report's verdicts and save calibration"
+        "calibrate-score",
+        help="agreement of the current judge's verdicts with the labels; saves calibration",
     )
-    score_parser.add_argument("--report", type=Path, required=True)
     score_parser.add_argument("--labels", type=Path, default=LABELS_PATH)
     args = parser.parse_args(argv)
 
@@ -109,14 +154,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 1
         print(report)
         return 0
-    try:
-        if args.command == "calibrate-export":
-            return _calibrate_export(args.report, args.out)
-        if args.command == "calibrate-score":
-            return _calibrate_score(args.report, args.labels)
-    except (OSError, ValidationError) as error:
-        print(f"cannot read {args.report} or the labels: {error}")
-        return 2
+    if args.command.startswith("calibrate-"):
+        try:
+            return _calibrate(args)
+        except (OSError, ValidationError, ValueError, KeyError) as error:
+            print(f"cannot calibrate: {error}")
+            return 2
     return _run(args)
 
 
@@ -154,9 +197,14 @@ def _run(args: argparse.Namespace) -> int:
     if judge is not None:
         prompt_versions["judge"] = judge.prompt_version
         state = load_calibration()
-        calibrated = calibrated_rubrics(state, judge.prompt_version)
-        if state is not None and state.judge_prompt_version != judge.prompt_version:
-            print("judge prompt changed since calibration: no rubric blocks until recalibrated")
+        calibrated = calibrated_rubrics(state, judge.model, judge.prompt_version)
+        stale = [
+            r.rubric
+            for r in (state.rubrics if state else [])
+            if r.calibrated and not r.matches(judge.model, judge.prompt_version)
+        ]
+        if stale:
+            print(f"judge changed since the calibration of {stale}: they do not block")
 
     run_id = f"run-{datetime.now(UTC):%Y%m%dT%H%M%S}"
     tracer = LangfuseTurnTracer(settings, run_id, model) if tracing_enabled(settings) else None
@@ -239,36 +287,108 @@ def _load_report(path: Path) -> AdvisorRunReport:
     return AdvisorRunReport.model_validate_json(path.read_text(encoding="utf-8"))
 
 
-def _calibrate_export(report_path: Path, out: Path) -> int:
-    report = _load_report(report_path)
-    if report.judge_model is None:
-        print(f"{report_path} was run with --no-judge: there is nothing to label")
-        return 2
-    count = write_jsonl(out, export_for_labeling(report, judge_prompt()))
-    print(f"{count} pairs to label in {out}: fill human_passed (true/false), then save the")
-    print(f"labeled lines in {LABELS_PATH} and run calibrate-score --report {report_path}")
+def _calibrate(args: argparse.Namespace) -> int:
+    handlers = {
+        "calibrate-add": _calibrate_add,
+        "calibrate-sheet": _calibrate_sheet,
+        "calibrate-import": _calibrate_import,
+        "calibrate-judge": _calibrate_judge,
+        "calibrate-score": _calibrate_score,
+    }
+    return handlers[args.command](args)
+
+
+def _items(path: Path) -> list[LabelItem]:
+    return load_items(path) if path.exists() else []
+
+
+def _calibrate_add(args: argparse.Namespace) -> int:
+    prompt = judge_prompt()
+    new: list[LabelItem] = []
+    if args.report is not None:
+        report = _load_report(args.report)
+        if report.judge_model is None:
+            print(f"{args.report} was run with --no-judge: there is nothing to label")
+            return 2
+        rubrics = [r.strip() for r in args.rubrics.split(",") if r.strip()]
+        new += export_for_labeling(report, prompt, rubrics)  # pyright: ignore[reportArgumentType]
+    if not args.no_synthetic:
+        new += load_synthetic(prompt, args.synthetic)
+    existing = _items(args.labels)
+    merged = add_new(existing, new)
+    write_jsonl(args.labels, merged)
+    print(f"{len(merged) - len(existing)} pairs added to {args.labels}; {len(merged)} in all")
+    pending = sum(1 for item in merged if item.human_passed is None)
+    print(f"{pending} without a label: run calibrate-sheet to label them")
     return 0
 
 
-def _calibrate_score(report_path: Path, labels_path: Path) -> int:
-    report = _load_report(report_path)
-    prompt = judge_prompt()
-    if report.prompt_versions.get("judge") != prompt.version:
-        print("the report was judged with another judge prompt: run the evals again first")
+def _calibrate_sheet(args: argparse.Namespace) -> int:
+    items = load_items(args.labels)
+    sheet = render_sheet(items, args.seed)
+    pending = sum(1 for item in items if item.human_passed is None)
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(sheet, encoding="utf-8")
+    print(f"{pending} pairs in {args.out}: write SI or NO after human_passed, then run")
+    print(f"calibrate-import --sheet {args.out}")
+    return 0
+
+
+def _calibrate_import(args: argparse.Namespace) -> int:
+    items = load_items(args.labels)
+    answers = parse_sheet(args.sheet.read_text(encoding="utf-8"))
+    unknown = sorted(set(answers) - {item.id for item in items})
+    if unknown:
+        print(f"the sheet has pairs that are not in {args.labels}: {unknown}")
         return 2
-    agreements = score(report, load_labels(labels_path))
+    updated, applied = apply_sheet(items, answers)
+    write_jsonl(args.labels, updated)
+    left = sum(1 for item in updated if item.human_passed is None)
+    print(f"{applied} labels read from {args.sheet}; {left} pairs still without a label")
+    return 0
+
+
+def _calibrate_judge(args: argparse.Namespace) -> int:
+    settings = load_settings()
+    model = judge_model_name()
+    try:
+        require_prices([model], allow_unknown=args.allow_unknown_cost)
+        judge = build_judge(settings, model, advisor_model=settings.advisor_model)
+    except (JudgeUnavailableError, UnknownPriceError) as error:
+        print(f"cannot judge: {error}")
+        return 2
+    items = load_items(args.labels)
+    known = verdicts_of(load_verdicts(), judge.model, judge.prompt_version)
+    todo = sum(1 for item in labeled(items) if item.id not in known)
+    print(f"judging {todo} labeled pairs with {judge.model} (prompt {judge.prompt_version})")
+    verdicts, usage, unjudged = judge_labeled(items, judge, known, CostCap(args.max_cost))
+    append_verdicts(verdicts)
+    print(f"{len(verdicts)} verdicts in {VERDICTS_PATH}, {usage.cost_usd:.4f} USD")
+    for line in unjudged:
+        print(f"not judged: {line}")
+    return 1 if unjudged else 0
+
+
+def _calibrate_score(args: argparse.Namespace) -> int:
+    judge_model = judge_model_name()
+    prompt_version = judge_prompt().version
+    items = load_items(args.labels)
+    verdicts = verdicts_of(load_verdicts(), judge_model, prompt_version)
+    missing = sum(1 for item in labeled(items) if item.id not in verdicts)
+    if missing:
+        print(f"{missing} labeled pairs have no verdict from {judge_model} ({prompt_version}):")
+        print("run calibrate-judge first")
+        return 2
+    agreements = score(items, verdicts, judge_model, prompt_version)
     if not agreements:
-        print(f"no labeled pair of {labels_path} matches {report_path}")
+        print(f"no labeled pair in {args.labels}")
         return 2
-    state = CalibrationState(
-        judge_model=report.judge_model or "",
-        judge_prompt_version=prompt.version,
-        report=report_path.name,
-        rubrics=agreements,
-    )
+    state = merge_calibration(load_calibration(), agreements, judge_model, prompt_version)
     save_calibration(state)
     print(to_markdown(agreements))
-    print(f"calibrated: {', '.join(state.calibrated()) or 'none'} (saved in {CALIBRATION_PATH})")
+    calibrated = ", ".join(state.calibrated(judge_model, prompt_version)) or "none"
+    print(f"calibrated with {judge_model} ({prompt_version}): {calibrated}")
+    print(f"saved in {CALIBRATION_PATH}")
     return 0
 
 

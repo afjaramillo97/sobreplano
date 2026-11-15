@@ -19,6 +19,7 @@ from openai import APIError
 
 from sobreplano.domain.advisor import AdvisorReply, ToolCallRecord
 from sobreplano.domain.errors import AdvisorLimitError, AdvisorUnavailableError
+from sobreplano.domain.privacy import redact_personal_data
 from sobreplano.infrastructure.advisor.graph import (
     RECURSION_LIMIT,
     SYSTEM_PROMPT,
@@ -54,11 +55,17 @@ class LangGraphAdvisor:
     def reply(self, thread_id: UUID, message: str) -> AdvisorReply:
         """Run one turn of the conversation and return the last answer.
 
+        Personal data in message is redacted before the graph runs, so the model, the memory
+        and Langfuse only ever see the redacted text; the answer is redacted too, in the
+        reply and in the thread.
+
         Raises:
             AdvisorUnavailableError: if there is no API key or the provider fails.
             AdvisorLimitError: if the turn needs more than MAX_TOOL_ROUNDS tool rounds;
                 it carries the LLM calls made so they can be recorded.
         """
+        redacted = redact_personal_data(message)
+        guardrails = _events("input_redacted", redacted.kinds)
         graph = build_advisor_graph(self._chat_model(), self._tools, self._checkpointer)
         usage = UsageCallback(self._model_name, SYSTEM_PROMPT.version)
         config: RunnableConfig = {
@@ -68,7 +75,7 @@ class LangGraphAdvisor:
             # Read by the Langfuse handler: the conversation is the session.
             "metadata": {
                 "langfuse_session_id": str(thread_id),
-                "langfuse_tags": self._tags,
+                "langfuse_tags": [*self._tags, *guardrails],
                 "prompt_version": SYSTEM_PROMPT.version,
                 "model": self._model_name,
             },
@@ -77,7 +84,7 @@ class LangGraphAdvisor:
         try:
             # Partly unknown overloads in langgraph's invoke (see graph.py).
             result = graph.invoke(  # pyright: ignore[reportUnknownMemberType]
-                {"messages": [HumanMessage(message)]}, config
+                {"messages": [HumanMessage(redacted.text)]}, config
             )
         except GraphRecursionError as error:
             _close_orphan_tool_calls(graph, config)
@@ -108,12 +115,40 @@ class LangGraphAdvisor:
             for call in message.tool_calls
         ]
         answer = new_messages[-1]
+        text = answer.text if isinstance(answer, AIMessage) else ""
+        output = redact_personal_data(text)
+        if output.kinds and isinstance(answer, AIMessage):
+            # The model rebuilt personal data: the thread must not keep it either.
+            _replace_message(graph, config, answer, output.text)
+            guardrails += _events("output_redacted", output.kinds)
         return AdvisorReply(
-            text=answer.text if isinstance(answer, AIMessage) else "",
+            text=output.text,
             tools_used=tools_used,
             llm_calls=usage.calls,
             tool_calls=tool_calls,
+            guardrails=guardrails,
         )
+
+
+def _events(prefix: str, kinds: Sequence[str]) -> list[str]:
+    """One "prefix:kind" event per distinct kind, in order of appearance."""
+    return [f"{prefix}:{kind}" for kind in dict.fromkeys(kinds)]
+
+
+def _replace_message(
+    graph: CompiledStateGraph[MessagesState, None, MessagesState, MessagesState],
+    config: RunnableConfig,
+    message: AIMessage,
+    text: str,
+) -> None:
+    """Replace the content of a final answer in the thread, keeping its id.
+
+    add_messages replaces by id. as_node="agent" with no tool calls routes to END, so no
+    step is left pending.
+    """
+    graph.update_state(
+        config, {"messages": [AIMessage(content=text, id=message.id)]}, as_node="agent"
+    )
 
 
 def _close_orphan_tool_calls(

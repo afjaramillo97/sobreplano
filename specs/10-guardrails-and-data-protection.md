@@ -143,8 +143,8 @@ def redact_personal_data(text: str) -> Redaction: ...
 
 Un documento sin palabra clave no se toca: `1.234.567.890` también puede ser un precio. Tests con cada forma, y con precios que **no** se redactan (`$450.000.000`, `450 millones`, `3.000.000`).
 
-- `AskAdvisor` redacta el mensaje **antes** de pasarlo al agente: el modelo, el checkpointer y Langfuse reciben el texto redactado. Así se resuelve también el pendiente de privacidad de las trazas antes del SPEC 12.
-- El adaptador redacta también la respuesta final (por si el modelo reconstruye un dato).
+- `LangGraphAdvisor` redacta el mensaje antes de invocar el grafo, porque el modelo, la memoria y Langfuse viven dentro del adaptador y así las evals prueban el mismo camino que producción: el modelo, el checkpointer y Langfuse reciben el texto redactado. Así se resuelve también el pendiente de privacidad de las trazas antes del SPEC 12. `AskAdvisor` no cambia.
+- El adaptador redacta también la respuesta final (por si el modelo reconstruye un dato); si cambia algo, reemplaza también el mensaje del hilo.
 - `AdvisorReply` suma `guardrails: list[str]` con lo que se activó (`input_redacted:email`, `output_redacted:phone`, `ungrounded_retry`, `ungrounded_fallback`, `detail_limit`), y el adaptador lo envía como etiquetas a Langfuse. `POST /advisor/chat` no cambia.
 
 ### 6. Verificación de cifras en tiempo de ejecución
@@ -237,7 +237,7 @@ Una tabla por activo (histórico de precios, presupuesto de LLM, privacidad de q
 ## Plan de implementación
 
 1. **Figuras al dominio.** Mover `find_figures` y la lógica de cifras sin fuente a `domain/figures.py`, con sus tests; las evals importan desde ahí. Sin cambios de comportamiento. Commit `refactor:`.
-2. **Redacción.** `domain/privacy.py` con tests (cada patrón y los precios que no se tocan); `AskAdvisor` redacta la entrada; el adaptador, la salida; `AdvisorReply.guardrails`. Commit `feat:`.
+2. **Redacción.** `domain/privacy.py` con tests (cada patrón y los precios que no se tocan); `LangGraphAdvisor` redacta el mensaje antes de invocar el grafo, porque el modelo, la memoria y Langfuse viven dentro del adaptador y así las evals prueban el mismo camino que producción, y también la respuesta; `AdvisorReply.guardrails`; test del adaptador con el modelo guionizado y `InMemorySaver`. Commit `feat:`.
 3. **Cifras en ejecución.** Reintento y respuesta segura en `LangGraphAdvisor`, con el modelo guionizado: respuesta con fuente (sin reintento), reintento que corrige, reintento que falla y deja el texto fijo; el hilo queda con un solo `AIMessage` final. Commit `feat:`.
 4. **Prompt y tope de detalles.** Las tres reglas nuevas, versión actualizada en el test, `MAX_DETAILS_PER_MESSAGE` con su test. Commit `feat:`.
 5. **Textos extraídos.** `validate_text` y su uso en el scraper, con tests de cada regla y el test sobre el golden set. Commit `feat:`.
@@ -284,7 +284,7 @@ Cada criterio se verifica pegando el comando y su salida en el PR (constitución
 - **Sí:** contadores en Postgres. **No:** contadores en memoria, que se reinician con cada instancia de Lambda y no se comparten entre ellas. **No:** Redis, que agrega un servicio con costo fijo.
 - **Sí:** guardar un HMAC de la IP con una clave secreta, y por 2 días. La IP es un dato personal; un hash sin clave se revierte probando las 4.000 millones de IPv4.
 - **Sí:** falla abierta en las lecturas y cerrada en el asesor. Una caída de los contadores no debe tumbar el catálogo, pero tampoco abrir el gasto en LLM.
-- **Sí:** redactar datos personales antes del modelo, de la memoria y de Langfuse, en el caso de uso. Es más barato y más seguro que limpiar trazas después, y deja listo el tema de privacidad que el SPEC 12 tenía pendiente.
+- **Sí:** redactar datos personales antes del modelo, de la memoria y de Langfuse, en el adaptador (el modelo, la memoria y Langfuse viven dentro de él, y así las evals prueban el mismo camino que producción). Es más barato y más seguro que limpiar trazas después, y deja listo el tema de privacidad que el SPEC 12 tenía pendiente.
 - **Sí:** verificar cifras en ejecución con la misma lógica de las evals, movida al dominio, con un solo reintento. **No:** reintentos ilimitados ni descartar la respuesta sin reintentar.
 - **No:** un clasificador de inyección (modelo propio o llamada extra a un LLM por mensaje). Las herramientas solo leen datos públicos y el prompt es público en el repo, así que lo peor que logra una inyección es una cifra falsa o un tema ajeno, y eso lo atrapan la verificación de cifras y las evals. Un clasificador agrega latencia y costo en cada mensaje; se reconsidera si el asesor gana herramientas que escriben.
 - **Sí:** validar los textos que vienen del extractor con reglas simples y conservadoras, porque son la puerta de la inyección indirecta. Un falso positivo pierde una tipología con aviso; un falso negativo pone texto ajeno frente al asesor. El test sobre el golden set mide el costo del lado de los falsos positivos.

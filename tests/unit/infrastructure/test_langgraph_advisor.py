@@ -3,7 +3,7 @@
 from collections.abc import Callable, Sequence
 from decimal import Decimal
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import httpx2
 import pytest
@@ -331,3 +331,53 @@ def test_chat_model_caps_tokens_and_sends_no_temperature() -> None:
     assert chat.max_tokens == 1024
     assert chat.reasoning_effort == "medium"
     assert chat.temperature is None
+
+
+def _thread_texts(saver: InMemorySaver, thread_id: UUID) -> list[str]:
+    checkpoint = saver.get_tuple({"configurable": {"thread_id": str(thread_id)}})
+    assert checkpoint is not None
+    return [m.text for m in checkpoint.checkpoint["channel_values"]["messages"]]
+
+
+def test_personal_data_never_reaches_the_model_or_the_checkpoint() -> None:
+    saver = InMemorySaver()
+    model = ScriptedChatModel(script=[answer("Te mando opciones en Envigado.")])
+    thread_id = uuid4()
+    reply = make_advisor(model, saver).reply(
+        thread_id,
+        "Soy juan@example.com, mi celular es 300 123 4567 y mi cédula 43.123.456. "
+        "¿Qué hay en Envigado?",
+    )
+
+    sent = " ".join(m.text for call in model.seen for m in call)
+    stored = " ".join(_thread_texts(saver, thread_id))
+    for original in ("juan@example.com", "300 123 4567", "43.123.456"):
+        assert original not in sent
+        assert original not in stored
+    assert "[correo]" in sent and "[teléfono]" in sent and "[documento]" in sent
+    assert "[correo]" in stored
+    assert reply.guardrails == [
+        "input_redacted:email",
+        "input_redacted:phone",
+        "input_redacted:id_number",
+    ]
+
+
+def test_a_message_without_personal_data_fires_no_guardrail() -> None:
+    reply = make_advisor(ScriptedChatModel(script=[answer("Ok.")])).reply(
+        uuid4(), "Busco algo de $450.000.000 en Sabaneta"
+    )
+    assert reply.guardrails == []
+
+
+def test_personal_data_in_the_answer_is_redacted_in_the_reply_and_the_thread() -> None:
+    saver = InMemorySaver()
+    model = ScriptedChatModel(script=[answer("Escribe a ventas@constructora.co o al 3109876543.")])
+    thread_id = uuid4()
+    reply = make_advisor(model, saver).reply(thread_id, "¿Cómo contacto a la constructora?")
+
+    assert reply.text == "Escribe a [correo] o al [teléfono]."
+    assert reply.guardrails == ["output_redacted:email", "output_redacted:phone"]
+    stored = _thread_texts(saver, thread_id)
+    assert stored[-1] == reply.text
+    assert len(stored) == 2  # the question and one final answer, replaced and not duplicated

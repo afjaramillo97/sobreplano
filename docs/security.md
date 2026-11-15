@@ -1,7 +1,90 @@
 # Security (SPEC 10)
 
-Work in progress: SPEC 10 step 11 and 12 turn this into the full threat model (one table per
-asset, controls, where each is tested, what remains). What is here is what is already decided.
+Threat model of Sobreplano as of SPEC 10: one table per asset, with the threat, the control,
+where it is tested and what remains. Then the controls that are not tied to one asset
+(poisoned data, judge rubrics, security pass). Terms of use: [terms-of-use.md](terms-of-use.md).
+
+## Threat model by asset
+
+### 1. The price history
+
+The value of the product: today's price is on each developer's site; the past is not.
+
+| Threat | Control | Tested in | What remains |
+| --- | --- | --- | --- |
+| Pulling every history through `GET /projects/{slug}` | Per-IP limits: 10 a minute and **40 a day** on the detail, below the catalog's size (about 50 projects), so copying everything takes several IPs and shows in the report. 30 a minute and 600 a day on the lists | `tests/unit/interface/test_rate_limit.py`, `tests/integration/test_rate_limit_repository.py` | See "Not protected" |
+| Walking the listing with a huge page or offset | `limit` 1 to 50 (20 by default), `offset` 0 to 1000 | `tests/unit/interface/test_read_api_routes.py` | |
+| Asking the advisor for "the full history of every project" | `MAX_DETAILS_PER_MESSAGE = 6` per message, 5 messages a minute and 30 a day per IP, 20 messages per conversation; prompt rule 11 | `tests/unit/infrastructure/test_advisor_tools.py`, eval A4 | Costs as many messages as the API costs requests |
+| Reading the tables through Supabase's public API | RLS on every table, no policy, and `REVOKE` for `anon` and `authenticated` (migration `0009`); a test walks every table of `public` | `tests/integration/test_supabase_api_closed.py` | |
+| Documentation as a map of the API | `API_DOCS_ENABLED=false` turns off `/docs`, `/redoc` and `/openapi.json`; `/robots.txt` disallows everything | `tests/unit/interface/test_read_api_routes.py` | The deployment (SPEC 12) must set the flag |
+| Noticing who copies | `rate_limited` log lines and `rate_limit_report` (top 10 clients per group, who went over) | `tests/unit/interface/test_rate_limit_report.py` | No alarm yet (SPEC 12) |
+
+Client key: `HMAC-SHA256(RATE_LIMIT_KEY, ip)` cut to 32 characters, kept for 2 days
+(`prune_rate_limits`). The IP is never stored: a plain hash of an IPv4 is reversed by trying
+all of them. `X-Forwarded-For` is trusted only with `TRUSTED_PROXY_HOPS` > 0 (default 0).
+If the counters are down, reads are served and the advisor answers 503.
+
+### 2. The LLM budget
+
+| Threat | Control | Tested in | What remains |
+| --- | --- | --- | --- |
+| Draining it with chat messages | 5 a minute and 30 a day per IP (fail closed), 20 messages per conversation, 1000 characters per message, 0.20 USD a day for the advisor (`ADVISOR_DAILY_BUDGET_USD`), at most 5 tool rounds per message | `tests/unit/interface/test_rate_limit.py`, `tests/unit/application/test_ask_advisor.py` | Many IPs: 30 messages a day each. The daily budget is the real ceiling (about 6 USD a month) |
+| A runaway eval or scrape | `--max-cost` on every paid run; extraction reused by text hash | `tests/unit/evals/` | |
+
+### 3. Privacy of whoever uses the chat
+
+| Threat | Control | Tested in | What remains |
+| --- | --- | --- | --- |
+| Email, phone or ID number reaching the model, the memory or Langfuse | `redact_personal_data` in `LangGraphAdvisor.reply`, before the graph runs: `[correo]`, `[teléfono]`, `[documento]`; an ID only after a keyword (a bare 1.234.567.890 may be a price) | `tests/unit/domain/test_privacy.py`, `tests/unit/infrastructure/test_langgraph_advisor.py` (model and checkpoint), eval A5 | A datum in a form the patterns do not know (a landline, a name). Names are not redacted |
+| The model rebuilding a datum in its answer | The answer is redacted too, in the reply and in the thread | same | |
+| The advisor asking for or repeating personal data | Prompt rule 5; rubric `privacy` (100 %) | evals O2, A5, A9 | |
+| Conversations kept | Deleted after 7 days without messages (`advisor_cleanup`) | `tests/integration/test_advisor_repositories.py` | |
+| Client IPs | Only the keyed hash, for 2 days | `tests/unit/interface/test_rate_limit.py` | |
+
+### 4. Integrity of the prices shown
+
+| Threat | Control | Tested in | What remains |
+| --- | --- | --- | --- |
+| The advisor inventing a figure | Every amount and percentage of the answer must come from the thread (user messages, tool results and arguments) or the tool definitions; one rewrite, then a fixed answer. Rubric `price_citation` | `tests/unit/infrastructure/test_langgraph_advisor.py`, `tests/unit/domain/test_figures.py`, eval `grounded` at 100 % | An invented tool argument (a rate the user never gave) is covered by `asks_rate` and cases F2 and A9, not by this check |
+| Agreeing with a price or discount the user dictates | Rubric `no_false_claims`; cases A3, A8, O4 | `docs/evals.md` | |
+| Injected text on a developer's page | See "Poisoned data" below | | |
+| Corrupting the append-only history | A trigger blocks `UPDATE`, `DELETE` and `TRUNCATE` on price observations; the range rules refuse a price outside 50 million to 20 billion COP | `tests/integration/test_db_rules.py` | |
+
+### 5. The AWS account
+
+| Threat | Control | Tested in | What remains |
+| --- | --- | --- | --- |
+| Deploying from a branch, a fork or a re-created repo | OIDC trust pinned to `main` of this repo with GitHub's immutable subject; only `deploy-scraper.yml` can request a token | Review below | |
+| An over-broad role | The deploy role cannot touch IAM or Terraform; the Lambda role writes one bucket and reads two parameters | IAM review below | ECR pull policy for any Lambda of the account |
+| A compromised action | Every action pinned by commit SHA; Dependabot updates them weekly | `grep` in the table below | |
+| Cost surprises | Monthly budget alarm (Terraform), Infracost on `infra/` PRs if the free plan allows | `infra/alerts.tf` | Infracost pending |
+| Terraform applied by CI | Never: it is applied by hand with the owner's OK | `docs/deploy.md` | |
+
+### 6. Secrets
+
+| Threat | Control | Tested in | What remains |
+| --- | --- | --- | --- |
+| A key in git | `.env` files ignored; secret scanning and push protection on GitHub; `gitleaks` over the history | Pending by hand (table below) | |
+| Keys in the Lambda | SSM SecureStrings read at runtime; the Lambda role reads exactly two | IAM review below | |
+| Scraped data or HTML in git | `.gitignore` of `data/`, `.evals/` and `evals/reports/`; golden set of the extraction only in S3 | Review of the diff | The synthetic adversarial pages are in the repo on purpose: they are fictional |
+| A vulnerable dependency | `audit` job (`pip-audit`), Dependabot, `ruff` `S` rules | CI | |
+
+### Not protected by SPEC 10
+
+- **Distributed scraping from many IPs, or residential IPs.** The limits are per IP: 40 detail
+  requests a day each. SPEC 12 adds an edge layer (Cloudflare or AWS WAF, Turnstile on the chat);
+  if copying persists, the full history for signed-in users only is the next step.
+- **Copying today's prices from the developers' own sites.** They are public there.
+- **A model-based injection classifier.** Tools only read public data and the prompt is in the
+  repo, so the worst an injection reaches is a false figure or an off-topic answer, which the
+  figure check and the evals catch. Reconsider it if the advisor gains tools that write.
+- **Alerts on 429s** (CloudWatch metric and alarm) and **good bots** (Google): SPEC 12.
+
+### What SPEC 12 adds
+
+`RATE_LIMIT_KEY` required in production, `TRUSTED_PROXY_HOPS` set to the real number of
+proxies, `API_DOCS_ENABLED=false`, the scheduled `prune_rate_limits`, the edge layer, and the
+429 alarm.
 
 ## Poisoned data from a scraped page
 

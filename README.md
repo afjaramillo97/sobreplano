@@ -101,7 +101,9 @@ uv run --env-file .env python -m sobreplano.interface.cli.advise   # chat in the
 
 Tools, limits, retention and cost: [docs/advisor.md](docs/advisor.md).
 
-Quality is measured, not assumed (SPEC 09): a golden set of 28 advisor cases with deterministic checks and an LLM judge calibrated against hand labels, and a golden set for the extraction. They pick the cheapest model that passes (Luna as the advisor at `medium` reasoning, and as the extractor), and run in CI on advisor changes. Numbers, method and decisions: [docs/evals.md](docs/evals.md).
+Quality is measured, not assumed (SPEC 09, 10): a golden set of 38 advisor cases (10 of them adversarial) with deterministic checks and an LLM judge calibrated against hand labels, and a golden set for the extraction. They pick the cheapest model that passes (Luna as the advisor at `medium` reasoning, and as the extractor), and run in CI on advisor changes. Numbers, method and decisions: [docs/evals.md](docs/evals.md).
+
+SPEC 10 protects the data and the advisor: per-IP rate limits that make copying the price history slow and visible, personal data redacted before it reaches the model or the traces, every figure of an answer checked against its sources, a database closed to Supabase's public API, validation of scraped text and a price-per-m² outlier rule against poisoned pages, and a security pass (static analysis, dependency audit, pinned actions, IAM review). Threat model: [docs/security.md](docs/security.md). By using it you accept the [terms of use](docs/terms-of-use.md).
 
 Tests: `uv run pytest -m "not integration"` needs no database; `uv run --env-file .env pytest` runs everything. Stop the database with `supabase stop`.
 

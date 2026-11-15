@@ -4,7 +4,7 @@
 
 Sobreplano is a portfolio project (AI Engineer): a search engine for new off-plan housing in the Aburrá Valley, Colombia, with a daily price history and an AI advisor. Its differentiator versus portals (Fincaraíz, Metrocuadrado, La Haus) is showing how much each project has risen since its first observed price.
 
-Status: week 3 of 8. Schema, read API and the first scraper (Londoño Gómez) are in place (SPECs 01–04); since SPEC 05 the scraper runs daily in AWS (Lambda + Supabase cloud); SPEC 06 adds Constructora Capital and reuses extractions by clean-text hash; SPEC 08 adds the advisor (`POST /advisor/chat`, LangGraph, memory in Postgres); SPEC 09 adds the evals (golden sets, LLM judge, prompt versions, Langfuse). Budget: at most ~20 USD/month, so check cost before proposing any new service.
+Status: week 3 of 8. Schema, read API and the first scraper (Londoño Gómez) are in place (SPECs 01–04); since SPEC 05 the scraper runs daily in AWS (Lambda + Supabase cloud); SPEC 06 adds Constructora Capital and reuses extractions by clean-text hash; SPEC 08 adds the advisor (`POST /advisor/chat`, LangGraph, memory in Postgres); SPEC 09 adds the evals (golden sets, LLM judge, prompt versions, Langfuse); SPEC 10 adds guardrails and data protection (rate limits, redaction, figure check, closed database, security pass). Budget: at most ~20 USD/month, so check cost before proposing any new service.
 
 ## Stack
 
@@ -93,7 +93,9 @@ API (docs at `/docs`):
 uv run --env-file .env uvicorn sobreplano.interface.api.main:app --reload   # http://localhost:8000
 ```
 
-Routes (SPEC 03, 07, 08): `POST /advisor/chat` (`message`, optional `thread_id`; see `docs/advisor.md`); `GET /health`; `GET /projects` (filters `municipality`, `developer`, `min_price`, `max_price`, `min_bedrooms`, `min_area`, `max_area`; `sort=name|price`; `limit`, `offset`); `GET /projects/{slug}` (unit types with price history, 404 if unknown); `GET /developers`. Queries live behind the `ProjectListingQuery` port, so the advisor can reuse them without HTTP.
+Routes (SPEC 03, 07, 08, 10): `POST /advisor/chat` (`message`, optional `thread_id`; see `docs/advisor.md`); `GET /health`; `GET /projects` (filters `municipality`, `developer`, `min_price`, `max_price`, `min_bedrooms`, `min_area`, `max_area`; `sort=name|price`; `limit` 1 to 50, 20 by default; `offset` 0 to 1000); `GET /projects/{slug}` (unit types with price history, 404 if unknown); `GET /developers`; `GET /robots.txt` (disallows everything). Queries live behind the `ProjectListingQuery` port, so the advisor can reuse them without HTTP.
+
+Rate limits per client IP (SPEC 10; answer `429` with `Retry-After`; counters in Postgres, keyed by an HMAC of the IP): lists 30 a minute and 600 a day, detail 10 and 40, advisor 5 and 30 (`503` if the counters are down; reads are served). Set `RATE_LIMIT_KEY` and, behind proxies, `TRUSTED_PROXY_HOPS`; `RATE_LIMITS_ENABLED`, `API_DOCS_ENABLED` and the six numbers are in `Settings`. Tests replace the limit dependencies with `dependency_overrides`.
 
 Scraper (one pass per site per day; paid LLM calls, see `docs/scrapers/`):
 
@@ -112,13 +114,23 @@ uv run --env-file .env python -m sobreplano.interface.cli.advise                
 uv run --env-file .env python -m sobreplano.interface.cli.advisor_cleanup --dry-run # conversations idle 7 days
 ```
 
-Evals (SPEC 09; paid model calls, always with a cost cap, ask before each run; details in `docs/evals.md`):
+Rate limit upkeep (SPEC 10; the SPEC 12 deployment schedules the prune):
+
+```
+uv run --env-file .env python -m sobreplano.interface.cli.rate_limit_report   # top clients of the last 24 h, who went over
+uv run --env-file .env python -m sobreplano.interface.cli.prune_rate_limits   # delete windows older than 2 days
+```
+
+Evals (SPEC 09, 10; paid model calls, always with a cost cap, ask before each run; details in `docs/evals.md`):
 
 ```
 uv run --env-file .env python -m sobreplano.evals.advisor prepare                      # isolated local database
 uv run --env-file .env python -m sobreplano.evals.advisor run --repeat 3 --max-cost 1.00   # golden set; --no-judge, --model
 uv run --env-file .env python -m sobreplano.evals.extraction run --model openai:gpt-6-luna --repeat 2
+uv run --env-file .env python -m sobreplano.evals.extraction run --set adversarial --repeat 2   # synthetic pages with hidden instructions; injection_followed must be 0
 ```
+
+Judge calibration (SPEC 10; a label is a whole pair, so it survives new runs; `calibrate-judge` is paid): `calibrate-add --report <run.json>`, `calibrate-sheet --out .evals/hoja.md`, `calibrate-import --sheet .evals/hoja.md`, `calibrate-judge --max-cost 0.50`, `calibrate-score`. A rubric blocks CI only if it was calibrated with the current judge model and prompt version; steps and rules in `docs/evals.md`.
 
 Prompts live in `src/sobreplano/infrastructure/llm/prompts/` and are versioned by hash: changing one changes its version, and `tests/unit/infrastructure/test_prompt_store.py` pins it, so update that test in the same change. Golden set data of the extraction stays outside the repo (S3 and `.evals/`). The `evals.yml` workflow runs the advisor evals on PRs that touch the advisor, only if the repository variable `RUN_ADVISOR_EVALS` is `true`.
 
@@ -134,6 +146,8 @@ terraform -chdir=infra plan -out=tfplan                              # show the 
 uv run --env-file .env.cloud alembic upgrade head                   # migrate Supabase cloud before merging code that needs it
 aws lambda invoke --function-name sobreplano-scraper --payload '{"developer":"londono-gomez"}' --cli-binary-format raw-in-base64-out out.json   # or constructora-capital
 ```
+
+Keep checks green on the security side too: `ruff` includes the `S` rules, the `audit` job runs `pip-audit` on `uv.lock`, and every workflow action is pinned by commit SHA (Dependabot updates them).
 
 Merging to `main` a change under `src/`, the `Dockerfile` or `uv.lock` deploys the image (`deploy-scraper.yml`, OIDC). Terraform is never applied from CI.
 
@@ -183,6 +197,7 @@ This file is an index, not a manual. When a topic needs depth (scrapers, schema,
 - Scrapers: `docs/scrapers/` (one file per developer).
 - Advisor (graph, tools, limits, retention, cost): `docs/advisor.md`.
 - Evals (golden sets, judge calibration, model choice, results): `docs/evals.md`.
+- Security (threat model by asset, IAM review, security pass): `docs/security.md`; terms of use: `docs/terms-of-use.md`.
 - Ideas left out of a spec: `docs/backlog.md`.
 - Deploy, cloud database and production runs: `docs/deploy.md`.
 - AWS accounts, access and guardrails: `docs/aws-accounts.md`. Sign in with `eval "$(scripts/aws-sso.sh)"`.

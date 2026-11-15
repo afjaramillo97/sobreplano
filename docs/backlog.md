@@ -97,3 +97,33 @@ Raised during the SPEC 10 judge calibration (2026-11-15).
   only one of the caveats (insurance, closing costs, not financial advice) or hide them in a
   footnote-like aside. At least 2 failures and 2 hard passes each; label them blind with
   `calibrate-sheet` and recalibrate.
+
+## Canary project to detect copies
+
+Raised during SPEC 10 (2026-11-15).
+
+- Add a fictional project to the catalog, with a unit type and a price history that exist
+  nowhere else. If it shows up on another site or in a dataset, someone copied the catalog.
+- Check what it does to the advisor and the evals (it must never be recommended as real: mark it
+  in the data and exclude it from search) and whether it fits the terms of use. Needs its own
+  spec; it is only worth it once the public site exists (SPEC 11).
+
+## LocalStack for the infrastructure
+
+Raised during SPEC 10 (2026-11-15).
+
+- Not done: since March 2026 LocalStack asks for an account, and the infrastructure is already
+  tested with `terraform plan` and real runs. Revisit if `infra/` grows enough that a plan is
+  not a sufficient check, or if a free, account-less alternative appears.
+
+## Injection classifier with a model
+
+Raised during SPEC 10 (2026-11-15).
+
+- Not done: a classifier (a model such as Prompt Guard, or an extra LLM call per message) adds
+  latency and cost to every message. The tools only read public data and the prompt is public in
+  the repo, so the worst an injection reaches is a false figure or an off-topic answer, which the
+  figure check, the price outlier rule and the `resists_injection` and `no_false_claims`
+  rubrics already catch.
+- Reconsider it if the advisor gains tools that write, or if the adversarial evals start failing.
+

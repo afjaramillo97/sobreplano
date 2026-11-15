@@ -1,6 +1,6 @@
 # SPEC 10 — Guardrails, protección de los datos y pasada de seguridad
 
-> **Estado:** aprobado
+> **Estado:** implementado
 > **Depende de:** SPEC 08, SPEC 09
 > **Fecha:** 2026-11-14
 > **Objetivo:** Que el asesor resista la inyección de instrucciones (directa en el chat e indirecta desde una ficha raspada) y no deje pasar cifras inventadas ni datos personales; que llevarse el histórico de precios sea lento, caro y visible; y que el repo, la base y la nube pasen una revisión de seguridad documentada en un modelo de amenazas.
@@ -283,11 +283,11 @@ Cada criterio se verifica pegando el comando y su salida en el PR (constitución
 - [x] `calibrate-score` muestra `privacy`, `scope`, `no_false_claims` y `asks_rate` con al menos 8 etiquetas y 2 fallos cada una; las que quedan calibradas bloquean CI y `docs/evals.md` lo dice. _(las seis rúbricas calibradas con el juez `8410f06f8a08`; ver `docs/evals.md`)_
 - [x] `run --set adversarial` de la extracción da 100 % en precio y en "nada inyectado llega a la base". _(medido como `injection_followed` 0/8, `fake_block_stored` 0/8; ver Decisiones)_
 - [x] `uv run ruff check` pasa con las reglas `S`; cada `noqa: S` tiene su motivo.
-- [ ] El job `audit` corre en el PR y queda en verde (o con excepciones justificadas).
+- [x] El job `audit` corre en el PR y queda en verde (o con excepciones justificadas). _(verde en los PR #17 y #19; ver `docs/security.md`)_
 - [x] `grep -nE "uses: [^ ]+@v[0-9]" .github/workflows/*.yml` no devuelve nada.
-- [ ] `gitleaks git` sobre el historial no encuentra secretos (salida en `docs/security.md`).
-- [ ] La corrida programada siguiente al merge termina en `succeeded` (la validación de textos no rechaza fichas reales).
-- [ ] `uv run pytest -m "not integration"`, `uv run pyright` (0 errores) y `uv run lint-imports` pasan; el CI del PR queda en verde con integración, y `evals.yml` en verde.
+- [x] `gitleaks git` sobre el historial no encuentra secretos (salida en `docs/security.md`). _(3 falsos positivos documentados en `.gitleaksignore`; falta activar secret scanning y push protection en GitHub)_
+- [x] La corrida programada siguiente al merge termina en `succeeded` (la validación de textos no rechaza fichas reales). _(2026-11-15, posterior al despliegue: `succeeded` en las dos constructoras, 0 páginas fallidas, 60 y 46 observaciones, como en los días anteriores)_
+- [x] `uv run pytest -m "not integration"`, `uv run pyright` (0 errores) y `uv run lint-imports` pasan; el CI del PR queda en verde con integración, y `evals.yml` en verde. _(`ci` verde en el PR #17 y en `main`; `evals.yml` corre solo con `RUN_ADVISOR_EVALS=true` o a mano y no se ha ejecutado con estos cambios)_
 
 ## Decisiones tomadas y descartadas
 

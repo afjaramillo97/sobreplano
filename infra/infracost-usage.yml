@@ -1,0 +1,36 @@
+# Approximate real usage of the production infrastructure, for Infracost (SPEC 10). Resources
+# priced by use (Lambda, S3 requests and storage, CloudWatch Logs) would show 0 USD without it.
+# Measured on 2026-11-15 in the sobreplano-prod account; update it when usage changes a lot
+# (a new developer adds a schedule, SPEC 12 adds traffic).
+version: 0.1
+resource_usage:
+  aws_lambda_function.scraper:
+    # One schedule per developer (infra/schedule.tf, var.scrape_schedules), two developers, once a
+    # day each: 2 * 365 / 12 = 60.8 a month. CloudWatch counted 29 invocations in 14 days.
+    monthly_requests: 61
+    # CloudWatch metric Duration, average of those 29 invocations: 81.5 s (maximum 116.4 s).
+    # Rounded to 82 s. The first estimate was about 100 s; the measured value is used instead.
+    request_duration_ms: 82000
+    # The memory (512 MB) and the architecture (arm64) are read from infra/lambda.tf.
+
+  aws_s3_bucket.raw_html:
+    standard:
+      # aws s3 ls --recursive --summarize on the raw HTML bucket: 696 objects, 102,456,074 bytes
+      # = 0.095 GB, rounded to 0.1 (147 KB per object on average). It grows by about 0.007 GB a
+      # day: 49 pages a day, and the key carries the date, so every day adds its own objects.
+      storage_gb: 0.1
+      # PutObject: one per page fetched, 27 (constructora-capital) + 22 (londono-gomez) = 49 a
+      # day, 49 * 365 / 12 = 1,490 a month. Tier 1 are PUT, COPY, POST and LIST requests.
+      monthly_tier_1_requests: 1490
+      # GET: the scraper never reads the bucket; only the extraction evals pull from it by hand.
+      monthly_tier_2_requests: 0
+
+  aws_cloudwatch_log_group.scraper:
+    # describe-log-groups storedBytes: 127,507 bytes = 0.000128 GB, with 14 days of retention
+    # (infra/lambda.tf).
+    storage_gb: 0.0001
+    # What is stored is what 14 days ingested: 127,507 bytes / 14 days * 30 days = 273 KB
+    # = 0.00027 GB a month.
+    monthly_data_ingested_gb: 0.0003
+    # Nobody queries the logs in Logs Insights on a schedule.
+    monthly_data_scanned_gb: 0

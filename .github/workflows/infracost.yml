@@ -1,0 +1,66 @@
+# Cost of infra/ on every pull request that changes it (SPEC 10): Infracost comments the
+# difference between main and the PR, so a resource with a fixed cost is seen before the merge,
+# above all when SPEC 12 adds the edge layer. It reads the Terraform code only: no AWS
+# credentials, no plan, and Terraform is still never applied from CI.
+#
+# On/off: the secret INFRACOST_API_KEY (Settings > Secrets and variables > Actions). Without it
+# the job skips with a notice instead of failing the PR, as evals.yml does without its key.
+# Forks and Dependabot do not get secrets either, so they skip too.
+name: infracost
+
+on:
+  pull_request:
+    branches: [main]
+    # closed: the action only updates the PR's status on it (it does not scan).
+    types: [opened, synchronize, reopened, closed]
+    paths:
+      - "infra/**"
+      - ".github/workflows/infracost.yml"
+
+permissions:
+  contents: read
+  pull-requests: write # to post and update the cost comment
+
+concurrency:
+  group: infracost-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+    env:
+      INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
+    steps:
+      # Secrets cannot be read in `if`, so a step says whether the key is there.
+      - name: check the Infracost key
+        id: key
+        run: |
+          if [ -n "$INFRACOST_API_KEY" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::INFRACOST_API_KEY secret is not set: cost estimate skipped"
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+      # Head (the PR) and base (main) in two folders inside the workspace, as the action expects.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.key.outputs.present == 'true' && github.event.action != 'closed'
+        with:
+          path: head
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.key.outputs.present == 'true' && github.event.action != 'closed'
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          path: base
+          persist-credentials: false
+      - uses: infracost/actions/diff@a5783eb98adc93aa7a0049fce0abb06fdd30770a # v5.0.1
+        if: steps.key.outputs.present == 'true'
+        env:
+          # Nothing about the repository is sent to the Infracost dashboard; the PR comment
+          # is posted by this action with the job's own token. Remove this line to see the
+          # runs in the dashboard (the trial of Infracost Cloud ends 13 days after 2026-11-15).
+          INFRACOST_CI_DISABLE_DASHBOARD: "true"
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+          base-path: base
+          head-path: head

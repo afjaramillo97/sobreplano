@@ -196,17 +196,17 @@ first_value(observed_on) over (partition by unit_type_id order by observed_on) a
 
 Cada criterio se verifica pegando el comando y su salida en el PR (constitución, principio 6).
 
-- [ ] `alembic upgrade head`, `downgrade -1` y `upgrade head` en local; `alembic check` limpio; una sola cabeza; la nube en `0006`.
-- [ ] Con la API apuntando a la nube, `curl -s localhost:8000/projects/axis-ciudad-peldar | jq '.unit_types[] | select(.name == "Tipo 02") | .history | length'` es al menos 2 (precio manual del 28 oct y del scraper).
-- [ ] En esa misma tipología, `first_price.source` es `manual` y `first_price.observed_on` es `2026-10-28`.
-- [ ] `curl -s localhost:8000/projects/no-existe -o /dev/null -w "%{http_code}"` imprime `404`, y `curl -s "localhost:8000/projects/NO_VALIDO" -o /dev/null -w "%{http_code}"` imprime `422`.
-- [ ] `curl -s "localhost:8000/projects?developer=constructora-capital" | jq '[.items[].developer.slug] | unique'` devuelve solo `constructora-capital`.
-- [ ] `curl -s "localhost:8000/projects?max_price=400000000&sort=price" | jq '[.items[].unit_types[].latest_price.price_cop] | max'` es menor o igual que 400.000.000, y el primer proyecto es el más barato.
-- [ ] `curl -s "localhost:8000/projects?min_price=900000000&max_price=100000000" -o /dev/null -w "%{http_code}"` imprime `422`.
-- [ ] `curl -s localhost:8000/developers | jq 'length'` imprime `2`, y la suma de `projects` coincide con `total` de `GET /projects` sin filtros.
-- [ ] El test de presupuesto pasa: listado con todos los filtros en 3 consultas o menos, detalle en 3 o menos, `/developers` en 1.
-- [ ] Las convenciones de FastAPI siguen: `grep -rn "return HTTPException" src` vacío, `grep -rnE "= Depends\(" src` vacío, `async def` solo en el lifespan.
-- [ ] `uv run pytest -m "not integration"`, `uv run pyright` (0 errores) y `uv run lint-imports` (2 contratos) pasan; el CI del PR queda en verde.
+- [x] `alembic upgrade head`, `downgrade -1` y `upgrade head` en local; `alembic check` limpio; una sola cabeza; la nube en `0006`. _(comprobado el 2026-11-03: local `0005 → 0006 → 0005 → 0006`, `alembic check` sin diferencias, cabeza `0006`; la nube pasó de `0005` a `0006` el mismo día)_
+- [x] Con la API apuntando a la nube, `curl -s localhost:8000/projects/axis-ciudad-peldar | jq '.unit_types[] | select(.name == "Tipo 02") | .history | length'` es al menos 2 (precio manual del 28 oct y del scraper). _(comprobado el 2026-11-03 contra la nube: imprime `2`)_
+- [x] En esa misma tipología, `first_price.source` es `manual` y `first_price.observed_on` es `2026-10-28`. _(comprobado el 2026-11-03: `manual` y `2026-10-28`)_
+- [x] `curl -s localhost:8000/projects/no-existe -o /dev/null -w "%{http_code}"` imprime `404`, y `curl -s "localhost:8000/projects/NO_VALIDO" -o /dev/null -w "%{http_code}"` imprime `422`. _(comprobado el 2026-11-03: `404` y `422`)_
+- [x] `curl -s "localhost:8000/projects?developer=constructora-capital" | jq '[.items[].developer.slug] | unique'` devuelve solo `constructora-capital`. _(comprobado el 2026-11-03: `["constructora-capital"]`)_
+- [x] `curl -s "localhost:8000/projects?max_price=400000000&sort=price" | jq '[.items[].unit_types[].latest_price.price_cop] | max'` es menor o igual que 400.000.000, y el primer proyecto es el más barato. _(comprobado el 2026-11-03: el máximo fue 389.300.000 y los proyectos salieron ordenados del más barato al más caro)_
+- [x] `curl -s "localhost:8000/projects?min_price=900000000&max_price=100000000" -o /dev/null -w "%{http_code}"` imprime `422`. _(comprobado el 2026-11-03: `422`)_
+- [x] `curl -s localhost:8000/developers | jq 'length'` imprime `2`, y la suma de `projects` coincide con `total` de `GET /projects` sin filtros. _(comprobado el 2026-11-03: `2` constructoras; la suma de `projects` y el `total` de `/projects` fueron 49)_
+- [x] El test de presupuesto pasa: listado con todos los filtros en 3 consultas o menos, detalle en 3 o menos, `/developers` en 1. _(comprobado el 2026-11-03 contra una base local aparte y vacía, `sobreplano_test`; el suite de integración completo dio 351 pasan y 2 se saltan)_
+- [x] Las convenciones de FastAPI siguen: `grep -rn "return HTTPException" src` vacío, `grep -rnE "= Depends\(" src` vacío, `async def` solo en el lifespan. _(comprobado el 2026-11-03: los dos `grep` salieron vacíos y `async def` está solo en `main.py`)_
+- [x] `uv run pytest -m "not integration"`, `uv run pyright` (0 errores) y `uv run lint-imports` (2 contratos) pasan; el CI del PR queda en verde. _(comprobado el 2026-11-03: 271 pasan y 2 se saltan, 0 errores de `pyright`, 2 contratos cumplidos; el PR #11 se fusionó con `ci` y `terraform` en verde)_
 
 ## Decisiones tomadas y descartadas
 
@@ -227,7 +227,7 @@ Cada criterio se verifica pegando el comando y su salida en el PR (constitución
 
 | Riesgo | Mitigación |
 | --- | --- |
-| La CTE de últimos precios recorre todas las observaciones para filtrar por precio, y crece cada día | Hoy son unas 100 filas por día. Se mide con `EXPLAIN ANALYZE` en el PR; si pasa de 50 ms, una vista materializada que se refresca después de cada corrida |
+| La CTE de últimos precios recorre todas las observaciones para filtrar por precio, y crece cada día | Hoy son unas 100 filas por día. Se mide con `EXPLAIN ANALYZE` en el PR; si pasa de 50 ms, una vista materializada que se refresca después de cada corrida. _(medido el 2026-11-16 contra la nube con 1.672 observaciones y 114 tipologías, con la ventana y el filtro `price_cop <= 400000000` sin los `first_value`: 1,7 ms en caliente en cinco corridas seguidas; la primera, en frío, dio 48,6 ms. Sin vista materializada por ahora)_ |
 | `first_value` sin marco explícito devuelve un valor distinto del esperado | Con `order by observed_on` y sin marco, el primer valor de la partición es siempre la primera fila; un test con tres días lo verifica |
 | La semilla de Capital tiene la misma tipología con precio manual y del scraper el mismo día | No puede pasar: el único (`unit_type_id`, `observed_on`) lo impide desde el SPEC 02 |
 | Filtrar las tipologías de la respuesta confunde al frontend, que espera ver todas | El contrato lo dice en OpenAPI; sin filtros de tipología la respuesta no cambia |

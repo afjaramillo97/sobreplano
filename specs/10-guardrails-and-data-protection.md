@@ -270,7 +270,7 @@ Costo estimado de las corridas del paso 10, con los precios de hoy:
 Cada criterio se verifica pegando el comando y su salida en el PR (constitución, principio 6). Los commits van en inglés.
 
 - [x] `uv run pytest tests/unit/domain/test_privacy.py tests/unit/domain/test_figures.py` pasa, incluidos los precios que no se redactan.
-- [x] Con la API local y `ADVISOR_*` configurado, el mensaje de A5 queda en la memoria del hilo (tablas `checkpoint_*`, filtrando por el `thread_id`) y en Langfuse con `[correo]` y `[teléfono]`, nunca con los originales (consulta y captura de la traza). _(comprobado el 2026-11-15; las etiquetas `input_redacted:*` en Langfuse no se pudieron leer por API)_
+- [x] Con la API local y `ADVISOR_*` configurado, el mensaje de A5 queda en la memoria del hilo (tablas `checkpoint_*`, filtrando por el `thread_id`) y en Langfuse con `[correo]` y `[teléfono]`, nunca con los originales (consulta y captura de la traza). _(comprobado el 2026-11-15; la traza de Langfuse lleva las etiquetas `input_redacted:email`, `input_redacted:phone` y `api`, vistas en la interfaz el 2026-11-16)_
 - [x] `for i in $(seq 1 11); do curl -s -o /dev/null -w "%{http_code} " localhost:8000/projects/<slug>; done` imprime diez `200` y un `429`, y la cabecera `Retry-After` viene en el `429`.
 - [x] Con 41 peticiones de detalle espaciadas (o la ventana diaria simulada en el test de integración), la 41 responde `429`.
 - [x] Con la tabla de contadores inaccesible (test con el repositorio que falla), `/projects` responde `200` y `/advisor/chat` responde `503`.
@@ -285,7 +285,7 @@ Cada criterio se verifica pegando el comando y su salida en el PR (constitución
 - [x] `uv run ruff check` pasa con las reglas `S`; cada `noqa: S` tiene su motivo.
 - [x] El job `audit` corre en el PR y queda en verde (o con excepciones justificadas). _(verde en los PR #17 y #19; ver `docs/security.md`)_
 - [x] `grep -nE "uses: [^ ]+@v[0-9]" .github/workflows/*.yml` no devuelve nada.
-- [x] `gitleaks git` sobre el historial no encuentra secretos (salida en `docs/security.md`). _(3 falsos positivos documentados en `.gitleaksignore`; falta activar secret scanning y push protection en GitHub)_
+- [x] `gitleaks git` sobre el historial no encuentra secretos (salida en `docs/security.md`). _(3 falsos positivos documentados en `.gitleaksignore`; secret scanning y push protection activos en GitHub, confirmado por el dueño)_
 - [x] La corrida programada siguiente al merge termina en `succeeded` (la validación de textos no rechaza fichas reales). _(2026-11-15, posterior al despliegue: `succeeded` en las dos constructoras, 0 páginas fallidas, 60 y 46 observaciones, como en los días anteriores)_
 - [x] `uv run pytest -m "not integration"`, `uv run pyright` (0 errores) y `uv run lint-imports` pasan; el CI del PR queda en verde con integración, y `evals.yml` en verde. _(`ci` verde en el PR #17 y en `main`; `evals.yml` corre solo con `RUN_ADVISOR_EVALS=true` o a mano y no se ha ejecutado con estos cambios)_
 

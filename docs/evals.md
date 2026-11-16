@@ -334,7 +334,8 @@ Guardrails fired in the 126 turns: `input_redacted:id_number` 6, `input_redacted
 
 A5 against the real API (local, 2026-11-15): the message with an email and a phone number left
 `[correo]` and `[teléfono]` in the conversation's checkpoint tables and in the Langfuse
-observations of the session, and none of the originals.
+observations of the session, and none of the originals. The trace itself carries the tags `input_redacted:email`, `input_redacted:phone` and `api`
+(seen in the Langfuse interface; the API client only returns the tags of the graph nodes).
 
 ### Adversarial extraction (2026-11-15, Luna, 4 pages, 2 runs each, 0.0012 USD per run)
 

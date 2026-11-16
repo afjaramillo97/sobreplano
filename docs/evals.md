@@ -120,6 +120,13 @@ Notes:
 sources, language) plus an LLM judge with seven binary rubrics. Every turn is traced in
 Langfuse (session = thread id, scores `check.*` and `rubric.*`).
 
+Checked in Langfuse on 2026-11-16, on the run of 2026-11-15 (tag `run-20261115T061059`): the
+Sessions page lists one session per conversation, with the `thread_id` as its id. The root
+trace of each turn is named `eval <case> r<run> t<turn>`, carries the tags `eval`, the run tag
+and the model, and has scores such as `check.completed`, `check.grounded` and `check.language`.
+Redacted messages show tags like `input_redacted:id_number`. No screenshot is kept in the repo:
+the Langfuse page shows the account owner's name.
+
 ```
 uv run --env-file .env python -m sobreplano.evals.advisor prepare
 uv run --env-file .env python -m sobreplano.evals.advisor run --repeat 3 --max-cost 1.00

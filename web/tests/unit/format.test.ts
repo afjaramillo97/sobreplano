@@ -7,6 +7,7 @@ import {
   formatDate,
   formatDateShort,
   formatMillions,
+  formatMillionsShort,
   formatPct,
 } from "../../src/lib/format";
 
@@ -30,6 +31,14 @@ describe("formatMillions", () => {
   it("keeps one decimal at most", () => {
     expect(formatMillions(716_500_000)).toBe(`$${NBSP}716,5${NBSP}millones`);
     expect(formatMillions(389_990_000)).toBe(`$${NBSP}390${NBSP}millones`);
+  });
+});
+
+describe("formatMillionsShort", () => {
+  it("abbreviates millions to M, one decimal at most", () => {
+    expect(formatMillionsShort(289_000_000)).toBe(`$${NBSP}289${NBSP}M`);
+    expect(formatMillionsShort(427_600_000)).toBe(`$${NBSP}427,6${NBSP}M`);
+    expect(formatMillionsShort(1_250_000_000)).toBe(`$${NBSP}1.250${NBSP}M`);
   });
 });
 

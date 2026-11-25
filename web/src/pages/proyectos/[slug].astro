@@ -37,7 +37,11 @@ const sectionClass = "flex flex-col gap-6 border-t-(length:--border-width-defaul
 const linkClass = "font-bold text-action-soft-text underline underline-offset-4 hover:text-action";
 ---
 
-<BaseLayout title={project.name} description={description}>
+<BaseLayout
+  title={project.name}
+  description={description}
+  image={{ path: `/og/${project.slug}.png`, alt: `${project.name}: precio desde y su cambio` }}
+>
   <div class="page py-8 lg:py-12">
     <nav aria-label="Migas de pan">
       <ol class="flex min-w-0 items-center gap-2 text-body-sm">

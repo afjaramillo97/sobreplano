@@ -50,8 +50,10 @@ const advantages: { icon: IconName; title: string; text: string }[] = [
         <h1 class="text-h1 text-text-primary lg:whitespace-nowrap xl:text-display">
           <span class="block">Descubre el mercado</span>
           <span class="block">inmobiliario</span>
+          <!-- bg-clip-text paints only the line box, and the 1.1 line height leaves the g's
+               descender outside it: the padding extends the background, the margin undoes it. -->
           <span
-            class="block bg-linear-to-r from-headline-gradient-start via-headline-gradient-mid to-headline-gradient-end bg-clip-text text-transparent forced-colors:bg-none forced-colors:text-[CanvasText]"
+            class="-mb-[0.15em] block bg-linear-to-r from-headline-gradient-start via-headline-gradient-mid to-headline-gradient-end bg-clip-text pb-[0.15em] text-transparent forced-colors:bg-none forced-colors:text-[CanvasText]"
           >
             inteligente con IA
           </span>
@@ -109,7 +111,7 @@ const advantages: { icon: IconName; title: string; text: string }[] = [
                 {MUNICIPALITY_NAMES[featured.municipality]}
               </span>
               <span class="text-caption text-text-muted">
-                {featuredFrom.name}, precio del {formatDate(featuredFrom.observedOn ?? "")}
+                {featuredFrom.name} · precio del {formatDate(featuredFrom.observedOn ?? "")}
               </span>
             </a>
           )

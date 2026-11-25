@@ -39,6 +39,9 @@
     font-family: var(--font-sans);
     font-size: var(--text-body);
     line-height: var(--text-body--line-height);
+    /* Plus Jakarta Sans draws its space at 0.17 em: at 14 px that is 2.4 px, and "Tipo 1"
+       reads as "Tipo1" with Linux and Windows rendering. 0.05 em more makes it about 0.22 em. */
+    word-spacing: 0.05em;
     -webkit-font-smoothing: antialiased;
   }
 

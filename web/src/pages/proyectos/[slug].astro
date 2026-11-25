@@ -58,7 +58,7 @@ const linkClass = "font-bold text-action-soft-text underline underline-offset-4 
     </header>
 
     <!-- The price card comes first in the source, so on a phone it shows before the image; on a
-         desktop it sits in the right column and stays in view while scrolling. -->
+         desktop it sits in the right column and stays in view while the history scrolls by. -->
     <div class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_376px]">
       <aside class="lg:sticky lg:top-[calc(var(--size-nav)+24px)] lg:col-start-2 lg:row-start-1 lg:self-start">
         <PriceCard project={project} />
@@ -90,57 +90,62 @@ const linkClass = "font-bold text-action-soft-text underline underline-offset-4 
           }
         </section>
 
-        <section aria-labelledby="tipologias" class={sectionClass}>
-          <h2 id="tipologias" class="text-h3 text-text-primary">Tipologías</h2>
-          <UnitTypesTable project={project} />
-        </section>
-
-        <section aria-labelledby="ubicacion" class={sectionClass}>
-          <h2 id="ubicacion" class="text-h3 text-text-primary">Ubicación</h2>
-          {
-            mapsQuery ? (
-              <div class="flex flex-wrap gap-4">
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${mapsQuery}`}
-                  target="_blank"
-                  rel="noopener"
-                  class={buttonVariants({ variant: "soft" })}
-                >
-                  <Icon name="map-outline" />
-                  Abrir en Google Maps
-                  <span class="sr-only">(se abre en otra pestaña)</span>
-                </a>
-                <a
-                  href={`https://www.google.com/maps/dir/?api=1&destination=${mapsQuery}`}
-                  target="_blank"
-                  rel="noopener"
-                  class={buttonVariants({ variant: "outline" })}
-                >
-                  Cómo llegar
-                  <span class="sr-only">(se abre en otra pestaña)</span>
-                </a>
-              </div>
-            ) : (
-              <p class="text-body text-text-secondary">
-                Sin ubicación publicada: {project.developer.name} no publica el mapa de este
-                proyecto.
-              </p>
-            )
-          }
-        </section>
-
-        <section aria-labelledby="fuente" class={sectionClass}>
-          <h2 id="fuente" class="text-h3 text-text-primary">Fuente</h2>
-          <p class="text-body text-text-secondary">
-            Los precios y las tipologías salen de la{" "}
-            <a href={project.sourceUrl} target="_blank" rel="noopener" class={linkClass}>
-              ficha del proyecto en el sitio de {project.developer.name}<span class="sr-only">
-                (se abre en otra pestaña)</span
-              ></a
-            >.
-          </p>
-        </section>
       </div>
+    </div>
+
+    <!-- Full width below the two columns: the unit types table has eight columns and does not
+         fit beside the price card. -->
+    <div class="mt-12 flex flex-col gap-12">
+      <section aria-labelledby="tipologias" class={sectionClass}>
+        <h2 id="tipologias" class="text-h3 text-text-primary">Tipologías</h2>
+        <UnitTypesTable project={project} />
+      </section>
+
+      <section aria-labelledby="ubicacion" class={sectionClass}>
+        <h2 id="ubicacion" class="text-h3 text-text-primary">Ubicación</h2>
+        {
+          mapsQuery ? (
+            <div class="flex flex-wrap gap-4">
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${mapsQuery}`}
+                target="_blank"
+                rel="noopener"
+                class={buttonVariants({ variant: "soft" })}
+              >
+                <Icon name="map-outline" />
+                Abrir en Google Maps
+                <span class="sr-only">(se abre en otra pestaña)</span>
+              </a>
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${mapsQuery}`}
+                target="_blank"
+                rel="noopener"
+                class={buttonVariants({ variant: "outline" })}
+              >
+                Cómo llegar
+                <span class="sr-only">(se abre en otra pestaña)</span>
+              </a>
+            </div>
+          ) : (
+            <p class="text-body text-text-secondary">
+              Sin ubicación publicada: {project.developer.name} no publica el mapa de este
+              proyecto.
+            </p>
+          )
+        }
+      </section>
+
+      <section aria-labelledby="fuente" class={sectionClass}>
+        <h2 id="fuente" class="text-h3 text-text-primary">Fuente</h2>
+        <p class="text-body text-text-secondary">
+          Los precios y las tipologías salen de la{" "}
+          <a href={project.sourceUrl} target="_blank" rel="noopener" class={linkClass}>
+            ficha del proyecto en el sitio de {project.developer.name}<span class="sr-only">
+              (se abre en otra pestaña)</span
+            ></a
+          >.
+        </p>
+      </section>
     </div>
   </div>
 </BaseLayout>

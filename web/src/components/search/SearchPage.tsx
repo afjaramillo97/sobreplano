@@ -2,8 +2,9 @@
 // pass them, the empty state and, from 1024 px, the map at the left as in the kit's Search
 // Result (Map v2). One island (client:load); its server render is the whole catalog without
 // filters, so the page works and is indexed without JavaScript.
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 
+import Icon from "@/components/Icon";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCount } from "@/lib/format";
@@ -14,6 +15,7 @@ import {
   clearFilters,
   developerOptions,
   hasUnitFilters,
+  type MapView,
   municipalityOptions,
   priceHistogram,
   type SearchItem,
@@ -70,7 +72,12 @@ export default function SearchPage({ items }: { items: SearchItem[] }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const isDesktop = useMediaQuery("(min-width: 1024px)");
-  const mapShown = ready && isDesktop;
+  // Below 1024 px the list and the map take turns (the kit's Search Result Swipe Up and
+  // Search Map v2); the map view is in the URL, so "Atrás" brings the list back.
+  const phoneMap = ready && !isDesktop && state.view === "mapa";
+  const mapShown = ready && (isDesktop || phoneMap);
+  // Whether this page pushed the map view, so "Ver lista" can go back instead of stacking.
+  const pushedMap = useRef(false);
   const [mapStatus, setMapStatus] = useState<"loading" | "ready" | "error">("loading");
   const [bounds, setBounds] = useState<Bounds | null>(null);
   const [highlighted, setHighlighted] = useState<string | null>(null);
@@ -83,6 +90,33 @@ export default function SearchPage({ items }: { items: SearchItem[] }) {
     if (ready) delete document.documentElement.dataset.searchPending;
   }, [ready]);
 
+  // The phone's map covers the page: the page must not scroll, and what lies under the map
+  // (the list, the footer) must not take the focus.
+  useEffect(() => {
+    if (!phoneMap) return;
+    const root = document.documentElement;
+    const footer = document.querySelector("body > footer");
+    root.classList.add("overflow-hidden");
+    footer?.setAttribute("inert", "");
+    return () => {
+      root.classList.remove("overflow-hidden");
+      footer?.removeAttribute("inert");
+    };
+  }, [phoneMap]);
+
+  const showMap = () => {
+    pushedMap.current = true;
+    update((s) => ({ ...s, view: "mapa" }), "push");
+  };
+  const showList = () => {
+    if (pushedMap.current) {
+      pushedMap.current = false;
+      window.history.back();
+    } else {
+      update((s) => ({ ...s, view: "lista" }));
+    }
+  };
+
   // A map that goes away (the window narrows) loads again from scratch.
   useEffect(() => {
     if (!mapShown) {
@@ -91,10 +125,22 @@ export default function SearchPage({ items }: { items: SearchItem[] }) {
     }
   }, [mapShown]);
 
+  const onViewChange = (next: Bounds, view: MapView, byUser: boolean) => {
+    setBounds(next);
+    if (byUser) {
+      const map = {
+        lat: Number(view.lat.toFixed(4)),
+        lon: Number(view.lon.toFixed(4)),
+        zoom: Number(view.zoom.toFixed(1)),
+      };
+      update((s) => ({ ...s, map }), "replace-later");
+    }
+  };
+
   const zone = useMemo(() => (bounds ? splitByBounds(results, bounds) : null), [results, bounds]);
   // The map filters the list only on a desktop, with "Buscar al mover el mapa" on and the map
   // drawn; a map that failed leaves every result in the list.
-  const mapFilters = mapShown && state.searchOnMove && mapStatus === "ready" && zone !== null;
+  const mapFilters = isDesktop && mapShown && state.searchOnMove && mapStatus === "ready" && zone !== null;
   const listed = mapFilters && zone ? zone.inside : results;
   const unlocated = mapFilters && zone ? zone.unlocated : [];
 
@@ -122,7 +168,7 @@ export default function SearchPage({ items }: { items: SearchItem[] }) {
         aria-label="Mapa de resultados"
         className="hidden lg:js:sticky lg:js:top-(--size-nav) lg:js:block lg:js:h-[calc(100dvh-var(--size-nav))] lg:js:self-start lg:js:py-8 lg:js:pl-12"
       >
-        {mapShown ? (
+        {isDesktop && mapShown ? (
           <Suspense fallback={<Skeleton className="h-full rounded-lg" />}>
             <ResultsMap
               className="h-full"
@@ -135,17 +181,7 @@ export default function SearchPage({ items }: { items: SearchItem[] }) {
               onSearchOnMoveChange={(searchOnMove) => update((s) => ({ ...s, searchOnMove }))}
               onHighlight={setHighlighted}
               onSelect={setSelected}
-              onViewChange={(next, view, byUser) => {
-                setBounds(next);
-                if (byUser) {
-                  const map = {
-                    lat: Number(view.lat.toFixed(4)),
-                    lon: Number(view.lon.toFixed(4)),
-                    zoom: Number(view.zoom.toFixed(1)),
-                  };
-                  update((s) => ({ ...s, map }), "replace-later");
-                }
-              }}
+              onViewChange={onViewChange}
               onStatus={setMapStatus}
               listId={LIST_ID}
             />
@@ -155,7 +191,48 @@ export default function SearchPage({ items }: { items: SearchItem[] }) {
         )}
       </section>
 
-      <div className="page py-12 lg:py-20 lg:js:mx-0 lg:js:max-w-none lg:js:px-12 lg:js:py-8">
+      {phoneMap && (
+        <section
+          aria-label="Mapa de resultados"
+          className="fixed inset-x-0 top-(--size-nav-mobile) bottom-0 z-30 md:top-(--size-nav)"
+        >
+          <Suspense fallback={<Skeleton className="h-full rounded-none" />}>
+            <ResultsMap
+              variant="fullscreen"
+              className="h-full"
+              results={results}
+              initialView={state.map}
+              inZone={zone?.inside.length ?? 0}
+              highlighted={highlighted}
+              selected={selected}
+              searchOnMove={state.searchOnMove}
+              onSearchOnMoveChange={(searchOnMove) => update((s) => ({ ...s, searchOnMove }))}
+              onHighlight={setHighlighted}
+              onSelect={setSelected}
+              onViewChange={onViewChange}
+              onStatus={setMapStatus}
+              onShowList={showList}
+              listId={LIST_ID}
+            />
+          </Suspense>
+        </section>
+      )}
+
+      {/* The kit's dark "Ver mapa" button, floating over the list below 1024 px. The wrapper
+          hides it without JavaScript, where it could not work. */}
+      {!phoneMap && (
+        <div className="fixed bottom-6 left-1/2 z-30 hidden -translate-x-1/2 js:block lg:js:hidden">
+          <button type="button" onClick={showMap} className={buttonVariants({ variant: "dark", className: "shadow-float" })}>
+            <Icon name="map-outline" size={20} />
+            Ver mapa
+          </button>
+        </div>
+      )}
+
+      <div
+        inert={phoneMap}
+        className="page py-12 pb-28 lg:py-20 lg:js:mx-0 lg:js:max-w-none lg:js:px-12 lg:js:py-8"
+      >
         <h1 className="text-h2 text-text-heading-alt search-pending:invisible">
           {formatCount(shownCount, "proyecto", "proyectos")}
         </h1>
@@ -215,7 +292,7 @@ export default function SearchPage({ items }: { items: SearchItem[] }) {
                     results={listed}
                     priority
                     highlighted={highlighted}
-                    onHighlight={mapShown ? setHighlighted : undefined}
+                    onHighlight={isDesktop && mapShown ? setHighlighted : undefined}
                     className={GRID}
                   />
                 ) : (

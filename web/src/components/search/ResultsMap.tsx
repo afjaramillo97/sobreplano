@@ -15,11 +15,12 @@ import {
 } from "maplibre-gl";
 // The worker is served from the site (worker-src 'self'), not built from a blob: URL.
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Supercluster, { type ClusterProperties } from "supercluster";
 
 import Icon from "@/components/Icon";
 import ProjectCard from "@/components/ProjectCard";
+import { buttonVariants } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCount } from "@/lib/format";
@@ -32,8 +33,8 @@ setWorkerUrl(workerUrl);
 
 /** Where the map opens when no project has coordinates: Medellín. */
 const FALLBACK_VIEW: MapView = { lat: 6.2442, lon: -75.5812, zoom: 11 };
-// Room above for the counter box and below for the attribution.
-const FIT_PADDING = { top: 120, bottom: 64, left: 64, right: 64 };
+// Room above for the counter box, below for the attribution, and half a pill on each side.
+const FIT_PADDING = { top: 120, bottom: 96, left: 96, right: 96 };
 const FIT_MAX_ZOOM = 14;
 /** Pills closer than this, in px, join a group. A pill is about 150 px wide. */
 const CLUSTER_RADIUS = 72;
@@ -64,9 +65,14 @@ type Props = {
   onStatus: (status: "ready" | "error") => void;
   /** Where the list starts, for "Saltar el mapa". */
   listId: string;
+  /**
+   * "panel": beside the list from 1024 px, with "Buscar al mover el mapa". "fullscreen": the
+   * phone's map view, with a bottom bar that goes back to the list.
+   */
+  variant?: "panel" | "fullscreen";
+  /** The bottom bar's "Ver lista", in the fullscreen variant. */
+  onShowList?: () => void;
   className?: string;
-  /** Extra controls over the map (the "Ver lista" bar on phones). */
-  children?: ReactNode;
 };
 
 /** The map tokens as the page resolved them (global.css declares --map-*). */
@@ -103,9 +109,11 @@ export default function ResultsMap(props: Props) {
     onSearchOnMoveChange,
     onSelect,
     listId,
+    variant = "panel",
+    onShowList,
     className,
-    children,
   } = props;
+  const fullscreen = variant === "fullscreen";
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markers = useRef(new Map<string, { marker: Marker; element: HTMLButtonElement }>());
@@ -188,7 +196,11 @@ export default function ResultsMap(props: Props) {
       mapRef.current = map;
       map.touchZoomRotate.disableRotation();
       map.keyboard.disableRotation();
-      map.addControl(new AttributionControl({ compact: false, customAttribution: ATTRIBUTION }), "bottom-right");
+      // Always expanded (compact: false), and clear of the phone's bottom bar.
+      map.addControl(
+        new AttributionControl({ compact: false, customAttribution: ATTRIBUTION }),
+        latest.current.variant === "fullscreen" ? "top-right" : "bottom-right",
+      );
       let loaded = false;
       map.on("error", () => {
         // A style or tile that never arrives before the first paint means no map at all.
@@ -324,7 +336,11 @@ export default function ResultsMap(props: Props) {
 
   return (
     <div
-      className={cn("relative isolate overflow-hidden rounded-lg bg-bg-selected", className)}
+      className={cn(
+        "relative isolate overflow-hidden bg-bg-selected",
+        fullscreen ? "rounded-none" : "rounded-lg",
+        className,
+      )}
       onKeyDown={(event) => {
         if (event.key === "Escape" && latest.current.selected) {
           event.stopPropagation();
@@ -351,25 +367,32 @@ export default function ResultsMap(props: Props) {
         </div>
       ) : (
         <>
-          <div className="absolute top-4 left-4 z-10 flex flex-col gap-3 rounded-md border-(length:--border-width-default) border-border-input bg-bg-surface px-4 py-3 shadow-float">
-            <p aria-live="polite" className="text-body-sm font-bold text-text-primary">
-              {status === "ready"
-                ? `${formatCount(inZone, "proyecto", "proyectos")} en esta zona del mapa`
-                : "Cargando el mapa…"}
-            </p>
-            <div className="flex items-center gap-3">
-              <Checkbox
-                id="buscar-al-mover"
-                checked={searchOnMove}
-                onCheckedChange={(checked) => onSearchOnMoveChange(checked === true)}
-              />
-              <label htmlFor="buscar-al-mover" className="cursor-pointer text-body-sm text-text-secondary">
-                Buscar al mover el mapa
-              </label>
+          {!fullscreen && (
+            <div className="absolute top-4 left-4 z-10 flex flex-col gap-3 rounded-md border-(length:--border-width-default) border-border-input bg-bg-surface px-4 py-3 shadow-float">
+              <p aria-live="polite" className="text-body-sm font-bold text-text-primary">
+                {status === "ready"
+                  ? `${formatCount(inZone, "proyecto", "proyectos")} en esta zona del mapa`
+                  : "Cargando el mapa…"}
+              </p>
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  id="buscar-al-mover"
+                  checked={searchOnMove}
+                  onCheckedChange={(checked) => onSearchOnMoveChange(checked === true)}
+                />
+                <label htmlFor="buscar-al-mover" className="cursor-pointer text-body-sm text-text-secondary">
+                  Buscar al mover el mapa
+                </label>
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="absolute right-4 bottom-12 z-10 flex flex-col overflow-hidden rounded-md border-(length:--border-width-default) border-border-input bg-bg-surface shadow-float">
+          <div
+            className={cn(
+              "absolute right-4 z-10 flex flex-col overflow-hidden rounded-md border-(length:--border-width-default) border-border-input bg-bg-surface shadow-float",
+              fullscreen ? "bottom-24" : "bottom-12",
+            )}
+          >
             <button
               type="button"
               onClick={() => zoomBy(1)}
@@ -395,7 +418,10 @@ export default function ResultsMap(props: Props) {
               ref={cardRef}
               role="dialog"
               aria-label={selectedResult.item.name}
-              className="absolute bottom-12 left-4 z-20 w-80 max-w-[calc(100%-2rem)] rounded-md shadow-float"
+              className={cn(
+                "absolute z-20 rounded-md shadow-float",
+                fullscreen ? "inset-x-4 bottom-24 mx-auto max-w-sm" : "bottom-12 left-4 w-80 max-w-[calc(100%-2rem)]",
+              )}
             >
               <ProjectCard project={selectedResult.item} from={cardUnit(selectedResult)} headingLevel={3} />
               <button
@@ -409,7 +435,19 @@ export default function ResultsMap(props: Props) {
           )}
         </>
       )}
-      {children}
+
+      {fullscreen && (
+        // The kit's Search Map v2 bar: the zone's count and the way back to the list.
+        <div className="absolute inset-x-0 bottom-0 z-30 flex items-center justify-between gap-4 border-t-(length:--border-width-default) border-border bg-bg-surface px-4 py-3 shadow-float">
+          <p aria-live="polite" className="text-body-sm font-bold text-text-primary">
+            {status === "ready" ? `${formatCount(inZone, "proyecto", "proyectos")} en esta zona` : ""}
+          </p>
+          <button type="button" onClick={onShowList} className={buttonVariants({ variant: "dark" })}>
+            <Icon name="unordered-list-outline" size={20} />
+            Ver lista
+          </button>
+        </div>
+      )}
     </div>
   );
 }

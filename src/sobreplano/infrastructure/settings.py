@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     rate_limits_enabled: bool = True
     # /docs, /redoc and /openapi.json; the deployment turns them off (SPEC 12).
     api_docs_enabled: bool = True
+    # Browser origins allowed to read the API (SPEC 11a), as a JSON list. Empty means no CORS
+    # at all; never "*", since the detail route returns the protected price history.
+    cors_allowed_origins: list[str] = []
     rate_limit_list_per_minute: int = Field(default=30, gt=0)
     rate_limit_list_per_day: int = Field(default=600, gt=0)
     # 40 a day is below the catalog's size: copying every history needs several IPs.

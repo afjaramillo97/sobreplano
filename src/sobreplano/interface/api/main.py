@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
 
 from sobreplano.infrastructure.advisor.tracing import shutdown_tracing
@@ -37,7 +38,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # Send the advisor traces still buffered before the process exits.
         shutdown_tracing(resolved)
 
-    docs_enabled = _docs_enabled(settings)
+    startup = _startup_settings(settings)
+    docs_enabled = startup is None or startup.api_docs_enabled
     app = FastAPI(
         title="Sobreplano",
         lifespan=lifespan,
@@ -50,20 +52,30 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(developers.router)
     app.include_router(advisor.router)
     app.include_router(robots.router)
+    if startup is not None and startup.cors_allowed_origins:
+        # Read-only for now; the advisor's POST joins in SPEC 11c. Without expose_headers a
+        # browser cannot read Retry-After on a 429, even though the API sends it.
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=startup.cors_allowed_origins,
+            allow_methods=["GET"],
+            allow_credentials=False,
+            expose_headers=["Retry-After"],
+        )
     return app
 
 
-def _docs_enabled(settings: Settings | None) -> bool:
-    """Whether /docs, /redoc and /openapi.json exist; these routes are fixed at build time.
+def _startup_settings(settings: Settings | None) -> Settings | None:
+    """Settings for what is fixed when the app is built: the docs routes and CORS.
 
     The module-level app is built at import, before DATABASE_URL need be set (tests import
-    it), so an unreadable environment keeps the docs on: the app cannot start without a
-    database anyway.
+    it), so an unreadable environment gives None: docs on and no CORS. The app cannot start
+    without a database anyway.
     """
     try:
-        return (settings or load_settings()).api_docs_enabled
+        return settings or load_settings()
     except ValidationError:
-        return True
+        return None
 
 
 app = create_app()

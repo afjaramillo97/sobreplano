@@ -358,13 +358,14 @@ describe("pills", () => {
     expect(pillText(null)).toBe("Sin precio");
   });
 
-  it("names the pill with the price in pesos and the change in words", () => {
+  it("names the pill with its visible text, the price in pesos and the change in words", () => {
     expect(pillLabel(torre, unit("A", 289_000_000, { changePct: 9.8 }))).toBe(
-      `Torre, desde $${NBSP}289.000.000, subió 9,8${NBSP}%`,
+      `Torre, $${NBSP}289${NBSP}M +9,8${NBSP}%: desde $${NBSP}289.000.000, subió 9,8${NBSP}%`,
     );
     expect(pillLabel(torre, unit("A", 289_000_000, { changePct: -2 }))).toBe(
-      `Torre, desde $${NBSP}289.000.000, bajó 2,0${NBSP}%`,
+      `Torre, $${NBSP}289${NBSP}M \u22122,0${NBSP}%: desde $${NBSP}289.000.000, bajó 2,0${NBSP}%`,
     );
+    expect(pillLabel(torre, unit("A", 289_000_000))).toBe(`Torre, $${NBSP}289${NBSP}M: desde $${NBSP}289.000.000`);
     expect(pillLabel(torre, null)).toBe("Torre, sin precio publicado");
   });
 });

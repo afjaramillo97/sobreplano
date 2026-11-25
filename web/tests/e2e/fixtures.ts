@@ -33,6 +33,7 @@ export const test = base.extend<{ cspErrors: string[]; offlineMap: void }>({
 });
 
 export { expect };
+export type { Page };
 
 /** The pages of the site, with one project with coordinates and one without. */
 export const PAGES = {

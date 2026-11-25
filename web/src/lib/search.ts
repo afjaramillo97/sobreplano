@@ -375,10 +375,14 @@ export function pillText(from: SearchUnit | null): string {
   return from.changePct === null ? price : `${price} ${formatPct(from.changePct)}`;
 }
 
-/** The pill's accessible name: "Torre, desde $ 289.000.000, subió 9,8 %". */
+/**
+ * The pill's accessible name: its visible text first, so speech input can name it (WCAG 2.5.3),
+ * then the price in pesos and the change in words: "Torre, $ 289 M +9,8 %: desde $ 289.000.000,
+ * subió 9,8 %".
+ */
 export function pillLabel(item: SearchItem, from: SearchUnit | null): string {
   if (from === null) return `${item.name}, sin precio publicado`;
-  const price = `${item.name}, desde ${formatCop(from.priceCop)}`;
+  const price = `${item.name}, ${pillText(from)}: desde ${formatCop(from.priceCop)}`;
   return from.changePct === null ? price : `${price}, ${formatChange(from.changePct).toLowerCase()}`;
 }
 

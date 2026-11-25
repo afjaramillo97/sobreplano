@@ -1,6 +1,6 @@
 # SPEC 11a — Base del frontend, ficha del proyecto y listado
 
-> **Estado:** aprobado
+> **Estado:** implementado
 > **Depende de:** SPEC 07, SPEC 10
 > **Fecha:** 2026-11-24
 > **Objetivo:** Crear el sitio estático de Sobreplano en `web/` (Astro con islas de React y el diseño del kit Estatery tal cual, con solo los cambios necesarios) con inicio, listado y ficha de cada proyecto con su histórico de precios, probado en CI con un catálogo ficticio.
@@ -305,28 +305,28 @@ Ningún paso tiene llamadas pagas.
 
 Cada criterio se verifica pegando el comando y su salida en el PR (constitución, principio 6). Los commits van en inglés.
 
-- [ ] `uv run pytest tests/unit/interface/test_cors.py tests/unit/interface/test_openapi_snapshot.py` pasa.
-- [ ] Con `CORS_ALLOWED_ORIGINS='["http://localhost:4321"]'`, `curl -si -H "Origin: http://localhost:4321" localhost:8000/projects?limit=1` trae `access-control-allow-origin: http://localhost:4321`. Con `-H "Origin: https://evil.example"` no la trae.
-- [ ] `uv run python -m sobreplano.interface.cli.export_openapi --check` sale con 0, y sale con 1 tras agregar un campo de prueba a `UnitTypeOut` (probado y revertido).
-- [ ] `pnpm --dir web tokens && git diff --exit-code web/src/styles/tokens.css` no muestra cambios.
-- [ ] `pnpm --dir web rules` pasa, y falla con archivo y línea al agregar `bg-indigo-600` o `#7065F0` a un componente (probado y revertido).
-- [ ] `pnpm --dir web check` termina con 0 errores y 0 advertencias.
-- [ ] `pnpm --dir web test` pasa, incluidos los formatos exactos de la sección 3 y todos los pares de `contrast-pairs.json`.
-- [ ] `pnpm --dir web build` con la API local y el catálogo ficticio genera una ficha y una `og:image` por proyecto (`ls web/dist/proyectos | wc -l` y `ls web/dist/og | wc -l` igual al número de proyectos).
-- [ ] `grep -L "astro-island" web/dist/index.html web/dist/proyectos/index.html web/dist/terminos/index.html` lista los tres archivos: esas páginas no cargan JavaScript de islas.
-- [ ] El histórico no queda en el sitio estático: `grep -rl '"history"' web/dist` no devuelve nada, y la isla recibe solo el `slug` como propiedad.
-- [ ] La ficha del proyecto sin precio vigente dice "Sin precio publicado"; la tipología que dejó de publicarse dice "No publicada desde el …" y no es el "desde" (prueba de Playwright).
-- [ ] Con `page.route` respondiendo `429` y `Retry-After: 120`, la isla muestra el mensaje con la hora y la tarjeta de precio sigue visible. Con `500`, muestra "Reintentar" y el botón vuelve a pedir.
-- [ ] En el test del `429`, el navegador hace una sola petición al detalle (sin reintentos), contada con `page.on("request")`.
-- [ ] `@axe-core/playwright` no reporta violaciones en `/`, `/proyectos/`, dos fichas (con y sin coordenadas), `/terminos/` y la 404, a 390 y 1440 px.
-- [ ] En la ficha, con solo el teclado se llega a las pestañas de tipología, se cambia de tipología con las flechas y el foco es visible en todo momento (prueba de Playwright).
-- [ ] A 320 px de ancho, ninguna página tiene scroll horizontal (`document.documentElement.scrollWidth <= 320`).
-- [ ] Las capturas de Playwright de inicio, listado y dos fichas, a 390 y 1440 px, están aprobadas y versionadas en `web/tests/e2e/**-snapshots/`, y el PR muestra al lado la pantalla equivalente del kit (fuera del repo) para la revisión visual.
-- [ ] Lighthouse CI (móvil) en `/`, `/proyectos/` y una ficha: rendimiento ≥ 0,90, accesibilidad = 1,00, buenas prácticas ≥ 0,95, SEO ≥ 0,95, LCP ≤ 2,5 s y CLS ≤ 0,1. El PR anota los KB de JavaScript de la ficha (gzip) y queda bajo 250 KB.
-- [ ] Ninguna página muestra errores de CSP en la consola del navegador en `pnpm preview` (Playwright falla ante un mensaje `Content Security Policy`).
-- [ ] `git ls-files | grep -iE '\.fig$|estatery'` no devuelve nada, y `git ls-files web/kit` lista solo el submódulo.
-- [ ] Sin el submódulo (`git submodule deinit -f web/kit`), `pnpm --dir web build` termina y usa los iconos de reemplazo (probado y revertido).
-- [ ] El workflow `web.yml` queda en verde en el PR, y `ci.yml` también.
+- [x] `uv run pytest tests/unit/interface/test_cors.py tests/unit/interface/test_openapi_snapshot.py` pasa.
+- [x] Con `CORS_ALLOWED_ORIGINS='["http://localhost:4321"]'`, `curl -si -H "Origin: http://localhost:4321" localhost:8000/projects?limit=1` trae `access-control-allow-origin: http://localhost:4321`. Con `-H "Origin: https://evil.example"` no la trae.
+- [x] `uv run python -m sobreplano.interface.cli.export_openapi --check` sale con 0, y sale con 1 tras agregar un campo de prueba a `UnitTypeOut` (probado y revertido).
+- [x] `pnpm --dir web tokens && git diff --exit-code web/src/styles/tokens.css` no muestra cambios.
+- [x] `pnpm --dir web rules` pasa, y falla con archivo y línea al agregar `bg-indigo-600` o `#7065F0` a un componente (probado y revertido).
+- [x] `pnpm --dir web check` termina con 0 errores y 0 advertencias.
+- [x] `pnpm --dir web test` pasa, incluidos los formatos exactos de la sección 3 y todos los pares de `contrast-pairs.json`.
+- [x] `pnpm --dir web build` con la API local y el catálogo ficticio genera una ficha y una `og:image` por proyecto (`ls web/dist/proyectos | wc -l` y `ls web/dist/og | wc -l` igual al número de proyectos). _(12 fichas y 12 `og:image`; `ls web/dist/proyectos` da 13 porque también cuenta el `index.html` del listado)_
+- [x] `grep -L "astro-island" web/dist/index.html web/dist/proyectos/index.html web/dist/terminos/index.html` lista los tres archivos: esas páginas no cargan JavaScript de islas.
+- [x] El histórico no queda en el sitio estático: `grep -rl '"history"' web/dist` no devuelve nada, y la isla recibe solo el `slug` como propiedad.
+- [x] La ficha del proyecto sin precio vigente dice "Sin precio publicado"; la tipología que dejó de publicarse dice "No publicada desde el …" y no es el "desde" (prueba de Playwright).
+- [x] Con `page.route` respondiendo `429` y `Retry-After: 120`, la isla muestra el mensaje con la hora y la tarjeta de precio sigue visible. Con `500`, muestra "Reintentar" y el botón vuelve a pedir.
+- [x] En el test del `429`, el navegador hace una sola petición al detalle (sin reintentos), contada con `page.on("request")`.
+- [x] `@axe-core/playwright` no reporta violaciones en `/`, `/proyectos/`, dos fichas (con y sin coordenadas), `/terminos/` y la 404, a 390 y 1440 px.
+- [x] En la ficha, con solo el teclado se llega a las pestañas de tipología, se cambia de tipología con las flechas y el foco es visible en todo momento (prueba de Playwright).
+- [x] A 320 px de ancho, ninguna página tiene scroll horizontal (`document.documentElement.scrollWidth <= 320`).
+- [x] Las capturas de Playwright de inicio, listado y dos fichas, a 390 y 1440 px, están aprobadas y versionadas en `web/tests/e2e/**-snapshots/`, y el PR muestra al lado la pantalla equivalente del kit (fuera del repo) para la revisión visual. _(aprobadas por el dueño el 2026-11-25, tras corregir en el PR #32 la "g" recortada del título, el espaciado de la línea "Tipo 1 · precio del…" y la tabla de tipologías cortada a 1440 px)_
+- [x] Lighthouse CI (móvil) en `/`, `/proyectos/` y una ficha: rendimiento ≥ 0,90, accesibilidad = 1,00, buenas prácticas ≥ 0,95, SEO ≥ 0,95, LCP ≤ 2,5 s y CLS ≤ 0,1. El PR anota los KB de JavaScript de la ficha (gzip) y queda bajo 250 KB. _(1,00 en las cuatro categorías en las tres páginas, LCP ≤ 1,05 s y CLS 0; la ficha carga 219 KB de JavaScript gzip con recharts 3.11, solo cuando el histórico entra en pantalla)_
+- [x] Ninguna página muestra errores de CSP en la consola del navegador en `pnpm preview` (Playwright falla ante un mensaje `Content Security Policy`).
+- [x] `git ls-files | grep -iE '\.fig$|estatery'` no devuelve nada, y `git ls-files web/kit` lista solo el submódulo.
+- [x] Sin el submódulo (`git submodule deinit -f web/kit`), `pnpm --dir web build` termina y usa los iconos de reemplazo (probado y revertido). _(el build avisa `[icons] web/kit is missing: building with the fallback icons`)_
+- [x] El workflow `web.yml` queda en verde en el PR, y `ci.yml` también. _(verde en los PR #28 y #32, con el kit; en los PR de Dependabot las capturas se saltan si falta `KIT_REPO_TOKEN` como secreto de Dependabot)_
 
 ## Decisiones tomadas y descartadas
 

@@ -1,46 +1,32 @@
 ---
-// The listing: every project as a card, cheapest "desde" first, without filters (filters and
-// map come in SPEC 11b).
-import ProjectCard from "@/components/ProjectCard";
-import { buttonVariants } from "@/components/ui/button";
+// The search (SPEC 11b): every project as a card, with filters kept in the URL. The island
+// renders the whole catalog on the server, so the page works and is indexed without
+// JavaScript; in the browser it reads the URL and filters in memory.
+import SearchPage from "@/components/search/SearchPage";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import { loadCatalog, sortByFrom } from "@/lib/catalog";
-import { formatCount } from "@/lib/format";
+import { toSearchItem } from "@/lib/search";
 
-const projects = sortByFrom(await loadCatalog());
+const items = sortByFrom(await loadCatalog()).map(toSearchItem);
 ---
 
 <BaseLayout
   title="Proyectos sobre plano"
-  description="Todos los proyectos de vivienda nueva sobre plano que seguimos en el Valle de Aburrá, con su precio desde y cuánto ha cambiado."
+  description="Todos los proyectos de vivienda nueva sobre plano que seguimos en el Valle de Aburrá, con su precio desde y cuánto ha cambiado. Filtra por municipio, precio y alcobas."
 >
-  <div class="page py-12 lg:py-20">
-    <h1 class="text-h2 text-text-heading-alt">
-      {formatCount(projects.length, "proyecto", "proyectos")}
-    </h1>
-    <p class="mt-2 max-w-2xl text-body text-text-secondary">
-      Ordenados por precio desde, del más bajo al más alto. Los que no tienen precio publicado van
-      al final.
-    </p>
-    {
-      projects.length > 0 ? (
-        <ul class="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project, i) => (
-            <li>
-              <ProjectCard project={project} priority={i === 0} />
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <div class="mt-12 flex flex-col items-start gap-4">
-          <p class="text-body text-text-secondary">
-            Todavía no hay proyectos en el catálogo. Vuelve pronto: lo actualizamos cada día.
-          </p>
-          <a href="/" class={buttonVariants({ variant: "outline" })}>
-            Ir al inicio
-          </a>
-        </div>
-      )
-    }
-  </div>
+  <Fragment slot="head">
+    <!-- Before the first paint: the filter controls show only with JavaScript, and a URL with
+         filters shows skeletons until the island has read it (no flash of the full list). -->
+    <script is:inline>
+      document.documentElement.dataset.js = "";
+      if (
+        /[?&](?:q|municipio|constructora|precio_min|precio_max|alcobas|banos|area_min|area_max|orden|vista)=[^&]/.test(
+          location.search,
+        )
+      ) {
+        document.documentElement.dataset.searchPending = "";
+      }
+    </script>
+  </Fragment>
+  <SearchPage client:load items={items} />
 </BaseLayout>

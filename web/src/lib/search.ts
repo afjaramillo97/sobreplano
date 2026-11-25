@@ -402,6 +402,14 @@ export function priceRange(items: readonly SearchItem[]): { min: number; max: nu
   return { min, max };
 }
 
+/** The smallest and largest current unit type of the catalog, in whole m²; null without any. */
+export function areaRange(items: readonly SearchItem[]): { min: number; max: number } | null {
+  const areas = items.flatMap((item) => item.units.map((unit) => unit.areaM2));
+  if (areas.length === 0) return null;
+  const min = Math.floor(Math.min(...areas));
+  return { min, max: Math.max(Math.ceil(Math.max(...areas)), min + 1) };
+}
+
 /**
  * The price filter's histogram: how many projects that pass the other filters have their
  * "desde" in each of `binCount` equal slices of the catalog's price range. Null without prices.

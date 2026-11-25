@@ -13,6 +13,11 @@
     format("woff2-variations");
 }
 
+/* Set on <html> by the inline script of /proyectos/ before the first paint (SPEC 11b): js
+   while JavaScript runs, search-pending while a URL with filters waits for the island. */
+@custom-variant js (&:where([data-js] *));
+@custom-variant search-pending (&:where([data-search-pending] *));
+
 /* The content column: 1120 wide (kit), with side gutters on narrow screens. */
 @utility page {
   width: 100%;

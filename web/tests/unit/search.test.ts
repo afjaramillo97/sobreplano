@@ -3,6 +3,7 @@ import type { ProjectView, UnitTypeView } from "../../src/lib/projects";
 import {
   activeChips,
   activeFilterCount,
+  areaRange,
   clearFilters,
   DEFAULT_SEARCH,
   developerOptions,
@@ -379,6 +380,12 @@ describe("priceHistogram", () => {
   it("spans the catalog's prices, rounded to the million", () => {
     expect(priceRange(items)).toEqual({ min: 240_000_000, max: 720_000_000 });
     expect(priceRange([item("D", [])])).toBeNull();
+  });
+
+  it("spans the catalog's areas in whole m²", () => {
+    const sized = [item("A", [unit("A1", 1, { areaM2: 38.4 }), unit("A2", 2, { areaM2: 118.2 })])];
+    expect(areaRange(sized)).toEqual({ min: 38, max: 119 });
+    expect(areaRange([item("D", [])])).toBeNull();
   });
 
   it("counts the desde of the projects that pass the other filters", () => {

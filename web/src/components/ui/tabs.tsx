@@ -52,7 +52,7 @@ function TabsTrigger({ className, ...props }: React.ComponentProps<typeof TabsPr
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "relative inline-flex shrink-0 items-center justify-center gap-2 text-body-lg whitespace-nowrap text-text-muted transition-colors duration-(--duration-fast) ease-out outline-none hover:text-text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none data-[state=active]:font-bold data-[state=active]:text-text-primary [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
+        "relative inline-flex shrink-0 items-center justify-center gap-2 text-body-lg whitespace-nowrap text-text-muted transition-colors duration-(--duration-fast) ease-out outline-hidden hover:text-text-primary focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none data-[state=active]:font-bold data-[state=active]:text-text-primary [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
         // Segmented control.
         "group-data-[variant=default]/tabs-list:h-(--size-control-md) group-data-[variant=default]/tabs-list:rounded-[calc(var(--radius-md)-2px)] group-data-[variant=default]/tabs-list:border-(length:--border-width-strong) group-data-[variant=default]/tabs-list:border-transparent group-data-[variant=default]/tabs-list:px-6 group-data-[variant=default]/tabs-list:data-[state=active]:border-border-input group-data-[variant=default]/tabs-list:data-[state=active]:bg-bg-surface group-data-[variant=default]/tabs-list:data-[state=active]:shadow-sm",
         // Underlined tabs.
@@ -69,7 +69,7 @@ function TabsContent({ className, ...props }: React.ComponentProps<typeof TabsPr
     <TabsPrimitive.Content
       data-slot="tabs-content"
       className={cn(
-        "flex-1 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        "flex-1 outline-hidden focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-ring",
         className,
       )}
       {...props}

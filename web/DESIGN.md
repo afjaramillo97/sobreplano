@@ -48,7 +48,7 @@ Join classes with `cn` from `@/lib/utils`, never from `cn` directly. The plain o
   - `skeleton`: no pulse;
   - `chart`: trimmed to the container and the tooltip. shadcn's `ChartStyle` injects a `<style>` element at run time, which the CSP blocks, so series colors go in through the `style` prop instead.
 - **No dark variants** (`dark:`) for now. The site has no dark mode, and those classes would half-apply on dark systems.
-- **Focus** is a solid 2 px `outline-ring`, offset by 2. A ring at 50 % alpha would fall under 3:1.
+- **Focus** is a solid 2 px `outline-ring`, offset by 2. A ring at 50 % alpha would fall under 3:1. Hide the resting outline with `outline-hidden`, never `outline-none`: in Tailwind v4 `outline-none` sets `--tw-outline-style: none`, which `focus-visible:outline-2` inherits, so the focus never shows.
 
 ## Kit assets
 

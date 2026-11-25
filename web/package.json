@@ -17,7 +17,8 @@
     "tokens": "node scripts/build-tokens.mjs",
     "rules": "node scripts/check-design-rules.mjs",
     "api:types": "openapi-typescript src/lib/api/openapi.json -o src/lib/api/schema.d.ts",
-    "astro": "astro"
+    "astro": "astro",
+    "lhci": "lhci autorun"
   },
   "dependencies": {
     "@astrojs/react": "^7.1.9",
@@ -38,7 +39,10 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
+    "@axe-core/playwright": "^4.14.0",
     "@fontsource/plus-jakarta-sans": "^5.3.0",
+    "@lhci/cli": "^0.16.1",
+    "@playwright/test": "^1.65.1",
     "@resvg/resvg-js": "^2.6.2",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",

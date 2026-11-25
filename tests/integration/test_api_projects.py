@@ -118,6 +118,7 @@ def test_openapi_lists_every_route(client: TestClient) -> None:
 
     assert sorted(paths) == [
         "/advisor/chat",
+        "/advisor/chat/stream",
         "/developers",
         "/health",
         "/projects",

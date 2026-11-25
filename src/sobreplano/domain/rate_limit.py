@@ -59,6 +59,22 @@ class WindowCounts:
 
 
 @dataclass(frozen=True)
+class Remaining:
+    """Requests one client may still make in each window, after the one just counted."""
+
+    minute: int
+    day: int
+
+
+def remaining(counts: WindowCounts, limit: Limit) -> Remaining:
+    """What is left of limit after counts; never below zero, also once a window is over."""
+    return Remaining(
+        minute=max(0, limit.per_minute - counts.minute),
+        day=max(0, limit.per_day - counts.day),
+    )
+
+
+@dataclass(frozen=True)
 class Exceeded:
     """The window a request went over, and the seconds until that window ends."""
 

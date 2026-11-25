@@ -6,9 +6,11 @@ from sobreplano.domain.rate_limit import (
     BOGOTA,
     Exceeded,
     Limit,
+    Remaining,
     WindowCounts,
     WindowKind,
     check_limit,
+    remaining,
     windows_at,
 )
 
@@ -54,3 +56,11 @@ def test_retry_after_is_at_least_one_second() -> None:
     exceeded = check_limit(WindowCounts(minute=11, day=11), LIMIT, windows_at(now), now)
     assert exceeded is not None
     assert exceeded.retry_after_seconds == 1
+
+
+def test_remaining_is_what_is_left_of_each_window() -> None:
+    assert remaining(WindowCounts(minute=3, day=12), LIMIT) == Remaining(minute=7, day=28)
+
+
+def test_remaining_never_goes_below_zero() -> None:
+    assert remaining(WindowCounts(minute=11, day=41), LIMIT) == Remaining(minute=0, day=0)

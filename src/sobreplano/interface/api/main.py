@@ -53,12 +53,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(advisor.router)
     app.include_router(robots.router)
     if startup is not None and startup.cors_allowed_origins:
-        # Read-only for now; the advisor's POST joins in SPEC 11c. Without expose_headers a
-        # browser cannot read Retry-After on a 429, even though the API sends it.
+        # GET for the reads and POST with a JSON body for the advisor (SPEC 11c). The
+        # middleware answers the preflight itself, so it never counts against a limit.
+        # Without expose_headers a browser cannot read Retry-After on a 429.
         app.add_middleware(
             CORSMiddleware,
             allow_origins=startup.cors_allowed_origins,
-            allow_methods=["GET"],
+            allow_methods=["GET", "POST"],
+            allow_headers=["Content-Type"],
             allow_credentials=False,
             expose_headers=["Retry-After"],
         )

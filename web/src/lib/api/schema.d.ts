@@ -17,10 +17,39 @@ export interface paths {
          * Chat
          * @description Answer one message with Sobreplano's data.
          *
-         *     The only route that writes: it commits the conversation and the token log, also before
-         *     the 503 for too many tool rounds, so the spend is not lost.
+         *     Commits the conversation and the token log, also before the 503 for too many tool
+         *     rounds, so the spend is not lost.
          */
         post: operations["chat_advisor_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/advisor/chat/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Chat Stream
+         * @description Answer one message as Server-Sent Events, telling each tool as it starts and ends.
+         *
+         *     Events: `step` (StepOut) when a tool starts or ends, then one `answer` (StreamAnswerOut)
+         *     or one `error` (StreamErrorOut). The answer is the verified text, never partial text.
+         *     What is known before the turn (422, 429, 404, 409, 503) is a plain HTTP answer, as in
+         *     POST /advisor/chat.
+         *
+         *     The turn runs in a thread with its own session and commits the conversation and the
+         *     token log, also after too many tool rounds. If the client goes away or the stream
+         *     times out, the turn still ends and is recorded.
+         */
+        post: operations["chat_stream_advisor_chat_stream_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -135,6 +164,8 @@ export interface components {
          * @description The advisor's answer and the conversation to continue it in.
          */
         ChatOut: {
+            /** Projects */
+            projects: string[];
             /** Reply */
             reply: string;
             /**
@@ -408,6 +439,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChatOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chat_stream_advisor_chat_stream_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": unknown;
                 };
             };
             /** @description Validation Error */

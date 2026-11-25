@@ -44,6 +44,7 @@ class FakeAgent:
             tools_used=["search_projects"],
             llm_calls=[CALL],
             tool_calls=[],
+            projects=["arrayanes-del-sur", "cipres"],
         )
 
 
@@ -128,6 +129,7 @@ def test_new_conversation_matches_the_contract(client: TestClient, world: World)
     assert status == 200
     assert body["reply"] == "Encontré 2 proyectos."
     assert body["tools_used"] == ["search_projects"]
+    assert body["projects"] == ["arrayanes-del-sur", "cipres"]
     assert UUID(str(body["thread_id"])) in world.threads.turns
     assert world.session.commits == 1
     assert world.usage.rows == [CALL]

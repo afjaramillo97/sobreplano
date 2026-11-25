@@ -1,4 +1,5 @@
-// The fictitious catalog (tests/fixtures/catalog.json) keeps covering the cases of SPEC 11a §6.
+// The fictitious catalog (tests/fixtures/catalog.json) keeps covering the cases of SPEC 11a §6
+// and SPEC 11b §7.
 // seed_schema.py validates its shape; this checks that the rare cases stay in it.
 import { describe, expect, it } from "vitest";
 import catalog from "../fixtures/catalog.json";
@@ -14,6 +15,7 @@ type Unit = {
 type Project = (typeof catalog.projects)[number] & {
   neighborhood?: string;
   lat?: number;
+  lon?: number;
   unit_types: Unit[];
 };
 
@@ -76,5 +78,17 @@ describe("fictitious catalog", () => {
     expect(projects.some((p) => !p.neighborhood)).toBe(true);
     expect(projects.some((p) => p.neighborhood)).toBe(true);
     expect(projects.some((p) => p.name.length >= 40)).toBe(true);
+  });
+
+  it("has two projects under 300 m apart, so the map groups them when zoomed out", () => {
+    const located = projects.filter((p) => p.lat !== undefined && p.lon !== undefined);
+    const meters = (a: Project, b: Project) => {
+      const rad = Math.PI / 180;
+      const dLat = ((b.lat as number) - (a.lat as number)) * rad;
+      const dLon = ((b.lon as number) - (a.lon as number)) * rad * Math.cos((a.lat as number) * rad);
+      return 6_371_000 * Math.hypot(dLat, dLon);
+    };
+    const close = located.some((a, i) => located.slice(i + 1).some((b) => meters(a, b) < 300));
+    expect(close).toBe(true);
   });
 });

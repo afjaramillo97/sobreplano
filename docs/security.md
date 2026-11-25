@@ -1,6 +1,6 @@
 # Security (SPEC 10)
 
-Threat model of Sobreplano as of SPEC 10: one table per asset, with the threat, the control,
+Threat model of Sobreplano as of SPEC 10, with the website of SPEC 11a: one table per asset, with the threat, the control,
 where it is tested and what remains. Then the controls that are not tied to one asset
 (poisoned data, judge rubrics, security pass). Terms of use: [terms-of-use.md](terms-of-use.md).
 
@@ -18,6 +18,9 @@ The value of the product: today's price is on each developer's site; the past is
 | Reading the tables through Supabase's public API | RLS on every table, no policy, and `REVOKE` for `anon` and `authenticated` (migration `0009`); a test walks every table of `public` | `tests/integration/test_supabase_api_closed.py` | |
 | Documentation as a map of the API | `API_DOCS_ENABLED=false` turns off `/docs`, `/redoc` and `/openapi.json`; `/robots.txt` disallows everything | `tests/unit/interface/test_read_api_routes.py` | The deployment (SPEC 12) must set the flag |
 | Noticing who copies | `rate_limited` log lines and `rate_limit_report` (top 10 clients per group, who went over) | `tests/unit/interface/test_rate_limit_report.py` | No alarm yet (SPEC 12) |
+| Reading the history from the website (SPEC 11a) | The static site has no history: pages are built from `GET /projects`, and the browser asks `GET /projects/{slug}` only when the chart comes into view, so the per-IP limit still applies. The island gets only the slug, never retries a `429` or a `404`, and never refetches on focus | `web/tests/unit/projects.test.ts` (no history in the view model), `web/tests/e2e/project.spec.ts` (one request on a `429`); `grep -rl '"history"' web/dist` is empty | A visitor reading 40 pages a day reaches the limit; the page explains when the chart comes back |
+| Another site reading the API from a visitor's browser | CORS only for the origins in `CORS_ALLOWED_ORIGINS`: `GET` only, no credentials, never `*`; `Retry-After` exposed so the site can say when to come back | `tests/unit/interface/test_cors.py` | CORS does not stop a script outside a browser: that is what the rate limits are for |
+| Script injection on the website | CSP in a `<meta>` on every page (Astro's `security.csp`): `default-src 'self'`, `connect-src` only to the API's origin, `object-src 'none'`, `base-uri` and `form-action 'self'`, hashes for Astro's own inline scripts and styles. No inline styles at run time (shadcn's chart `<style>` was removed) | `web/tests/e2e/fixtures.ts` fails any test that logs a CSP violation | A `<meta>` policy cannot set `frame-ancestors` or report violations (SPEC 12) |
 
 Client key: `HMAC-SHA256(RATE_LIMIT_KEY, ip)` cut to 32 characters, kept for 2 days
 (`prune_rate_limits`). The IP is never stored: a plain hash of an IPv4 is reversed by trying
@@ -84,7 +87,8 @@ If the counters are down, reads are served and the advisor answers 503.
 
 `RATE_LIMIT_KEY` required in production, `TRUSTED_PROXY_HOPS` set to the real number of
 proxies, `API_DOCS_ENABLED=false`, the scheduled `prune_rate_limits`, the edge layer, and the
-429 alarm.
+429 alarm. For the website (SPEC 11a): `CORS_ALLOWED_ORIGINS` with the production domain, and
+the CSP as response headers (`_headers`), which adds `frame-ancestors` and violation reports.
 
 ## Poisoned data from a scraped page
 

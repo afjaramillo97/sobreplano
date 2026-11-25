@@ -1,0 +1,4 @@
+[submodule "web/kit"]
+	path = web/kit
+	url = https://github.com/afjaramillo97/sobreplano-kit.git
+	branch = main

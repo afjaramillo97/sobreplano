@@ -1,0 +1,713 @@
+{
+  "$schema": "https://www.designtokens.org/schemas/2025.10/format.json",
+  "color": {
+    "$type": "color",
+    "primitive": {
+      "purple": {
+        "500": {
+          "$value": "#685DE8",
+          "$description": "Kit Main Color/Primary #7065F0, darkened just enough for AA: 4.86:1 on white (kit: 4.37:1)."
+        },
+        "600": {
+          "$value": "#5245ED",
+          "$description": "Kit loose color (POPULAR fold). Hover and text on soft purple fills: 4.99:1 on purple.94."
+        },
+        "90": {
+          "$value": "#D8D6F5"
+        },
+        "92": {
+          "$value": "#E0DEF7"
+        },
+        "94": {
+          "$value": "#E8E6F9"
+        },
+        "96": {
+          "$value": "#F0EFFB"
+        },
+        "98": {
+          "$value": "#F7F7FD"
+        }
+      },
+      "navy": {
+        "900": {
+          "$value": "#100A55",
+          "$description": "Kit Main Color/Secondary."
+        }
+      },
+      "ink": {
+        "1000": {
+          "$value": "#000929",
+          "$description": "Kit Main Color/Black."
+        },
+        "700": {
+          "$value": "#4D5369",
+          "$description": "Kit black at 70 %, as a solid color."
+        },
+        "600": {
+          "$value": "#666B7F",
+          "$description": "Replaces kit black at 50 % (3.72:1). Black at 60 %, solid: 5.28:1 on white."
+        }
+      },
+      "white": {
+        "$value": "#FFFFFF"
+      },
+      "hero": {
+        "top": {
+          "$value": "#E7E5F8"
+        },
+        "mid": {
+          "$value": "#F4F3FC"
+        },
+        "nav": {
+          "$value": "#EEEDFA"
+        }
+      },
+      "map": {
+        "land": {
+          "$value": "#F4F1EA"
+        },
+        "park": {
+          "$value": "#DCEBD3"
+        },
+        "water": {
+          "$value": "#CFE3F2"
+        }
+      },
+      "red": {
+        "50": {
+          "$value": "#FEF2F2"
+        },
+        "700": {
+          "$value": "#B91C1C"
+        }
+      },
+      "headline": {
+        "violet": {
+          "$value": "#7B5BE6"
+        },
+        "pink": {
+          "$value": "#B9479F"
+        },
+        "periwinkle": {
+          "$value": "#5B6BE8"
+        },
+        "$description": "Hero title gradient (Andrés, 24 Nov). Each stop is at least 3.6:1 on the hero background, enough for 64 px text."
+      }
+    },
+    "bg": {
+      "canvas": {
+        "$value": "{color.primitive.white}"
+      },
+      "surface": {
+        "$value": "{color.primitive.white}"
+      },
+      "subtle": {
+        "$value": "{color.primitive.purple.98}"
+      },
+      "selected": {
+        "$value": "{color.primitive.purple.96}"
+      },
+      "night": {
+        "$value": "{color.primitive.navy.900}"
+      },
+      "nav": {
+        "$value": "{color.primitive.hero.nav}"
+      }
+    },
+    "text": {
+      "primary": {
+        "$value": "{color.primitive.ink.1000}"
+      },
+      "secondary": {
+        "$value": "{color.primitive.ink.700}"
+      },
+      "muted": {
+        "$value": "{color.primitive.ink.600}"
+      },
+      "heading-alt": {
+        "$value": "{color.primitive.navy.900}"
+      },
+      "on-action": {
+        "$value": "{color.primitive.white}"
+      },
+      "on-night": {
+        "$value": "{color.primitive.white}"
+      },
+      "price": {
+        "$value": "{color.primitive.purple.500}"
+      },
+      "danger": {
+        "$value": "{color.primitive.red.700}"
+      }
+    },
+    "border": {
+      "default": {
+        "$value": "{color.primitive.purple.96}"
+      },
+      "input": {
+        "$value": "{color.primitive.purple.92}"
+      },
+      "strong": {
+        "$value": "{color.primitive.purple.94}"
+      }
+    },
+    "action": {
+      "default": {
+        "$value": "{color.primitive.purple.500}"
+      },
+      "hover": {
+        "$value": "{color.primitive.purple.600}"
+      },
+      "dark": {
+        "$value": "{color.primitive.navy.900}"
+      },
+      "soft": {
+        "$value": "{color.primitive.purple.94}"
+      },
+      "soft-text": {
+        "$value": "{color.primitive.purple.600}"
+      }
+    },
+    "focus": {
+      "ring": {
+        "$value": "{color.primitive.purple.500}"
+      }
+    },
+    "change": {
+      "bg": {
+        "$value": "{color.primitive.purple.500}",
+        "$description": "Kit POPULAR badge shape and color, used for the price change."
+      },
+      "fold": {
+        "$value": "{color.primitive.purple.600}"
+      },
+      "text": {
+        "$value": "{color.primitive.white}"
+      }
+    },
+    "map": {
+      "land": {
+        "$value": "{color.primitive.map.land}"
+      },
+      "park": {
+        "$value": "{color.primitive.map.park}"
+      },
+      "water": {
+        "$value": "{color.primitive.map.water}"
+      },
+      "pill": {
+        "$value": "{color.primitive.white}"
+      },
+      "pill-text": {
+        "$value": "{color.primitive.navy.900}"
+      },
+      "pill-selected": {
+        "$value": "{color.primitive.purple.500}"
+      }
+    },
+    "headline-gradient": {
+      "start": {
+        "$value": "{color.primitive.headline.violet}"
+      },
+      "mid": {
+        "$value": "{color.primitive.headline.pink}"
+      },
+      "end": {
+        "$value": "{color.primitive.headline.periwinkle}"
+      }
+    }
+  },
+  "font": {
+    "family": {
+      "$type": "fontFamily",
+      "sans": {
+        "$value": [
+          "Plus Jakarta Sans",
+          "system-ui",
+          "sans-serif"
+        ]
+      }
+    },
+    "weight": {
+      "$type": "fontWeight",
+      "regular": {
+        "$value": 400
+      },
+      "medium": {
+        "$value": 500
+      },
+      "bold": {
+        "$value": 700
+      },
+      "extrabold": {
+        "$value": 800
+      }
+    },
+    "size": {
+      "$type": "dimension",
+      "xs": {
+        "$value": {
+          "value": 12,
+          "unit": "px"
+        }
+      },
+      "sm": {
+        "$value": {
+          "value": 14,
+          "unit": "px"
+        }
+      },
+      "md": {
+        "$value": {
+          "value": 16,
+          "unit": "px"
+        }
+      },
+      "lg": {
+        "$value": {
+          "value": 18,
+          "unit": "px"
+        }
+      },
+      "xl": {
+        "$value": {
+          "value": 20,
+          "unit": "px"
+        }
+      },
+      "2xl": {
+        "$value": {
+          "value": 24,
+          "unit": "px"
+        }
+      },
+      "3xl": {
+        "$value": {
+          "value": 32,
+          "unit": "px"
+        }
+      },
+      "4xl": {
+        "$value": {
+          "value": 40,
+          "unit": "px"
+        }
+      },
+      "5xl": {
+        "$value": {
+          "value": 64,
+          "unit": "px"
+        }
+      }
+    },
+    "$description": "Plus Jakarta Sans variable (wght 200-800): one file covers 400-800. Has tnum and pnum; default figures are proportional, so set font-variant-numeric: tabular-nums where numbers must align."
+  },
+  "typography": {
+    "$type": "typography",
+    "display": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "{font.size.5xl}",
+        "fontWeight": 700,
+        "lineHeight": 1.1,
+        "letterSpacing": {
+          "value": -0.01,
+          "unit": "em"
+        }
+      }
+    },
+    "h1": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "{font.size.4xl}",
+        "fontWeight": 700,
+        "lineHeight": 1.4,
+        "letterSpacing": {
+          "value": -0.01,
+          "unit": "em"
+        }
+      }
+    },
+    "h2": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "{font.size.3xl}",
+        "fontWeight": 700,
+        "lineHeight": 1.25,
+        "letterSpacing": {
+          "value": -0.01,
+          "unit": "em"
+        }
+      }
+    },
+    "h3": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "{font.size.2xl}",
+        "fontWeight": 700,
+        "lineHeight": 1.5,
+        "letterSpacing": {
+          "value": -0.01,
+          "unit": "em"
+        }
+      }
+    },
+    "title": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "{font.size.xl}",
+        "fontWeight": 500,
+        "lineHeight": 1.6,
+        "letterSpacing": {
+          "value": -0.005,
+          "unit": "em"
+        }
+      }
+    },
+    "body-lg": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "{font.size.lg}",
+        "fontWeight": 500,
+        "lineHeight": 1.45,
+        "letterSpacing": {
+          "value": -0.005,
+          "unit": "em"
+        }
+      }
+    },
+    "body": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "{font.size.md}",
+        "fontWeight": 400,
+        "lineHeight": 1.6,
+        "letterSpacing": {
+          "value": 0,
+          "unit": "em"
+        }
+      }
+    },
+    "body-sm": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "{font.size.sm}",
+        "fontWeight": 500,
+        "lineHeight": 1.4,
+        "letterSpacing": {
+          "value": 0,
+          "unit": "em"
+        }
+      }
+    },
+    "caption": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "{font.size.xs}",
+        "fontWeight": 500,
+        "lineHeight": 1.35,
+        "letterSpacing": {
+          "value": 0,
+          "unit": "em"
+        }
+      }
+    },
+    "label": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "{font.size.md}",
+        "fontWeight": 700,
+        "lineHeight": 1.5,
+        "letterSpacing": {
+          "value": 0,
+          "unit": "em"
+        }
+      }
+    },
+    "price-lg": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "{font.size.2xl}",
+        "fontWeight": 800,
+        "lineHeight": 1.5,
+        "letterSpacing": {
+          "value": -0.04,
+          "unit": "em"
+        }
+      },
+      "$description": "Kit: ExtraBold 800, tracking -1 px, color text.price. Proportional figures on cards; tabular-nums where prices line up."
+    },
+    "price": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "{font.size.md}",
+        "fontWeight": 800,
+        "lineHeight": 1.5,
+        "letterSpacing": {
+          "value": -0.06,
+          "unit": "em"
+        }
+      },
+      "$description": "Kit: small cards, ExtraBold 800, tracking -1 px, color text.price."
+    },
+    "price-pill": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "{font.size.md}",
+        "fontWeight": 700,
+        "lineHeight": 1.5,
+        "letterSpacing": {
+          "value": 0,
+          "unit": "em"
+        }
+      },
+      "$description": "Kit: map price pills, Bold 700, tracking 0."
+    }
+  },
+  "space": {
+    "$type": "dimension",
+    "0-5": {
+      "$value": {
+        "value": 2,
+        "unit": "px"
+      }
+    },
+    "1": {
+      "$value": {
+        "value": 4,
+        "unit": "px"
+      }
+    },
+    "2": {
+      "$value": {
+        "value": 8,
+        "unit": "px"
+      }
+    },
+    "3": {
+      "$value": {
+        "value": 12,
+        "unit": "px"
+      }
+    },
+    "4": {
+      "$value": {
+        "value": 16,
+        "unit": "px"
+      }
+    },
+    "6": {
+      "$value": {
+        "value": 24,
+        "unit": "px"
+      }
+    },
+    "8": {
+      "$value": {
+        "value": 32,
+        "unit": "px"
+      }
+    },
+    "12": {
+      "$value": {
+        "value": 48,
+        "unit": "px"
+      }
+    },
+    "20": {
+      "$value": {
+        "value": 80,
+        "unit": "px"
+      }
+    }
+  },
+  "radius": {
+    "$type": "dimension",
+    "sm": {
+      "$value": {
+        "value": 4,
+        "unit": "px"
+      }
+    },
+    "md": {
+      "$value": {
+        "value": 8,
+        "unit": "px"
+      }
+    },
+    "lg": {
+      "$value": {
+        "value": 16,
+        "unit": "px"
+      }
+    },
+    "full": {
+      "$value": {
+        "value": 9999,
+        "unit": "px"
+      }
+    }
+  },
+  "border-width": {
+    "$type": "dimension",
+    "default": {
+      "$value": {
+        "value": 1.5,
+        "unit": "px"
+      },
+      "$description": "Kit value."
+    },
+    "strong": {
+      "$value": {
+        "value": 2,
+        "unit": "px"
+      }
+    }
+  },
+  "shadow": {
+    "$type": "shadow",
+    "sm": {
+      "$value": {
+        "color": "#0E08540D",
+        "offsetX": {
+          "value": 0,
+          "unit": "px"
+        },
+        "offsetY": {
+          "value": 3,
+          "unit": "px"
+        },
+        "blur": {
+          "value": 40,
+          "unit": "px"
+        },
+        "spread": {
+          "value": 0,
+          "unit": "px"
+        }
+      },
+      "$description": "Kit: selected segment."
+    },
+    "float": {
+      "$value": {
+        "color": "#0E085426",
+        "offsetX": {
+          "value": 0,
+          "unit": "px"
+        },
+        "offsetY": {
+          "value": 0,
+          "unit": "px"
+        },
+        "blur": {
+          "value": 80,
+          "unit": "px"
+        },
+        "spread": {
+          "value": 0,
+          "unit": "px"
+        }
+      },
+      "$description": "Kit: controls over the map."
+    }
+  },
+  "size": {
+    "$type": "dimension",
+    "control-sm": {
+      "$value": {
+        "value": 40,
+        "unit": "px"
+      }
+    },
+    "control-md": {
+      "$value": {
+        "value": 48,
+        "unit": "px"
+      }
+    },
+    "control-lg": {
+      "$value": {
+        "value": 56,
+        "unit": "px"
+      }
+    },
+    "search-lg": {
+      "$value": {
+        "value": 64,
+        "unit": "px"
+      }
+    },
+    "chip": {
+      "$value": {
+        "value": 24,
+        "unit": "px"
+      }
+    },
+    "nav": {
+      "$value": {
+        "value": 96,
+        "unit": "px"
+      },
+      "$description": "Kit value; 72 on mobile."
+    },
+    "container": {
+      "$value": {
+        "value": 1120,
+        "unit": "px"
+      }
+    },
+    "nav-mobile": {
+      "$value": {
+        "value": 72,
+        "unit": "px"
+      }
+    }
+  },
+  "duration": {
+    "$type": "duration",
+    "fast": {
+      "$value": {
+        "value": 120,
+        "unit": "ms"
+      }
+    },
+    "base": {
+      "$value": {
+        "value": 200,
+        "unit": "ms"
+      }
+    },
+    "slow": {
+      "$value": {
+        "value": 400,
+        "unit": "ms"
+      }
+    },
+    "preloader": {
+      "$value": {
+        "value": 1600,
+        "unit": "ms"
+      }
+    }
+  },
+  "easing": {
+    "$type": "cubicBezier",
+    "out": {
+      "$value": [
+        0.16,
+        1,
+        0.3,
+        1
+      ]
+    },
+    "in-out": {
+      "$value": [
+        0.65,
+        0,
+        0.35,
+        1
+      ]
+    }
+  },
+  "$description": "Sobreplano tokens: the Estatery kit as is, with only the changes needed for AA contrast (24 Nov 2026). Previous palette kept in tokens-sobreplano.draft.atardecer-marino.json."
+}

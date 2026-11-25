@@ -21,6 +21,9 @@ export default defineConfig({
   integrations: [react(), sitemap({ filter: (page) => !page.includes("/404") })],
   vite: {
     plugins: [tailwindcss()],
+    // resvg is a native binary that only the og:image endpoint uses, at build time. Pre-bundling
+    // it for the browser fails, and the dev server then hangs every module waiting on it.
+    optimizeDeps: { exclude: ["@resvg/resvg-js"] },
   },
   // Astro hashes its own scripts and styles and writes the policy in a <meta> on every page.
   // A <meta> policy cannot carry frame-ancestors or reporting: those come as headers in SPEC 12.

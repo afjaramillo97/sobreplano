@@ -1,0 +1,23 @@
+---
+// Not found: the cause and two ways out (DESIGN.md, rule 7).
+import { buttonVariants } from "@/components/ui/button";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Página no encontrada"
+  description="La dirección que buscas no existe en Sobreplano."
+>
+  <section class="page flex flex-col items-center gap-6 py-20 text-center">
+    <p class="text-h3 text-text-price">Error 404</p>
+    <h1 class="text-h1 text-text-primary">No encontramos esta página</h1>
+    <p class="max-w-xl text-body-lg text-text-secondary">
+      La dirección no existe, o el proyecto ya no está en el catálogo. Puedes ver todos los
+      proyectos o volver al inicio.
+    </p>
+    <div class="flex flex-wrap justify-center gap-4">
+      <a href="/proyectos/" class={buttonVariants({ size: "lg" })}>Ver proyectos</a>
+      <a href="/" class={buttonVariants({ variant: "outline", size: "lg" })}>Ir al inicio</a>
+    </div>
+  </section>
+</BaseLayout>

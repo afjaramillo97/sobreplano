@@ -1,0 +1,33 @@
+---
+// The terms of use, read at build time from docs/terms-of-use.md: the Spanish section as is,
+// so the site and the repository never disagree.
+import { marked } from "marked";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import source from "../../../docs/terms-of-use.md?raw";
+
+const [, spanish] = source.split(/^## Español\s*$/m);
+if (!spanish) throw new Error("docs/terms-of-use.md has no '## Español' section");
+// The draft notice is the bilingual blockquote at the top: "English / Español".
+const notice = source
+  .split("\n")
+  .filter((line) => line.startsWith(">"))
+  .map((line) => line.replace(/^>\s?/, ""))
+  .join(" ")
+  .split(" / ")[1];
+// Our own file, so its HTML is trusted.
+const html = marked.parse(spanish.trim(), { async: false });
+---
+
+<BaseLayout
+  title="Términos de uso"
+  description="Términos de uso de Sobreplano: precios desde, que no es asesoría financiera, uso razonable y tus datos."
+>
+  <article class="page max-w-3xl py-12 lg:py-20">
+    <h1 class="text-h1 text-text-primary">Términos de uso</h1>
+    {notice && <p class="mt-2 text-body-sm text-text-muted">{notice}</p>}
+    <div
+      class="mt-8 text-body text-text-secondary [&_code]:rounded-sm [&_code]:bg-bg-subtle [&_code]:px-1 [&_li]:mt-4 [&_li]:pl-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mt-4 [&_strong]:text-text-primary"
+      set:html={html}
+    />
+  </article>
+</BaseLayout>

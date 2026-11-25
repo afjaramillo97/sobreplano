@@ -1,0 +1,131 @@
+name: web
+
+# The site in web/ (SPEC 11a): built against the API with the fictitious catalog, then checked
+# with the browser. It runs when the site, the API it reads, or this workflow change.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "web/**"
+      - "src/sobreplano/interface/api/**"
+      - ".github/workflows/web.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    env:
+      # Same URL as .env.example: the Supabase CLI serves Postgres on 54322.
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:54322/postgres
+      SOBREPLANO_API_URL: http://localhost:8000
+      PUBLIC_API_URL: http://localhost:8000
+      PUBLIC_SITE_URL: http://localhost:4321
+      # Only whether the secret exists, so the token itself never reaches the environment.
+      HAS_KIT_TOKEN: ${{ secrets.KIT_REPO_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The kit's icons live in a private repository, mounted as the submodule web/kit. It is
+      # checked out with a read-only token limited to that repository (docs/deploy.md). Without
+      # the secret, as in a fork, the site builds with the fallback icons and the screenshot
+      # comparison is skipped.
+      - name: kit commit
+        id: kit
+        if: env.HAS_KIT_TOKEN == 'true'
+        run: echo "sha=$(git rev-parse HEAD:web/kit)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.HAS_KIT_TOKEN == 'true'
+        with:
+          repository: afjaramillo97/sobreplano-kit
+          ref: ${{ steps.kit.outputs.sha }}
+          path: web/kit
+          token: ${{ secrets.KIT_REPO_TOKEN }}
+          persist-credentials: false
+
+      # The API with the fictitious catalog (web/tests/fixtures/catalog.json).
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
+      - run: uv sync --locked
+      - uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
+        with:
+          version: latest
+      - name: supabase db start
+        run: supabase db start
+      - name: alembic upgrade head
+        run: uv run alembic upgrade head
+      - name: seed the fictitious catalog
+        run: uv run python -m sobreplano.interface.cli.seed --file web/tests/fixtures/catalog.json
+      - name: start the API
+        env:
+          RATE_LIMITS_ENABLED: "false"
+          CORS_ALLOWED_ORIGINS: '["http://localhost:4321"]'
+        run: |
+          uv run uvicorn sobreplano.interface.api.main:app --port 8000 > api.log 2>&1 &
+          for _ in $(seq 1 30); do
+            curl -sf http://localhost:8000/health > /dev/null && exit 0
+            sleep 1
+          done
+          cat api.log
+          exit 1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: web/.nvmrc
+      # pnpm at the version pinned in web/package.json (packageManager).
+      - run: corepack enable pnpm
+      - name: pnpm install
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+      - name: pnpm audit
+        working-directory: web
+        run: pnpm audit --prod --audit-level high
+      - name: tokens unchanged
+        working-directory: web
+        run: pnpm tokens && git diff --exit-code src/styles/tokens.css
+      - name: API types unchanged
+        working-directory: web
+        run: pnpm api:types && git diff --exit-code src/lib/api/schema.d.ts
+      - name: design rules
+        working-directory: web
+        run: pnpm rules
+      - name: astro check
+        working-directory: web
+        run: pnpm check
+      - name: vitest
+        working-directory: web
+        run: pnpm test
+      - name: build
+        working-directory: web
+        run: pnpm build
+
+      # The browser tests run in the official Playwright image, where the reference screenshots
+      # were made: fonts render differently on every system. Its version must match
+      # @playwright/test in web/package.json.
+      - name: playwright
+        run: >
+          docker run --rm --network host -e CI=1
+          -v "$GITHUB_WORKSPACE:/work" -w /work/web
+          mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579
+          node_modules/.bin/playwright test
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            web/playwright-report
+            web/test-results
+          retention-days: 7
+
+      - name: lighthouse
+        working-directory: web
+        run: pnpm lhci
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: lighthouse
+          path: web/.lighthouseci
+          retention-days: 7
+          include-hidden-files: true

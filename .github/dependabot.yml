@@ -1,5 +1,6 @@
-# Weekly updates for the locked Python dependencies and for the workflow actions, which are
-# pinned by commit SHA (SPEC 10): without this they would never receive a security patch.
+# Weekly updates for the locked Python dependencies, the site's npm dependencies (web/, SPEC
+# 11a) and the workflow actions, which are pinned by commit SHA (SPEC 10): without this they
+# would never receive a security patch.
 version: 2
 updates:
   - package-ecosystem: "uv"
@@ -15,4 +16,14 @@ updates:
       interval: "weekly"
     groups:
       github-actions:
+        patterns: ["*"]
+  - package-ecosystem: "npm"
+    directory: "/web"
+    schedule:
+      interval: "weekly"
+    # pnpm refuses versions younger than a day (minimumReleaseAge in web/pnpm-workspace.yaml).
+    cooldown:
+      default-days: 2
+    groups:
+      web-dependencies:
         patterns: ["*"]

@@ -5,5 +5,7 @@ import { getViteConfig } from "astro/config";
 export default getViteConfig({
   test: {
     include: ["tests/unit/**/*.test.ts"],
+    // West of UTC, where a date formatted in local time would slip to the day before.
+    env: { TZ: "America/Bogota" },
   },
 });

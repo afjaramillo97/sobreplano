@@ -14,9 +14,35 @@
 }
 
 /* Set on <html> by the inline script of /proyectos/ before the first paint (SPEC 11b): js
-   while JavaScript runs, search-pending while a URL with filters waits for the island. */
+   while JavaScript runs (no-js otherwise), search-pending while a URL with filters waits for
+   the island. */
 @custom-variant js (&:where([data-js] *));
+@custom-variant no-js (&:where(html:not([data-js]) *));
 @custom-variant search-pending (&:where([data-search-pending] *));
+
+/* The map style reads these at run time (components/search/ResultsMap.tsx); referenced here so
+   Tailwind emits the tokens behind them. */
+:root {
+  --map-land: var(--color-map-land);
+  --map-park: var(--color-map-park);
+  --map-water: var(--color-map-water);
+}
+
+/* MapLibre's attribution, in the site's type and colors: always visible, readable on the map. */
+.maplibregl-ctrl.maplibregl-ctrl-attrib {
+  margin: 0;
+  padding: 2px 8px;
+  border-top-left-radius: var(--radius-sm);
+  background-color: var(--color-bg-surface);
+  color: var(--color-text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--text-caption);
+  line-height: var(--text-caption--line-height);
+}
+.maplibregl-ctrl-attrib a {
+  color: var(--color-text-secondary);
+  text-decoration: underline;
+}
 
 /* The content column: 1120 wide (kit), with side gutters on narrow screens. */
 @utility page {

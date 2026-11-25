@@ -8,9 +8,10 @@ import { defineConfig } from "astro/config";
 // with the deployment (SPEC 12); until then the local preview.
 const site = process.env.PUBLIC_SITE_URL ?? "http://localhost:4321";
 
-// The browser asks the API for the price history only; the CSP lets it reach that origin and
-// nothing else.
+// The browser asks the API for the price history only; the CSP lets it reach that origin and,
+// for the search map (SPEC 11b), OpenFreeMap's style, tiles, fonts and sprites.
 const apiOrigin = process.env.PUBLIC_API_URL ? new URL(process.env.PUBLIC_API_URL).origin : null;
+const mapOrigin = "https://tiles.openfreemap.org";
 
 // Static output only: the site is HTML built from the API, plus one island (SPEC 11a).
 export default defineConfig({
@@ -27,9 +28,12 @@ export default defineConfig({
     csp: {
       directives: [
         "default-src 'self'",
-        "img-src 'self' data:",
+        // blob: for the map's sprites and glyphs, which MapLibre decodes from blobs.
+        "img-src 'self' data: blob:",
         "font-src 'self'",
-        `connect-src 'self'${apiOrigin ? ` ${apiOrigin}` : ""}`,
+        `connect-src 'self'${apiOrigin ? ` ${apiOrigin}` : ""} ${mapOrigin}`,
+        // MapLibre's worker, served from the site (setWorkerUrl), never from a blob: URL.
+        "worker-src 'self'",
         "object-src 'none'",
         "base-uri 'self'",
         "form-action 'self'",

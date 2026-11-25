@@ -5,18 +5,23 @@ import Icon from "@/components/Icon";
 import PriceChangeBadge from "@/components/PriceChangeBadge";
 import ProjectCard from "@/components/ProjectCard";
 import ProjectImage from "@/components/ProjectImage";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import { catalogStats, loadCatalog, mostRisen } from "@/lib/catalog";
 import { formatDate, formatMillions } from "@/lib/format";
 import type { IconName } from "@/lib/icons";
 import { MUNICIPALITY_NAMES } from "@/lib/projects";
+import { municipalityOptions } from "@/lib/search";
 
 const projects = await loadCatalog();
 const stats = catalogStats(projects);
 const top = mostRisen(projects);
 const featured = top[0];
 const featuredFrom = featured?.from;
+// The hero search: the municipalities that have projects, and budget caps (SPEC 11b).
+const municipalities = municipalityOptions(projects);
+const budgets = [250, 300, 400, 500, 700].map((millions) => millions * 1_000_000);
 
 // The fourth advantage, "Asesor con fuentes" (message-outline), waits for the advisor on the
 // web (SPEC 11c).
@@ -62,7 +67,31 @@ const advantages: { icon: IconName; title: string; text: string }[] = [
           Sigue el precio de cada proyecto sobre plano del Valle de Aburrá y mira cuánto ha subido
           desde el primer precio que observamos.
         </p>
-        <a href="/proyectos/" class={buttonVariants({ size: "lg" })}>Ver proyectos</a>
+        <!-- The kit's hero search: a plain GET form, so it works without JavaScript. Empty
+             fields mean "any" and the search page ignores them. -->
+        <form
+          method="get"
+          action="/proyectos/"
+          role="search"
+          aria-label="Buscar proyectos"
+          class="flex w-full max-w-xl flex-col gap-4 rounded-lg bg-bg-surface p-4 shadow-sm sm:flex-row sm:items-end"
+        >
+          <div class="flex flex-1 flex-col gap-2">
+            <label for="hero-municipio" class="text-label text-text-primary">Municipio</label>
+            <Select id="hero-municipio" name="municipio">
+              <option value="">Todos</option>
+              {municipalities.map((m) => <option value={m}>{MUNICIPALITY_NAMES[m]}</option>)}
+            </Select>
+          </div>
+          <div class="flex flex-1 flex-col gap-2">
+            <label for="hero-presupuesto" class="text-label text-text-primary">Presupuesto</label>
+            <Select id="hero-presupuesto" name="precio_max">
+              <option value="">Sin tope</option>
+              {budgets.map((cop) => <option value={cop}>Hasta {formatMillions(cop)}</option>)}
+            </Select>
+          </div>
+          <Button type="submit">Ver proyectos</Button>
+        </form>
         <ul class="mt-6 flex flex-wrap gap-x-20 gap-y-6">
           <li class="flex items-center gap-4">
             <span class="flex size-12 items-center justify-center rounded-full border-(length:--border-width-strong) border-border-input bg-bg-surface text-action">

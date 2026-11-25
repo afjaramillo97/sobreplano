@@ -1,0 +1,589 @@
+{
+  "projects": [
+    {
+      "developer": {
+        "name": "Altamira Constructores",
+        "slug": "altamira-constructores",
+        "website_url": "https://example.com/altamira/"
+      },
+      "name": "Mirador de los Guaduales",
+      "slug": "mirador-de-los-guaduales",
+      "municipality": "envigado",
+      "neighborhood": "Zúñiga",
+      "lat": 6.1752,
+      "lon": -75.5821,
+      "source_url": "https://example.com/altamira/mirador-de-los-guaduales",
+      "unit_types": [
+        {
+          "name": "Tipo A",
+          "bedrooms": 2,
+          "bathrooms": 2,
+          "private_area_m2": 58.5,
+          "built_area_m2": 64.2,
+          "history": [
+            {
+              "price_cop": 380000000,
+              "observed_at": "2026-07-01T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 380000000,
+              "observed_at": "2026-07-15T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 386000000,
+              "observed_at": "2026-07-20T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-01T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-20T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 405000000,
+              "observed_at": "2026-09-07T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-09-25T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-10-10T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 427000000,
+              "observed_at": "2026-10-20T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 427000000,
+              "observed_at": "2026-11-01T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            }
+          ],
+          "observation": {
+            "price_cop": 445000000,
+            "observed_at": "2026-11-02T08:00:00-05:00",
+            "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+          }
+        },
+        {
+          "name": "Tipo B",
+          "bedrooms": 3,
+          "bathrooms": 2,
+          "private_area_m2": 74.3,
+          "built_area_m2": 81,
+          "history": [
+            {
+              "price_cop": 510000000,
+              "observed_at": "2026-07-01T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 528000000,
+              "observed_at": "2026-09-07T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            }
+          ],
+          "observation": {
+            "price_cop": 548000000,
+            "observed_at": "2026-11-02T08:00:00-05:00",
+            "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+          }
+        }
+      ]
+    },
+    {
+      "developer": {
+        "name": "Ceiba Urbana",
+        "slug": "ceiba-urbana",
+        "website_url": "https://example.com/ceiba/"
+      },
+      "name": "Parque Central Sabaneta",
+      "slug": "parque-central-sabaneta",
+      "municipality": "sabaneta",
+      "neighborhood": "Centro",
+      "lat": 6.1515,
+      "lon": -75.6166,
+      "source_url": "https://example.com/ceiba/parque-central-sabaneta",
+      "unit_types": [
+        {
+          "name": "Tipo 1",
+          "bedrooms": 2,
+          "bathrooms": 2,
+          "private_area_m2": 62,
+          "history": [
+            {
+              "price_cop": 520000000,
+              "observed_at": "2026-09-07T08:00:00-05:00",
+              "source_url": "https://example.com/ceiba/parque-central-sabaneta"
+            },
+            {
+              "price_cop": 515000000,
+              "observed_at": "2026-10-01T08:00:00-05:00",
+              "source_url": "https://example.com/ceiba/parque-central-sabaneta"
+            }
+          ],
+          "observation": {
+            "price_cop": 509000000,
+            "observed_at": "2026-11-02T08:00:00-05:00",
+            "source_url": "https://example.com/ceiba/parque-central-sabaneta"
+          }
+        },
+        {
+          "name": "Tipo 2",
+          "bedrooms": 3,
+          "bathrooms": 2,
+          "private_area_m2": 78.4,
+          "history": [
+            {
+              "price_cop": 610000000,
+              "observed_at": "2026-09-07T08:00:00-05:00",
+              "source_url": "https://example.com/ceiba/parque-central-sabaneta"
+            }
+          ],
+          "observation": {
+            "price_cop": 598000000,
+            "observed_at": "2026-11-02T08:00:00-05:00",
+            "source_url": "https://example.com/ceiba/parque-central-sabaneta"
+          }
+        }
+      ]
+    },
+    {
+      "developer": {
+        "name": "Piedra Azul Desarrollos",
+        "slug": "piedra-azul-desarrollos",
+        "website_url": "https://example.com/piedra-azul/"
+      },
+      "name": "Torres del Ancón",
+      "slug": "torres-del-ancon",
+      "municipality": "la_estrella",
+      "neighborhood": "Ancón San Martín",
+      "lat": 6.1578,
+      "lon": -75.6431,
+      "source_url": "https://example.com/piedra/torres-del-ancon",
+      "unit_types": [
+        {
+          "name": "Apartamento 1",
+          "bedrooms": 2,
+          "bathrooms": 1,
+          "private_area_m2": 48.2,
+          "observation": {
+            "price_cop": 289000000,
+            "observed_at": "2026-11-02T08:00:00-05:00",
+            "source_url": "https://example.com/piedra/torres-del-ancon"
+          }
+        },
+        {
+          "name": "Apartamento 2",
+          "bedrooms": 3,
+          "bathrooms": 2,
+          "private_area_m2": 61,
+          "observation": {
+            "price_cop": 355000000,
+            "observed_at": "2026-11-02T08:00:00-05:00",
+            "source_url": "https://example.com/piedra/torres-del-ancon"
+          }
+        }
+      ]
+    },
+    {
+      "developer": {
+        "name": "Ceiba Urbana",
+        "slug": "ceiba-urbana",
+        "website_url": "https://example.com/ceiba/"
+      },
+      "name": "Altos de Niquía",
+      "slug": "altos-de-niquia",
+      "municipality": "bello",
+      "neighborhood": "Niquía",
+      "lat": 6.3372,
+      "lon": -75.5446,
+      "source_url": "https://example.com/ceiba/altos-de-niquia",
+      "unit_types": [
+        {
+          "name": "Tipo 1",
+          "bedrooms": 2,
+          "bathrooms": 1,
+          "built_area_m2": 52,
+          "history": [
+            {
+              "price_cop": 238000000,
+              "observed_at": "2026-08-01T08:00:00-05:00",
+              "source_url": "https://example.com/ceiba/altos-de-niquia"
+            }
+          ],
+          "observation": {
+            "price_cop": 249000000,
+            "observed_at": "2026-11-02T08:00:00-05:00",
+            "source_url": "https://example.com/ceiba/altos-de-niquia"
+          }
+        },
+        {
+          "name": "Tipo 2",
+          "bedrooms": 3,
+          "bathrooms": 2,
+          "built_area_m2": 66.5,
+          "history": [
+            {
+              "price_cop": 291000000,
+              "observed_at": "2026-08-01T08:00:00-05:00",
+              "source_url": "https://example.com/ceiba/altos-de-niquia"
+            }
+          ],
+          "observation": {
+            "price_cop": 302000000,
+            "observed_at": "2026-11-02T08:00:00-05:00",
+            "source_url": "https://example.com/ceiba/altos-de-niquia"
+          }
+        }
+      ]
+    },
+    {
+      "developer": {
+        "name": "Altamira Constructores",
+        "slug": "altamira-constructores",
+        "website_url": "https://example.com/altamira/"
+      },
+      "name": "Distrito Laureles",
+      "slug": "distrito-laureles",
+      "municipality": "medellin",
+      "neighborhood": "Laureles",
+      "lat": 6.2447,
+      "lon": -75.5978,
+      "source_url": "https://example.com/altamira/distrito-laureles",
+      "unit_types": [
+        {
+          "name": "Estudio",
+          "bedrooms": 1,
+          "bathrooms": 1,
+          "private_area_m2": 38,
+          "history": [
+            {
+              "price_cop": 330000000,
+              "observed_at": "2026-08-01T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/distrito-laureles"
+            }
+          ],
+          "observation": {
+            "price_cop": 341000000,
+            "observed_at": "2026-10-03T08:00:00-05:00",
+            "source_url": "https://example.com/altamira/distrito-laureles"
+          }
+        },
+        {
+          "name": "Tipo 2",
+          "bedrooms": 2,
+          "bathrooms": 2,
+          "private_area_m2": 64.8,
+          "history": [
+            {
+              "price_cop": 512000000,
+              "observed_at": "2026-08-01T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/distrito-laureles"
+            }
+          ],
+          "observation": {
+            "price_cop": 536000000,
+            "observed_at": "2026-11-02T08:00:00-05:00",
+            "source_url": "https://example.com/altamira/distrito-laureles"
+          }
+        },
+        {
+          "name": "Tipo 3",
+          "bedrooms": 3,
+          "bathrooms": 2,
+          "private_area_m2": 82.1,
+          "history": [
+            {
+              "price_cop": 640000000,
+              "observed_at": "2026-08-01T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/distrito-laureles"
+            }
+          ],
+          "observation": {
+            "price_cop": 668000000,
+            "observed_at": "2026-11-02T08:00:00-05:00",
+            "source_url": "https://example.com/altamira/distrito-laureles"
+          }
+        }
+      ]
+    },
+    {
+      "developer": {
+        "name": "Piedra Azul Desarrollos",
+        "slug": "piedra-azul-desarrollos",
+        "website_url": "https://example.com/piedra-azul/"
+      },
+      "name": "Arboleda de Belén",
+      "slug": "arboleda-de-belen",
+      "municipality": "medellin",
+      "neighborhood": "Belén Rosales",
+      "lat": 6.2316,
+      "lon": -75.6046,
+      "source_url": "https://example.com/piedra/arboleda-de-belen",
+      "unit_types": [
+        {
+          "name": "Tipo A",
+          "bedrooms": 2,
+          "bathrooms": 2,
+          "private_area_m2": 60.4,
+          "history": [
+            {
+              "price_cop": 410000000,
+              "observed_at": "2026-09-07T08:00:00-05:00",
+              "source_url": "https://example.com/piedra/arboleda-de-belen"
+            }
+          ],
+          "observation": {
+            "price_cop": 427600000,
+            "observed_at": "2026-11-02T08:00:00-05:00",
+            "source_url": "https://example.com/piedra/arboleda-de-belen"
+          }
+        },
+        {
+          "name": "Penthouse",
+          "bedrooms": 3,
+          "bathrooms": 3,
+          "private_area_m2": 118
+        }
+      ]
+    },
+    {
+      "developer": {
+        "name": "Ceiba Urbana",
+        "slug": "ceiba-urbana",
+        "website_url": "https://example.com/ceiba/"
+      },
+      "name": "Reserva de San Antonio",
+      "slug": "reserva-de-san-antonio",
+      "municipality": "itagui",
+      "neighborhood": "San Antonio de Prado",
+      "lat": 6.1856,
+      "lon": -75.6553,
+      "source_url": "https://example.com/ceiba/reserva-de-san-antonio",
+      "unit_types": [
+        {
+          "name": "Tipo 1",
+          "bedrooms": 2,
+          "bathrooms": 2,
+          "private_area_m2": 57
+        },
+        {
+          "name": "Tipo 2",
+          "bedrooms": 3,
+          "bathrooms": 2,
+          "private_area_m2": 71.5
+        }
+      ]
+    },
+    {
+      "developer": {
+        "name": "Piedra Azul Desarrollos",
+        "slug": "piedra-azul-desarrollos",
+        "website_url": "https://example.com/piedra-azul/"
+      },
+      "name": "Bosque de Ditaires",
+      "slug": "bosque-de-ditaires",
+      "municipality": "itagui",
+      "neighborhood": "Ditaires",
+      "source_url": "https://example.com/piedra/bosque-de-ditaires",
+      "unit_types": [
+        {
+          "name": "Tipo A",
+          "bedrooms": 2,
+          "bathrooms": 2,
+          "private_area_m2": 59.9,
+          "history": [
+            {
+              "price_cop": 365000000,
+              "observed_at": "2026-08-15T08:00:00-05:00",
+              "source_url": "https://example.com/piedra/bosque-de-ditaires"
+            }
+          ],
+          "observation": {
+            "price_cop": 381000000,
+            "observed_at": "2026-11-02T08:00:00-05:00",
+            "source_url": "https://example.com/piedra/bosque-de-ditaires"
+          }
+        }
+      ]
+    },
+    {
+      "developer": {
+        "name": "Altamira Constructores",
+        "slug": "altamira-constructores",
+        "website_url": "https://example.com/altamira/"
+      },
+      "name": "Prados de Sabaneta",
+      "slug": "prados-de-sabaneta",
+      "municipality": "sabaneta",
+      "lat": 6.1432,
+      "lon": -75.6098,
+      "source_url": "https://example.com/altamira/prados-de-sabaneta",
+      "unit_types": [
+        {
+          "name": "Tipo 1",
+          "bedrooms": 2,
+          "bathrooms": 2,
+          "private_area_m2": 61.2,
+          "history": [
+            {
+              "price_cop": 400000000,
+              "observed_at": "2026-08-01T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/prados-de-sabaneta"
+            },
+            {
+              "price_cop": 412000000,
+              "observed_at": "2026-09-15T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/prados-de-sabaneta"
+            }
+          ],
+          "observation": {
+            "price_cop": 424000000,
+            "observed_at": "2026-11-02T08:00:00-05:00",
+            "source_url": "https://example.com/altamira/prados-de-sabaneta"
+          }
+        }
+      ]
+    },
+    {
+      "developer": {
+        "name": "Ceiba Urbana",
+        "slug": "ceiba-urbana",
+        "website_url": "https://example.com/ceiba/"
+      },
+      "name": "Conjunto Residencial Mirador del Poblado Etapa II",
+      "slug": "mirador-del-poblado-etapa-ii",
+      "municipality": "medellin",
+      "neighborhood": "El Poblado",
+      "lat": 6.2087,
+      "lon": -75.5675,
+      "source_url": "https://example.com/ceiba/mirador-del-poblado-etapa-ii",
+      "unit_types": [
+        {
+          "name": "Tipo 1",
+          "bedrooms": 2,
+          "bathrooms": 2,
+          "private_area_m2": 71,
+          "history": [
+            {
+              "price_cop": 690000000,
+              "observed_at": "2026-07-10T08:00:00-05:00",
+              "source_url": "https://example.com/ceiba/mirador-del-poblado-etapa-ii"
+            }
+          ],
+          "observation": {
+            "price_cop": 721000000,
+            "observed_at": "2026-11-02T08:00:00-05:00",
+            "source_url": "https://example.com/ceiba/mirador-del-poblado-etapa-ii"
+          }
+        },
+        {
+          "name": "Tipo 2",
+          "bedrooms": 3,
+          "bathrooms": 3,
+          "private_area_m2": 96.4,
+          "history": [
+            {
+              "price_cop": 890000000,
+              "observed_at": "2026-07-10T08:00:00-05:00",
+              "source_url": "https://example.com/ceiba/mirador-del-poblado-etapa-ii"
+            }
+          ],
+          "observation": {
+            "price_cop": 932000000,
+            "observed_at": "2026-11-02T08:00:00-05:00",
+            "source_url": "https://example.com/ceiba/mirador-del-poblado-etapa-ii"
+          }
+        }
+      ]
+    },
+    {
+      "developer": {
+        "name": "Piedra Azul Desarrollos",
+        "slug": "piedra-azul-desarrollos",
+        "website_url": "https://example.com/piedra-azul/"
+      },
+      "name": "Vista Verde Envigado",
+      "slug": "vista-verde-envigado",
+      "municipality": "envigado",
+      "neighborhood": "El Esmeraldal",
+      "lat": 6.1648,
+      "lon": -75.5734,
+      "source_url": "https://example.com/piedra/vista-verde-envigado",
+      "unit_types": [
+        {
+          "name": "Tipo 1",
+          "bedrooms": 2,
+          "bathrooms": 2,
+          "private_area_m2": 63,
+          "history": [
+            {
+              "price_cop": 450000000,
+              "observed_at": "2026-07-01T08:00:00-05:00",
+              "source_url": "https://example.com/piedra/vista-verde-envigado"
+            },
+            {
+              "price_cop": 471000000,
+              "observed_at": "2026-09-01T08:00:00-05:00",
+              "source_url": "https://example.com/piedra/vista-verde-envigado"
+            }
+          ],
+          "observation": {
+            "price_cop": 494100000,
+            "observed_at": "2026-11-02T08:00:00-05:00",
+            "source_url": "https://example.com/piedra/vista-verde-envigado"
+          }
+        }
+      ]
+    },
+    {
+      "developer": {
+        "name": "Altamira Constructores",
+        "slug": "altamira-constructores",
+        "website_url": "https://example.com/altamira/"
+      },
+      "name": "Cumbres de Las Palmas",
+      "slug": "cumbres-de-las-palmas",
+      "municipality": "envigado",
+      "neighborhood": "Las Palmas",
+      "lat": 6.1891,
+      "lon": -75.5532,
+      "source_url": "https://example.com/altamira/cumbres-de-las-palmas",
+      "unit_types": [
+        {
+          "name": "Casa 1",
+          "bedrooms": 4,
+          "bathrooms": 4,
+          "private_area_m2": 182,
+          "built_area_m2": 205,
+          "history": [
+            {
+              "price_cop": 1220000000,
+              "observed_at": "2026-08-01T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/cumbres-de-las-palmas"
+            }
+          ],
+          "observation": {
+            "price_cop": 1250000000,
+            "observed_at": "2026-11-02T08:00:00-05:00",
+            "source_url": "https://example.com/altamira/cumbres-de-las-palmas"
+          }
+        }
+      ]
+    }
+  ]
+}

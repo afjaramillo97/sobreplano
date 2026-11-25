@@ -1,0 +1,16 @@
+---
+// An icon of the kit (or its fallback), inlined so it takes the text color.
+import { type IconName, iconSvg } from "@/lib/icons";
+
+interface Props {
+  name: IconName;
+  size?: number;
+  class?: string;
+  /** Accessible name; leave it out for decorative icons next to text. */
+  label?: string;
+}
+
+const { name, size, class: className, label } = Astro.props;
+---
+
+<Fragment set:html={iconSvg(name, { size, class: className, label })} />

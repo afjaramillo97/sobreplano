@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@astrojs/react": "^7.1.9",
+    "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
     "@tailwindcss/vite": "^4.3.5",
     "astro": "^7.4.13",
     "class-variance-authority": "^0.7.1",

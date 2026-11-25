@@ -5,9 +5,15 @@ import type * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+// With `label`, the scroll container becomes a named, focusable region: a table wider than
+// the screen must be scrollable with the keyboard (axe: scrollable-region-focusable).
+function Table({ className, label, ...props }: React.ComponentProps<"table"> & { label?: string }) {
   return (
-    <div data-slot="table-container" className="relative w-full overflow-x-auto">
+    <div
+      data-slot="table-container"
+      className="relative w-full overflow-x-auto"
+      {...(label ? { role: "region", "aria-label": label, tabIndex: 0 } : {})}
+    >
       <table
         data-slot="table"
         className={cn("w-full caption-bottom text-body", className)}

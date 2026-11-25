@@ -1,0 +1,43 @@
+---
+// Every page: Spanish (Colombia), the site font preloaded, nav, main and footer.
+import fontUrl from "@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-wght-normal.woff2?url";
+import SiteFooter from "@/components/SiteFooter.astro";
+import SiteHeader from "@/components/SiteHeader.astro";
+import "@/styles/global.css";
+
+interface Props {
+  /** Page title; the site name is appended, except on the home page. */
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+const fullTitle = title === "Sobreplano" ? title : `${title} · Sobreplano`;
+---
+
+<!doctype html>
+<html lang="es-CO">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <!-- No favicon until the logo exists; an empty one avoids a 404 in the console. -->
+    <link rel="icon" href="data:," />
+    <link rel="preload" href={fontUrl} as="font" type="font/woff2" crossorigin />
+    <slot name="head" />
+  </head>
+  <body class="flex min-h-dvh flex-col">
+    <a
+      href="#contenido"
+      class="sr-only z-50 rounded-md bg-bg-surface px-4 py-2 text-label text-text-primary focus:not-sr-only focus:fixed focus:top-4 focus:left-4"
+    >
+      Saltar al contenido
+    </a>
+    <SiteHeader />
+    <main id="contenido" class="flex-1">
+      <slot />
+    </main>
+    <SiteFooter />
+  </body>
+</html>

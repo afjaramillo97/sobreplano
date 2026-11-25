@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   formatArea,
+  formatChange,
+  formatCount,
   formatCop,
   formatDate,
   formatDateShort,
@@ -40,6 +42,22 @@ describe("formatPct", () => {
 
   it("gives no sign to zero", () => {
     expect(formatPct(0)).toBe(`0,0${NBSP}%`);
+  });
+});
+
+describe("formatChange", () => {
+  it("says the direction in words and drops the sign", () => {
+    expect(formatChange(9.8)).toBe(`Subió 9,8${NBSP}%`);
+    expect(formatChange(-2.1)).toBe(`Bajó 2,1${NBSP}%`);
+    expect(formatChange(0)).toBe("Sin cambio");
+  });
+});
+
+describe("formatCount", () => {
+  it("picks singular or plural", () => {
+    expect(formatCount(1, "alcoba", "alcobas")).toBe(`1${NBSP}alcoba`);
+    expect(formatCount(2, "baño", "baños")).toBe(`2${NBSP}baños`);
+    expect(formatCount(0, "alcoba", "alcobas")).toBe(`0${NBSP}alcobas`);
   });
 });
 

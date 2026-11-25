@@ -1,0 +1,28 @@
+---
+// The kit's footer: brand, the columns that exist (no social links) and the rights line.
+const year = new Date().getFullYear();
+const linkClass =
+  "text-body font-medium text-text-secondary transition-colors duration-(--duration-fast) hover:text-text-primary";
+---
+
+<footer class="mt-20 border-t-(length:--border-width-default) border-border bg-bg-surface">
+  <div class="page grid gap-12 py-12 md:grid-cols-[2fr_1fr_1fr]">
+    <div class="flex flex-col gap-4">
+      <a href="/" class="text-h3 font-extrabold text-text-heading-alt">Sobreplano</a>
+      <p class="max-w-sm text-body text-text-muted">
+        Precios de vivienda nueva sobre plano en el Valle de Aburrá, observados día a día.
+      </p>
+    </div>
+    <nav aria-labelledby="pie-proyectos" class="flex flex-col gap-4">
+      <h2 id="pie-proyectos" class="text-label text-text-primary">Proyectos</h2>
+      <a href="/proyectos/" class={linkClass}>Todos los proyectos</a>
+    </nav>
+    <nav aria-labelledby="pie-legal" class="flex flex-col gap-4">
+      <h2 id="pie-legal" class="text-label text-text-primary">Legal</h2>
+      <a href="/terminos/" class={linkClass}>Términos de uso</a>
+    </nav>
+  </div>
+  <div class="page border-t-(length:--border-width-default) border-border py-6">
+    <p class="text-body-sm text-text-muted">© {year} Sobreplano. Todos los derechos reservados.</p>
+  </div>
+</footer>

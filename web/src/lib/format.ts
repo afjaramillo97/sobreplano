@@ -76,3 +76,16 @@ export function formatDate(iso: string): string {
 export function formatDateShort(iso: string): string {
   return dateShort.format(toDate(iso));
 }
+
+/** A price change in words, for the badge: 9.8 → "Subió 9,8 %", −2.1 → "Bajó 2,1 %". */
+export function formatChange(value: number): string {
+  const magnitude = formatPct(Math.abs(value)).replace("+", "");
+  if (value > 0) return `Subió ${magnitude}`;
+  if (value < 0) return `Bajó ${magnitude}`;
+  return "Sin cambio";
+}
+
+/** A count with its noun: (1, "alcoba", "alcobas") → "1 alcoba"; 2 → "2 alcobas". */
+export function formatCount(value: number, singular: string, plural: string): string {
+  return `${value}${NBSP}${value === 1 ? singular : plural}`;
+}

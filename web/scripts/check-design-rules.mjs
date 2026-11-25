@@ -52,13 +52,14 @@ const RULES = [
     // A font-* utility; CSS properties (font-family:, font-weight:, ...) are skipped. The
     // first lookahead makes the class name whole, so "font-family:" cannot match "font-famil";
     // the second skips properties and object keys ("font-weight": ...).
-    pattern: /(?<![\w-])font-([\w[\]().%/-]+)(?![\w[\]().%/-])(?!["']?\s*:)/g,
+    pattern: /(?<![\w@-])font-([\w[\]().%/-]+)(?![\w[\]().%/-])(?!["']?\s*:)/g,
     check: (match) =>
       !FONT_UTILITIES.has(match[1]) && !/^(?:variant|feature|synthesis)/.test(match[1]),
     message: "font utility outside the tokens (font-sans and the token weights)",
   },
   {
-    pattern: /font-family\s*:(?!\s*(?:var\(--font-sans\)|inherit))/g,
+    // The family itself is allowed by name, for the @font-face that declares it.
+    pattern: /font-family\s*:(?!\s*(?:var\(--font-sans\)|inherit|["']Plus Jakarta Sans["']))/g,
     message: "font-family must be var(--font-sans)",
   },
   {

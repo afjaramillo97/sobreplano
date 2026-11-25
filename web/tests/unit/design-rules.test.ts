@@ -43,6 +43,8 @@ describe("design rules", () => {
     expect(texts("font-family: Georgia;")).toEqual(["font-family:"]);
     expect(texts('const f = "Inter";')).toEqual(["Inter"]);
     expect(texts('theme: { "font-weight": WEIGHTS }')).toEqual([]); // an object key
+    // The @font-face that declares the token's family.
+    expect(texts('@font-face { font-family: "Plus Jakarta Sans"; font-weight: 200 800; }')).toEqual([]);
   });
 
   it("leaves semantic classes, CSS variables and anchors alone", () => {

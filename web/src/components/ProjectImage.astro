@@ -1,0 +1,23 @@
+---
+// The default project image: our own drawing, decorative (alt=""), until there are photos.
+import placeholder from "@/assets/project-placeholder.svg?url";
+
+interface Props {
+  class?: string;
+  /** The first image on screen loads eagerly, the rest lazily. */
+  priority?: boolean;
+}
+
+const { class: className, priority = false } = Astro.props;
+---
+
+<img
+  src={placeholder}
+  alt=""
+  width="704"
+  height="400"
+  loading={priority ? "eager" : "lazy"}
+  decoding="async"
+  fetchpriority={priority ? "high" : "auto"}
+  class:list={["block w-full bg-bg-selected object-cover", className]}
+/>

@@ -61,10 +61,10 @@ export function iconSource(name: IconName): "kit" | "fallback" {
 
 export type IconOptions = {
   /** Width and height in px; the kit draws on 24. */
-  size?: number;
-  class?: string;
+  size?: number | undefined;
+  class?: string | undefined;
   /** Accessible name; without it the icon is decorative and hidden from assistive tech. */
-  label?: string;
+  label?: string | undefined;
 };
 
 const escapeAttribute = (value: string) =>

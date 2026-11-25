@@ -1129,6 +1129,103 @@
           }
         }
       ]
+    },
+    {
+      "developer": {
+        "name": "Ceiba Urbana",
+        "slug": "ceiba-urbana",
+        "website_url": "https://example.com/ceiba/"
+      },
+      "name": "Balcones del Ajizal",
+      "slug": "balcones-del-ajizal",
+      "municipality": "itagui",
+      "neighborhood": "El Ajizal",
+      "lat": 6.1725,
+      "lon": -75.613,
+      "source_url": "https://example.com/ceiba/balcones-del-ajizal",
+      "unit_types": [
+        {
+          "name": "Tipo 1",
+          "bedrooms": 2,
+          "bathrooms": 2,
+          "private_area_m2": 56.4,
+          "history": [
+            {
+              "price_cop": 302000000,
+              "observed_at": "2026-08-01T08:00:00-05:00",
+              "source_url": "https://example.com/ceiba/balcones-del-ajizal"
+            }
+          ],
+          "observation": {
+            "price_cop": 312000000,
+            "observed_at": "2026-11-02T08:00:00-05:00",
+            "source_url": "https://example.com/ceiba/balcones-del-ajizal"
+          }
+        },
+        {
+          "name": "Tipo 2",
+          "bedrooms": 3,
+          "bathrooms": 2,
+          "private_area_m2": 71.8,
+          "history": [
+            {
+              "price_cop": 386000000,
+              "observed_at": "2026-08-01T08:00:00-05:00",
+              "source_url": "https://example.com/ceiba/balcones-del-ajizal"
+            }
+          ],
+          "observation": {
+            "price_cop": 398000000,
+            "observed_at": "2026-11-02T08:00:00-05:00",
+            "source_url": "https://example.com/ceiba/balcones-del-ajizal"
+          }
+        }
+      ]
+    },
+    {
+      "developer": {
+        "name": "Altamira Constructores",
+        "slug": "altamira-constructores",
+        "website_url": "https://example.com/altamira/"
+      },
+      "name": "Terrazas de Santa María",
+      "slug": "terrazas-de-santa-maria",
+      "municipality": "itagui",
+      "neighborhood": "Santa María",
+      "lat": 6.1741,
+      "lon": -75.6115,
+      "source_url": "https://example.com/altamira/terrazas-de-santa-maria",
+      "unit_types": [
+        {
+          "name": "Tipo A",
+          "bedrooms": 3,
+          "bathrooms": 2,
+          "private_area_m2": 68.5,
+          "history": [
+            {
+              "price_cop": 360000000,
+              "observed_at": "2026-09-01T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/terrazas-de-santa-maria"
+            }
+          ],
+          "observation": {
+            "price_cop": 371000000,
+            "observed_at": "2026-11-02T08:00:00-05:00",
+            "source_url": "https://example.com/altamira/terrazas-de-santa-maria"
+          }
+        },
+        {
+          "name": "Tipo B",
+          "bedrooms": 1,
+          "bathrooms": 1,
+          "private_area_m2": 41,
+          "observation": {
+            "price_cop": 236000000,
+            "observed_at": "2026-11-02T08:00:00-05:00",
+            "source_url": "https://example.com/altamira/terrazas-de-santa-maria"
+          }
+        }
+      ]
     }
   ]
 }

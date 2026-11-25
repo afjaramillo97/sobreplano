@@ -3,10 +3,10 @@
 // unit types, location and source. Built from GET /projects; the history is fetched by the
 // browser and never written into this HTML (SPEC 11a §8).
 import HistoryChart from "@/components/HistoryChart";
-import Icon from "@/components/Icon.astro";
+import Icon from "@/components/Icon";
 import PriceCard from "@/components/PriceCard.astro";
 import ProjectFacts from "@/components/ProjectFacts.astro";
-import ProjectImage from "@/components/ProjectImage.astro";
+import ProjectImage from "@/components/ProjectImage";
 import UnitTypesTable from "@/components/UnitTypesTable.astro";
 import { buttonVariants } from "@/components/ui/button";
 import BaseLayout from "@/layouts/BaseLayout.astro";
@@ -66,7 +66,7 @@ const linkClass = "font-bold text-action-soft-text underline underline-offset-4 
 
       <div class="flex min-w-0 flex-col gap-12 lg:col-start-1 lg:row-start-1">
         <figure class="flex flex-col gap-3">
-          <ProjectImage class="aspect-video rounded-md" priority />
+          <ProjectImage className="aspect-video rounded-md" priority />
           <figcaption class="text-body-sm text-text-muted">
             Imagen ilustrativa. Aún no tenemos fotos de este proyecto. Puedes verlas en el{" "}
             <a href={project.sourceUrl} target="_blank" rel="noopener" class={linkClass}>

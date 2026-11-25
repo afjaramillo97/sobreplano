@@ -48,6 +48,14 @@ export function formatMillions(value: number): string {
   return `$${NBSP}${millions.format(value / 1_000_000)}${NBSP}millones`;
 }
 
+/**
+ * A price in millions for tight places, the map pill and the filter chips: 289000000 →
+ * "$ 289 M". Elsewhere use formatMillions, which spells the word out.
+ */
+export function formatMillionsShort(value: number): string {
+  return `$${NBSP}${millions.format(value / 1_000_000)}${NBSP}M`;
+}
+
 /** A change in percent, as the API gives it (12.5 means 12.5 %): → "+12,5 %", "−3,0 %". */
 export function formatPct(value: number): string {
   return `${percent.format(value).replace("-", MINUS)}${NBSP}%`;

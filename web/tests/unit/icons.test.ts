@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { ICON_NAMES, iconSource, iconSvg, kitAvailable } from "../../src/lib/icons";
+import { ICON_NAMES, iconParts, iconSource, kitAvailable } from "../../src/lib/icons";
 
 const FALLBACK_DIR = new URL("../../src/assets/icons-fallback/", import.meta.url);
 
@@ -24,17 +24,31 @@ describe("icons", () => {
   });
 
   it("hides decorative icons and sizes them", () => {
-    const svg = iconSvg("bed-outline", { size: 20, class: "shrink-0" });
-    expect(svg).toMatch(/^<svg\b/);
-    expect(svg).toContain('width="20" height="20"');
-    expect(svg).toContain('class="shrink-0"');
-    expect(svg).toContain('aria-hidden="true"');
-    expect(svg.match(/\swidth="/g)).toHaveLength(1); // the file's own size is replaced
+    const { attributes, inner } = iconParts("bed-outline", { size: 20, className: "shrink-0" });
+    expect(attributes).toMatchObject({
+      width: "20",
+      height: "20",
+      viewBox: "0 0 24 24",
+      className: "shrink-0",
+      "aria-hidden": "true",
+      focusable: "false",
+    });
+    expect(attributes).not.toHaveProperty("class");
+    expect(inner).not.toMatch(/<svg\b/);
+    expect(inner).toContain("currentColor");
   });
 
   it("names an icon that carries meaning", () => {
-    const svg = iconSvg("check-circle-outline", { label: "Vigente" });
-    expect(svg).toContain('role="img" aria-label="Vigente"');
-    expect(svg).not.toContain("aria-hidden");
+    const { attributes } = iconParts("check-circle-outline", { label: "Vigente" });
+    expect(attributes).toMatchObject({ role: "img", "aria-label": "Vigente" });
+    expect(attributes).not.toHaveProperty("aria-hidden");
+  });
+
+  it("turns the root's SVG attributes into React props", () => {
+    for (const name of ICON_NAMES) {
+      for (const key of Object.keys(iconParts(name).attributes)) {
+        expect(key, `${name}: ${key}`).toMatch(/^(?:[a-zA-Z]+|aria-hidden|aria-label)$/);
+      }
+    }
   });
 });

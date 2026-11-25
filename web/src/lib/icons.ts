@@ -6,11 +6,18 @@
  * never copied into this public repository (UI8 license).
  */
 
-const KIT = import.meta.glob<string>("/kit/icons/*.svg", {
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+// Only the icons in ICON_NAMES: the search island ships this module to the browser, and the
+// kit has 115 icons. Keep the list in step with ICON_NAMES (tests/unit/icons.test.ts).
+const KIT = import.meta.glob<string>(
+  [
+    "/kit/icons/{bed-outline,bath-outline,square-meters-outline,search-outline,chevron-left-outline}.svg",
+    "/kit/icons/{filter-outline,map-outline,check-circle-outline,chart-outline,dollar-square-outline}.svg",
+    "/kit/icons/{message-outline,property-insurance-outline,properties-outline,calendar-outline}.svg",
+    "/kit/icons/{close-outline,chevron-down-outline,add-outline,check-outline,unordered-list-outline}.svg",
+    "/kit/icons/{location-marker-outline,sort-outline}.svg",
+  ],
+  { query: "?raw", import: "default", eager: true },
+);
 const FALLBACK = import.meta.glob<string>("/src/assets/icons-fallback/*.svg", {
   query: "?raw",
   import: "default",
@@ -33,6 +40,13 @@ export const ICON_NAMES = [
   "property-insurance-outline",
   "properties-outline",
   "calendar-outline",
+  "close-outline",
+  "chevron-down-outline",
+  "add-outline",
+  "check-outline",
+  "unordered-list-outline",
+  "location-marker-outline",
+  "sort-outline",
 ] as const;
 
 export type IconName = (typeof ICON_NAMES)[number];
@@ -49,7 +63,7 @@ const fallbackIcons = byName(FALLBACK);
 /** Whether the kit's icons are available to this build. */
 export const kitAvailable = kitIcons.size > 0;
 
-if (!kitAvailable && import.meta.env.PROD) {
+if (!kitAvailable && import.meta.env.PROD && import.meta.env.SSR) {
   // Loud on purpose: a production build should not ship placeholder icons by accident.
   console.warn("[icons] web/kit is missing: building with the fallback icons");
 }
@@ -62,37 +76,47 @@ export function iconSource(name: IconName): "kit" | "fallback" {
 export type IconOptions = {
   /** Width and height in px; the kit draws on 24. */
   size?: number | undefined;
-  class?: string | undefined;
+  className?: string | undefined;
   /** Accessible name; without it the icon is decorative and hidden from assistive tech. */
   label?: string | undefined;
 };
 
-const escapeAttribute = (value: string) =>
-  value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+/** The root <svg> attributes as React props, plus the markup inside it. */
+export type IconParts = { attributes: Record<string, string>; inner: string };
+
+const SVG = /^\s*<svg\b([^>]*)>([\s\S]*)<\/svg>\s*$/;
+const ATTRIBUTE = /([\w:-]+)="([^"]*)"/g;
+// The file's own size and labels are replaced by the options.
+const REPLACED = /^(?:width|height|class|role|aria-[\w-]+)$/;
 
 /**
- * The icon's SVG markup, sized and labelled, for `set:html` in an Astro component.
+ * The icon split for a React <svg>: its root attributes (stroke-width becomes strokeWidth),
+ * sized and labelled, and its inner markup.
  *
- * Throws if the name has neither a kit icon nor a fallback (a missing fallback is a bug).
+ * Throws if the name has neither a kit icon nor a fallback (a missing fallback is a bug), or
+ * if the file is not a single <svg> element.
  */
-export function iconSvg(name: IconName, options: IconOptions = {}): string {
+export function iconParts(name: IconName, options: IconOptions = {}): IconParts {
   const svg = kitIcons.get(name) ?? fallbackIcons.get(name);
   if (svg === undefined) throw new Error(`icon ${name} has no kit file and no fallback`);
-  const { size = 24, label } = options;
-  const attributes = [
-    `width="${size}"`,
-    `height="${size}"`,
-    options.class ? `class="${escapeAttribute(options.class)}"` : "",
-    label
-      ? `role="img" aria-label="${escapeAttribute(label)}"`
-      : `aria-hidden="true" focusable="false"`,
-  ]
-    .filter(Boolean)
-    .join(" ");
-  return svg
-    .trim()
-    .replace(/<svg\b([^>]*)>/, (_, rest: string) => {
-      const kept = rest.replace(/\s(?:width|height|class|role|aria-[\w-]+)="[^"]*"/g, "");
-      return `<svg${kept} ${attributes}>`;
-    });
+  const match = SVG.exec(svg);
+  if (!match) throw new Error(`icon ${name} is not a single <svg> element`);
+  const [, rootAttributes = "", inner = ""] = match;
+  const attributes: Record<string, string> = {};
+  for (const [, key = "", value = ""] of rootAttributes.matchAll(ATTRIBUTE)) {
+    if (REPLACED.test(key)) continue;
+    attributes[key.replace(/[-:]([a-z])/g, (_, letter: string) => letter.toUpperCase())] = value;
+  }
+  const { size = 24, className, label } = options;
+  attributes.width = String(size);
+  attributes.height = String(size);
+  if (className) attributes.className = className;
+  if (label) {
+    attributes.role = "img";
+    attributes["aria-label"] = label;
+  } else {
+    attributes["aria-hidden"] = "true";
+    attributes.focusable = "false";
+  }
+  return { attributes, inner: inner.trim() };
 }

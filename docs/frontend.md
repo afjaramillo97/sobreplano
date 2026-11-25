@@ -1,6 +1,6 @@
-# Frontend (SPEC 11a)
+# Frontend (SPEC 11a, 11b)
 
-The site in `web/`: a static Astro 7 site with one React island, built from the read API. Its design rules (tokens, contrast, what CI rejects) are in [`web/DESIGN.md`](../web/DESIGN.md).
+The site in `web/`: a static Astro 7 site with two React islands (the price history and the search), built from the read API. Its design rules (tokens, contrast, what CI rejects) are in [`web/DESIGN.md`](../web/DESIGN.md).
 
 ## How it gets its data
 
@@ -10,6 +10,9 @@ pnpm build
   -> one HTML page per project, og:image per project, sitemap
 browser, on a project page
   -> GET /projects/{slug} when the chart comes into view   (PUBLIC_API_URL, CORS)
+browser, on /proyectos/ (SPEC 11b)
+  -> nothing from the API: the catalog comes inside the page and is filtered in memory
+  -> tiles.openfreemap.org, only while the map is shown    (style, tiles, fonts, sprites)
 ```
 
 The price history is never written into the HTML. Only the browser asks for it, so the API's per-client limit protects it (40 detail requests a day per IP, SPEC 10). The island gets only the slug. It never retries a `429` or a `404`, and never refetches when the tab regains focus.
@@ -21,6 +24,45 @@ The price history is never written into the HTML. Only the browser asks for it, 
 | `PUBLIC_SITE_URL` | Canonical URLs, `og:image`, sitemap, `robots.txt`. Defaults to `http://localhost:4321` until SPEC 12 sets the domain | `http://localhost:4321` |
 | `E2E_PORT` | Playwright's preview, when 4321 is taken | `4401` |
 | `CORS_ALLOWED_ORIGINS` (API) | Lets the site's origin read the API. A JSON list, in single quotes in `.env`, because uv drops bare inner quotes | `'["http://localhost:4321"]'` |
+
+## The search (SPEC 11b)
+
+`/proyectos/` is one island (`web/src/components/search/SearchPage.tsx`, `client:load`). The build hands it every project as a `SearchItem` (`web/src/lib/search.ts`): only what the cards show, never the history. Its server render is the whole catalog without filters, so the page works and is indexed without JavaScript; the filter controls show only with JavaScript.
+
+All the logic is pure and tested in `web/tests/unit/search.test.ts`: the URL, matching (every unit filter on the same unit type), the "desde" with filters (the cheapest unit type that passes), the four orders, the map bounds and the price histogram. It never calls `GET /projects`: the API allows 30 lists a minute per IP, which moving the map would use up. Reconsider it past about a thousand projects.
+
+### The URL
+
+Every filter lives in the URL, in this order, with default values left out, so one search always gives one URL. `parseSearch` never throws: an invalid value is ignored and drops out on the next write.
+
+| Parameter | Example | Rule |
+| --- | --- | --- |
+| `q` | `q=ditaires` | Free text, up to 80 characters; name, neighborhood, municipality or developer, without accents |
+| `municipio` | `municipio=itagui,envigado` | `Municipality` slugs, comma separated |
+| `constructora` | `constructora=ceiba-urbana` | A developer slug of the catalog |
+| `precio_min`, `precio_max` | `precio_max=400000000` | Pesos, whole numbers |
+| `alcobas`, `banos` | `alcobas=2` | Minimums, 1 to 5 |
+| `area_min`, `area_max` | `area_min=50` | Whole m² |
+| `orden` | `orden=subida` | `precio` (default), `precio_desc`, `subida`, `nombre` |
+| `mapa` | `mapa=6.1725,-75.6130,12.5` | Latitude and longitude with 4 decimals, zoom with 1 |
+| `mover` | `mover=0` | Only while "Buscar al mover el mapa" is off |
+| `vista` | `vista=mapa` | Only in the phone's map view (below 1024 px) |
+
+Filters and order replace the history entry, so "Atrás" leaves the search in one step; typing, sliders and the map write after 250 ms (Safari throws after 100 history writes in 30 s). Only the phone's map view pushes an entry, so "Atrás" goes back to the list. The home page's search is a plain `GET` form to `/proyectos/` with `municipio` and `precio_max`.
+
+### The map
+
+`web/src/components/search/ResultsMap.tsx`, loaded with `import()` only when it is shown: from 1024 px beside the list, and below that after "Ver mapa". MapLibre GL JS 6 on OpenFreeMap's Positron (`STYLE_URL` in `web/src/lib/map-style.ts`), with land, parks and water repainted from the `map.*` tokens. Each project with coordinates is an HTML `<button>` pill; Supercluster groups pills closer than 72 px. MapLibre's worker is served from the site (`setWorkerUrl`), so the CSP needs `worker-src 'self'` and no `blob:` worker.
+
+From 1024 px, with "Buscar al mover el mapa" on, the list shows the projects inside the map, and those without coordinates go last under "Sin ubicación publicada". If the style or the tiles fail, or there is no WebGL, the panel says "No pudimos cargar el mapa. La lista sigue funcionando." and the list stops filtering by zone.
+
+JavaScript budget, gzip: the first load of `/proyectos/` is about 103 KB (120 at most; the popovers and the "Más filtros" panel load on first use), the map chunk about 297 KB (320 at most) plus MapLibre's worker, about 157 KB, which runs off the main thread.
+
+**Plan B for the tiles.** OpenFreeMap is run by one person, with no service agreement. If it goes away, cut a PMTiles file of the Aburrá Valley from the OpenMapTiles planet, put it in Cloudflare R2 (free egress), serve the same Positron style from the site pointing at it, and change only `STYLE_URL` and the CSP's map origin.
+
+### Testing without the network
+
+`web/tests/e2e/fixtures.ts` answers every request to `tiles.openfreemap.org` with `web/tests/fixtures/map-style.json` (land only, no tiles, fonts or sprites) and aborts the rest, so no test and no screenshot depends on the network. A test that wants the map down routes the same host to a `503`. The fictitious catalog has two projects about 240 m apart in Itagüí, to test the groups.
 
 ## Running it locally
 
@@ -49,11 +91,11 @@ pnpm --dir web preview          # http://localhost:4321
 | Command | What |
 | --- | --- |
 | `pnpm --dir web check` | `astro check`: types, 0 errors and 0 warnings |
-| `pnpm --dir web test` | Vitest: formats, view model, history, catalog coverage, contrast pairs, design rules, icons |
+| `pnpm --dir web test` | Vitest: formats, view model, history, search, map style, catalog coverage, contrast pairs, design rules, icons |
 | `pnpm --dir web rules` | Colors, radii, shadows and fonts outside the tokens fail, with file and line |
 | `pnpm --dir web tokens` | Regenerates `src/styles/tokens.css`; CI fails if it changes |
 | `uv run python -m sobreplano.interface.cli.export_openapi` then `pnpm --dir web api:types` | After any API change: the contract and its TypeScript types. `test_openapi_snapshot.py` fails until the contract is exported |
-| `pnpm --dir web e2e` | Playwright against the build (API running): axe at 390 and 1440 px, no horizontal scroll at 320 px, the `429` and `500` states, the keyboard, no CSP errors |
+| `pnpm --dir web e2e` | Playwright against the build (API running): axe at 390 and 1440 px (also with "Más filtros" open and on the phone's map view), no horizontal scroll at 320 px, the `429` and `500` states, the keyboard, no CSP errors, and the search (`search.spec.ts`: filters and their URL, the map, its pills and groups, the phone's map view, the page without JavaScript) |
 | `pnpm --dir web lhci` | Lighthouse CI on `/`, `/proyectos/` and one project page, mobile, with the budgets in `web/lighthouserc.json` |
 
 ## Screenshots

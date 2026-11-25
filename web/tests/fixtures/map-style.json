@@ -1,0 +1,12 @@
+{
+  "version": 8,
+  "name": "Sobreplano tests: land only, no network",
+  "sources": {},
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": { "background-color": "#F4F1EA" }
+    }
+  ]
+}

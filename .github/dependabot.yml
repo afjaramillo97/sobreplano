@@ -24,6 +24,14 @@ updates:
     # pnpm refuses versions younger than a day (minimumReleaseAge in web/pnpm-workspace.yaml).
     cooldown:
       default-days: 2
+    ignore:
+      # TypeScript 7 is the native compiler without the JavaScript API: openapi-typescript
+      # (pnpm api:types) needs ts.factory, and @astrojs/check accepts ^5 or ^6 only.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      # The Node types follow the Node version in web/.nvmrc (24), not the newest Node.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       web-dependencies:
         patterns: ["*"]

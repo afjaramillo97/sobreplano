@@ -1,6 +1,6 @@
 # SPEC 11b — Búsqueda con filtros y mapa
 
-> **Estado:** aprobado
+> **Estado:** implementado
 > **Depende de:** SPEC 11a
 > **Fecha:** 2026-11-25
 > **Objetivo:** Convertir `/proyectos/` en una búsqueda con filtros guardados en la URL y un mapa de OpenFreeMap con píldoras de precio, calcada de la pantalla *Search Result (Map v2)* del kit Estatery.
@@ -224,27 +224,27 @@ Ningún paso tiene llamadas pagas ni cuentas nuevas.
 
 Cada criterio se verifica pegando el comando y su salida en el PR (constitución, principio 6).
 
-- [ ] `pnpm --dir web test` pasa, incluido `search.test.ts`, que cubre como mínimo los casos del paso 1.
-- [ ] `pnpm --dir web check`, `pnpm --dir web rules` y `pnpm --dir web tokens && git diff --exit-code web/src/styles/tokens.css` pasan sin cambios ni advertencias.
-- [ ] `/proyectos/?municipio=itagui&alcobas=3` muestra solo proyectos de Itagüí con al menos una tipología vigente de 3 alcobas o más, y el "desde" de cada tarjeta es el de esa tipología (prueba de Playwright contra el catálogo ficticio).
-- [ ] Cambiar un filtro reescribe la URL con los parámetros de la tabla, en su orden. Abrir una ficha y volver con "Atrás" muestra los mismos filtros y resultados.
-- [ ] `/proyectos/?alcobas=abc&municipio=narnia` carga sin errores en la consola y, al tocar cualquier filtro, la URL ya no trae esos parámetros.
-- [ ] Con filtros que no deja pasar ningún proyecto se ve "Ningún proyecto cumple estos filtros", con los chips y "Limpiar todo". Al limpiar vuelven todos los proyectos.
-- [ ] En escritorio, el número de píldoras más los proyectos dentro de grupos es igual al número de resultados con coordenadas dentro del mapa, y el contador anuncia ese número.
-- [ ] Al hacer clic en una píldora, esta queda seleccionada y aparece la tarjeta flotante con enlace a la ficha. Esc la cierra y devuelve el foco a la píldora.
-- [ ] Al mover el mapa con el teclado (flechas sobre el mapa enfocado), cambian el contador y la lista. Con "Buscar al mover el mapa" apagado, la lista no cambia.
-- [ ] Los dos proyectos cercanos del catálogo aparecen como un grupo con el número 2 al alejar el mapa, y se separan al hacer clic en el grupo.
-- [ ] Un proyecto sin coordenadas sigue en la lista bajo "Sin ubicación publicada" cuando el filtro del mapa está activo.
-- [ ] Con las peticiones a `tiles.openfreemap.org` respondiendo `503`, el panel del mapa muestra "No pudimos cargar el mapa. La lista sigue funcionando." y la lista muestra todos los resultados de los filtros.
-- [ ] A 390 px, "Ver mapa" muestra el mapa y agrega `vista=mapa` a la URL, y "Atrás" del navegador vuelve a la lista.
-- [ ] Con JavaScript desactivado, `/proyectos/` muestra todos los proyectos del catálogo, y el formulario del hero lleva a `/proyectos/?municipio=…&precio_max=…`.
-- [ ] `@axe-core/playwright` no reporta violaciones en `/proyectos/` (lista, panel "Más filtros" abierto y vista de mapa en móvil) ni en `/` con el buscador del hero, a 390 y 1440 px.
-- [ ] Con el mapa cargado no hay ningún mensaje `Content Security Policy` en la consola, y la política solo suma los orígenes y fuentes del paso 5.
-- [ ] La atribución "OpenFreeMap © OpenMapTiles Data from OpenStreetMap" se ve en el mapa a 390 y a 1440 px.
-- [ ] Lighthouse CI (móvil) en `/proyectos/`: rendimiento ≥ 0,90, accesibilidad = 1,00 y CLS ≤ 0,1. El PR anota el JavaScript inicial de `/proyectos/` (gzip, sin el mapa), que debe ser ≤ 120 KB, y el del mapa, que debe ser ≤ 320 KB y cargarse solo cuando el mapa se ve.
-- [ ] En el HTML generado de `/proyectos/` ningún archivo contiene `"history"` (`grep -rl '"history"' web/dist` no devuelve nada).
-- [ ] Las páginas del 11a mantienen sus capturas, salvo las que cambian por los dos proyectos nuevos del catálogo. Esas se regeneran en Linux y el PR las muestra.
-- [ ] Los workflows `web.yml` y `ci.yml` quedan en verde en el PR.
+- [x] `pnpm --dir web test` pasa, incluido `search.test.ts`, que cubre como mínimo los casos del paso 1.
+- [x] `pnpm --dir web check`, `pnpm --dir web rules` y `pnpm --dir web tokens && git diff --exit-code web/src/styles/tokens.css` pasan sin cambios ni advertencias.
+- [x] `/proyectos/?municipio=itagui&alcobas=3` muestra solo proyectos de Itagüí con al menos una tipología vigente de 3 alcobas o más, y el "desde" de cada tarjeta es el de esa tipología (prueba de Playwright contra el catálogo ficticio).
+- [x] Cambiar un filtro reescribe la URL con los parámetros de la tabla, en su orden. Abrir una ficha y volver con "Atrás" muestra los mismos filtros y resultados.
+- [x] `/proyectos/?alcobas=abc&municipio=narnia` carga sin errores en la consola y, al tocar cualquier filtro, la URL ya no trae esos parámetros.
+- [x] Con filtros que no deja pasar ningún proyecto se ve "Ningún proyecto cumple estos filtros", con los chips y "Limpiar todo". Al limpiar vuelven todos los proyectos.
+- [x] En escritorio, el número de píldoras más los proyectos dentro de grupos es igual al número de resultados con coordenadas dentro del mapa, y el contador anuncia ese número.
+- [x] Al hacer clic en una píldora, esta queda seleccionada y aparece la tarjeta flotante con enlace a la ficha. Esc la cierra y devuelve el foco a la píldora.
+- [x] Al mover el mapa con el teclado (flechas sobre el mapa enfocado), cambian el contador y la lista. Con "Buscar al mover el mapa" apagado, la lista no cambia.
+- [x] Los dos proyectos cercanos del catálogo aparecen como un grupo con el número 2 al alejar el mapa, y se separan al hacer clic en el grupo.
+- [x] Un proyecto sin coordenadas sigue en la lista bajo "Sin ubicación publicada" cuando el filtro del mapa está activo.
+- [x] Con las peticiones a `tiles.openfreemap.org` respondiendo `503`, el panel del mapa muestra "No pudimos cargar el mapa. La lista sigue funcionando." y la lista muestra todos los resultados de los filtros.
+- [x] A 390 px, "Ver mapa" muestra el mapa y agrega `vista=mapa` a la URL, y "Atrás" del navegador vuelve a la lista.
+- [x] Con JavaScript desactivado, `/proyectos/` muestra todos los proyectos del catálogo, y el formulario del hero lleva a `/proyectos/?municipio=…&precio_max=…`.
+- [x] `@axe-core/playwright` no reporta violaciones en `/proyectos/` (lista, panel "Más filtros" abierto y vista de mapa en móvil) ni en `/` con el buscador del hero, a 390 y 1440 px.
+- [x] Con el mapa cargado no hay ningún mensaje `Content Security Policy` en la consola, y la política solo suma los orígenes y fuentes del paso 5.
+- [x] La atribución "OpenFreeMap © OpenMapTiles Data from OpenStreetMap" se ve en el mapa a 390 y a 1440 px.
+- [x] Lighthouse CI (móvil) en `/proyectos/`: rendimiento ≥ 0,90, accesibilidad = 1,00 y CLS ≤ 0,1. El PR anota el JavaScript inicial de `/proyectos/` (gzip, sin el mapa), que debe ser ≤ 120 KB, y el del mapa, que debe ser ≤ 320 KB y cargarse solo cuando el mapa se ve.
+- [x] En el HTML generado de `/proyectos/` ningún archivo contiene `"history"` (`grep -rl '"history"' web/dist` no devuelve nada).
+- [x] Las páginas del 11a mantienen sus capturas, salvo las que cambian por los dos proyectos nuevos del catálogo. Esas se regeneran en Linux y el PR las muestra.
+- [x] Los workflows `web.yml` y `ci.yml` quedan en verde en el PR.
 
 ## Decisiones tomadas y descartadas
 

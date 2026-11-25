@@ -36,7 +36,8 @@ All AWS resources live in the `sobreplano-prod` account, region `us-east-1`. Sig
 | SSM parameter | `/sobreplano/prod/database_url` | `SecureString`. Supabase shared pooler, transaction mode (port 6543) |
 | SSM parameter | `/sobreplano/prod/openai_api_key` | `SecureString` |
 
-| GitHub secret | `AWS_DEPLOY_ROLE_ARN` | The `github_deploy_role_arn` Terraform output. The only secret in the repository; there are no AWS keys in GitHub |
+| GitHub secret | `AWS_DEPLOY_ROLE_ARN` | The `github_deploy_role_arn` Terraform output; there are no AWS keys in GitHub |
+| GitHub secret | `KIT_REPO_TOKEN` | Read-only token for the private kit repository (SPEC 11a); see [The site's private kit](#the-sites-private-kit-spec-11a) |
 | `.env` (local) | `TF_STATE_BUCKET`, `TF_VAR_alert_email` | Terraform's backend bucket and the alert email, kept out of the public repo |
 
 Upload or rotate the SSM parameters with `scripts/sync-ssm-secrets.sh` (`--dry-run` to preview). Terraform only knows the parameter names, so the values never enter its state. The Lambda reads them once per container, so a rotated value takes effect at the next cold start. To force one, run `deploy-scraper.yml` by hand (`workflow_dispatch`): a new deploy starts fresh containers. Do not edit the function's settings in the console or the CLI; Terraform would show the change as drift.
@@ -46,6 +47,25 @@ Set the GitHub secret once, after the first `terraform apply`:
 ```bash
 gh secret set AWS_DEPLOY_ROLE_ARN --body "$(terraform -chdir=infra output -raw github_deploy_role_arn)"
 ```
+
+## The site's private kit (SPEC 11a)
+
+The website uses icons from the Estatery UI kit. The UI8 license forbids redistributing the kit's files, so they live in the private repository `afjaramillo97/sobreplano-kit`, mounted as the submodule `web/kit`. This public repository only stores the submodule's commit.
+
+- **Locally:** `git submodule update --init web/kit` (needs access to the private repository). Without it the site builds with our own fallback icons (`web/src/assets/icons-fallback/`).
+- **In CI:** `web.yml` checks out the kit at the submodule's commit with the secret `KIT_REPO_TOKEN`. Without the secret, as in a fork, the site builds with the fallback icons and the screenshot comparison is skipped (the log says so).
+
+`KIT_REPO_TOKEN` is a fine-grained GitHub token:
+- resource owner `afjaramillo97`, repository access limited to `sobreplano-kit`;
+- permissions **Contents: read-only** (Metadata is read-only by default);
+- **expires on 22 Feb 2027.**
+
+To renew it before then:
+
+1. GitHub → Settings → Developer settings → Fine-grained tokens → Generate new token, with the same owner, repository and permission, and an expiry of at most a year.
+2. `gh secret set KIT_REPO_TOKEN` and paste the token (it is never written to a file).
+3. Re-run `web.yml` on an open PR and check that the screenshot tests ran, not skipped.
+4. Delete the old token, and write the new expiry date here.
 
 ## Database connections
 

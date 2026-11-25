@@ -1,0 +1,29 @@
+{
+  "$description": "Color pairs that must pass WCAG AA. kind text needs 4.5:1; large-text, non-text (borders, icons) and focus need 3:1. The input border (color.border.input on white, 1.32:1) is a known exception documented in web/DESIGN.md, rule 11.",
+  "pairs": [
+    { "fg": "color.text.primary", "bg": "color.bg.canvas", "kind": "text" },
+    { "fg": "color.text.primary", "bg": "color.bg.subtle", "kind": "text" },
+    { "fg": "color.text.primary", "bg": "color.bg.selected", "kind": "text" },
+    { "fg": "color.text.secondary", "bg": "color.bg.canvas", "kind": "text" },
+    { "fg": "color.text.secondary", "bg": "color.bg.subtle", "kind": "text" },
+    { "fg": "color.text.secondary", "bg": "color.bg.selected", "kind": "text" },
+    { "fg": "color.text.muted", "bg": "color.bg.canvas", "kind": "text" },
+    { "fg": "color.text.muted", "bg": "color.bg.subtle", "kind": "text" },
+    { "fg": "color.text.muted", "bg": "color.bg.selected", "kind": "text" },
+    { "fg": "color.text.price", "bg": "color.bg.canvas", "kind": "text" },
+    { "fg": "color.text.on-action", "bg": "color.action.default", "kind": "text" },
+    { "fg": "color.text.on-action", "bg": "color.action.hover", "kind": "text" },
+    { "fg": "color.text.on-action", "bg": "color.action.dark", "kind": "text" },
+    { "fg": "color.action.soft-text", "bg": "color.action.soft", "kind": "text" },
+    { "fg": "color.change.text", "bg": "color.change.bg", "kind": "text" },
+    {
+      "fg": "color.headline-gradient.start",
+      "bg": "color.primitive.hero.top",
+      "kind": "large-text",
+      "note": "hero.top is the darkest stop of the hero background, the worst case"
+    },
+    { "fg": "color.headline-gradient.mid", "bg": "color.primitive.hero.top", "kind": "large-text" },
+    { "fg": "color.headline-gradient.end", "bg": "color.primitive.hero.top", "kind": "large-text" },
+    { "fg": "color.focus.ring", "bg": "color.bg.canvas", "kind": "focus" }
+  ]
+}

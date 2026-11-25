@@ -18,7 +18,7 @@ Colombian listing portals (Fincaraíz, Metrocuadrado, La Haus) show a project's 
 
 ## Architecture
 
-Running today: a daily scraper in AWS writing the price history to Supabase.
+Running today: a daily scraper in AWS writing the price history to Supabase, and a website (SPEC 11a) built from the API.
 
 ```text
 EventBridge Scheduler, 06:00 Bogotá
@@ -39,7 +39,7 @@ The full picture, as planned:
 - **API:** FastAPI + SQLAlchemy.
 - **Advisor:** LangGraph with tools to search, compare, and simulate mortgage and investment return. Hybrid search, RAG over housing subsidies, and a custom MCP server.
 - **Quality:** golden set and LLM-as-judge in CI, guardrails against prompt injection in scraped content, Langfuse.
-- **Frontend:** React + Vite with a tRPC BFF.
+- **Frontend:** a static Astro site with one React island (the price history chart), Tailwind and shadcn/ui. Every page is built from the API; the history is fetched by the browser, so the API's rate limits protect it.
 - **Infra:** Terraform, LocalStack for local testing, Infracost on PRs, GitHub Actions.
 
 ## Roadmap
@@ -107,6 +107,16 @@ SPEC 10 protects the data and the advisor: per-IP rate limits that make copying 
 
 Tests: `uv run pytest -m "not integration"` needs no database; `uv run --env-file .env pytest` runs everything. Stop the database with `supabase stop`.
 
+The website (SPEC 11a) lives in `web/`: a home page, the listing, and a page per project with the honest "from" price, every unit type, and the price history as a step chart with a table. It is built from the API with the fictitious catalog in CI and checked with axe, keyboard tests, screenshots and Lighthouse budgets. It needs Node 24 and pnpm:
+
+```bash
+pnpm --dir web install
+SOBREPLANO_API_URL=http://localhost:8000 PUBLIC_API_URL=http://localhost:8000 pnpm --dir web build
+pnpm --dir web preview   # http://localhost:4321 (the API needs CORS_ALLOWED_ORIGINS='["http://localhost:4321"]')
+```
+
+How it gets its data, the checks and the screenshots: [docs/frontend.md](docs/frontend.md). Design rules: [web/DESIGN.md](web/DESIGN.md).
+
 Production (AWS, Terraform, deploys and how to check a run): [docs/deploy.md](docs/deploy.md).
 
 ## Scraping policy
@@ -117,5 +127,7 @@ Production (AWS, Terraform, deploys and how to check a run): [docs/deploy.md](do
 ## Author
 
 Built by Andrés Jaramillo as a portfolio project, end to end.
+
+Interface based on the Estatery UI kit by DhuhaCreative (UI8). The kit's files are not in this repository.
 
 [andres-jaramillo.vercel.app](https://andres-jaramillo.vercel.app) · [LinkedIn](https://www.linkedin.com/in/AFJR)

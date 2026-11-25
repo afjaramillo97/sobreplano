@@ -1,0 +1,77 @@
+---
+// The kit's price panel of the detail page (376 wide, sticky on desktop). "Desde" carries its
+// unit type, its date and the notice of what it may not include (rule 6).
+import { buttonVariants } from "@/components/ui/button";
+import { formatDate, formatMillions } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import type { ProjectView } from "@/lib/projects";
+import PriceChangeBadge from "./PriceChangeBadge.astro";
+
+interface Props {
+  project: ProjectView;
+  class?: string;
+}
+
+const { project, class: className } = Astro.props;
+const { from } = project;
+const observed = from?.observedOn ? formatDate(from.observedOn) : null;
+---
+
+<section
+  aria-labelledby="precio-titulo"
+  class:list={[
+    "flex flex-col gap-6 rounded-md border-(length:--border-width-default) border-border-input bg-bg-surface p-6",
+    className,
+  ]}
+>
+  {
+    from?.priceCop != null && observed ? (
+      <>
+        <div class="flex flex-col gap-1">
+          <h2 id="precio-titulo" class="flex flex-wrap items-baseline gap-x-2">
+            <span class="text-body font-medium text-text-muted">Desde</span>
+            <span class="text-price-lg text-text-price">{formatMillions(from.priceCop)}</span>
+          </h2>
+          <p class="text-body-sm text-text-secondary">
+            {from.name}, observado el {observed}
+          </p>
+        </div>
+        {from.changePct != null && from.firstPrice ? (
+          <div class="flex flex-col items-start gap-2">
+            <PriceChangeBadge changePct={from.changePct} />
+            <p class="text-body-sm text-text-secondary">
+              desde el primer precio, el {formatDate(from.firstPrice.observedOn)}
+            </p>
+          </div>
+        ) : (
+          <p class="text-body-sm text-text-secondary">Aún no hay cambio que mostrar.</p>
+        )}
+        <p class="text-body-sm font-regular text-text-muted">
+          Precio desde publicado por la constructora el {observed}. Puede no incluir
+          parqueadero, cuarto útil, acabados ni gastos de escrituración.
+        </p>
+      </>
+    ) : (
+      <div class="flex flex-col gap-1">
+        <h2 id="precio-titulo" class="text-h3 text-text-primary">Sin precio publicado</h2>
+        <p class="text-body-sm text-text-secondary">
+          {project.developer.name} no publica precios de este proyecto por ahora. Puedes
+          consultarlos en su sitio.
+        </p>
+      </div>
+    )
+  }
+  <a
+    href={project.sourceUrl}
+    target="_blank"
+    rel="noopener"
+    class={cn(
+      buttonVariants({ size: "lg" }),
+      // Developer names are long: the label wraps instead of overflowing.
+      "h-auto min-h-(--size-control-lg) w-full text-center whitespace-normal",
+    )}
+  >
+    Ver en el sitio de {project.developer.name}
+    <span class="sr-only">(se abre en otra pestaña)</span>
+  </a>
+</section>

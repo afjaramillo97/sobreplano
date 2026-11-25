@@ -1,0 +1,82 @@
+---
+// All unit types of a project: area with its basis, price, price per m², change and status.
+// A unit type that stopped being published shows since when, never a price of today.
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { formatArea, formatCop, formatDate, formatPct } from "@/lib/format";
+import type { ProjectView, UnitTypeView } from "@/lib/projects";
+
+interface Props {
+  project: ProjectView;
+}
+
+const { project } = Astro.props;
+const basis = (unit: UnitTypeView) =>
+  unit.areaBasis === "private" ? "privada" : "construida";
+const status = (unit: UnitTypeView) =>
+  unit.status === "current"
+    ? "Vigente"
+    : unit.status === "not-published"
+      ? `No publicada desde el ${formatDate(unit.observedOn ?? "")}`
+      : "Sin precio publicado";
+const dash = "—";
+---
+
+<Table label={`Tipologías de ${project.name}`} className="tabular-nums">
+  <TableCaption className="sr-only">
+    Tipologías de {project.name}, con su último precio publicado
+  </TableCaption>
+  <TableHeader>
+    <TableRow>
+      <TableHead>Tipología</TableHead>
+      <TableHead>Alcobas</TableHead>
+      <TableHead>Baños</TableHead>
+      <TableHead>Área</TableHead>
+      <TableHead>Precio</TableHead>
+      <TableHead>Precio por m²</TableHead>
+      <TableHead>Variación</TableHead>
+      <TableHead>Estado</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    {
+      project.unitTypes.map((unit) => (
+        <TableRow>
+          <TableHead scope="row" className="h-auto font-bold">
+            {unit.name}
+          </TableHead>
+          <TableCell>{unit.bedrooms ?? dash}</TableCell>
+          <TableCell>{unit.bathrooms ?? dash}</TableCell>
+          <TableCell>
+            {formatArea(unit.areaM2)}
+            <span class="block text-caption text-text-muted">{basis(unit)}</span>
+          </TableCell>
+          <TableCell className="font-bold text-text-primary">
+            {unit.priceCop != null ? formatCop(unit.priceCop) : dash}
+          </TableCell>
+          <TableCell>
+            {unit.pricePerM2Cop != null ? (
+              <>
+                {formatCop(unit.pricePerM2Cop)}
+                <span class="block text-caption text-text-muted">
+                  sobre área {basis(unit)}
+                </span>
+              </>
+            ) : (
+              dash
+            )}
+          </TableCell>
+          <TableCell>{unit.changePct != null ? formatPct(unit.changePct) : dash}</TableCell>
+          <TableCell className="min-w-44 whitespace-normal">{status(unit)}</TableCell>
+        </TableRow>
+      ))
+    }
+  </TableBody>
+</Table>

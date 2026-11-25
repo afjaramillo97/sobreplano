@@ -1,0 +1,146 @@
+---
+// A project page: header, image, fact sheet, price card, price history (the one island),
+// unit types, location and source. Built from GET /projects; the history is fetched by the
+// browser and never written into this HTML (SPEC 11a §8).
+import HistoryChart from "@/components/HistoryChart";
+import Icon from "@/components/Icon.astro";
+import PriceCard from "@/components/PriceCard.astro";
+import ProjectFacts from "@/components/ProjectFacts.astro";
+import ProjectImage from "@/components/ProjectImage.astro";
+import UnitTypesTable from "@/components/UnitTypesTable.astro";
+import { buttonVariants } from "@/components/ui/button";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { loadCatalog } from "@/lib/catalog";
+import { formatMillions } from "@/lib/format";
+import { MUNICIPALITY_NAMES, type ProjectView } from "@/lib/projects";
+
+export async function getStaticPaths() {
+  const projects = await loadCatalog();
+  return projects.map((project) => ({ params: { slug: project.slug }, props: { project } }));
+}
+
+interface Props {
+  project: ProjectView;
+}
+
+const { project } = Astro.props;
+const { from, location } = project;
+const place = [MUNICIPALITY_NAMES[project.municipality], project.neighborhood]
+  .filter(Boolean)
+  .join(", ");
+const hasPrices = project.unitTypes.some((unit) => unit.status !== "no-price");
+const description = from?.priceCop
+  ? `${project.name}, de ${project.developer.name} en ${place}: desde ${formatMillions(from.priceCop)} y su histórico de precios día a día.`
+  : `${project.name}, de ${project.developer.name} en ${place}: tipologías y fuente del proyecto.`;
+const mapsQuery = location ? `${location.lat},${location.lon}` : null;
+const sectionClass = "flex flex-col gap-6 border-t-(length:--border-width-default) border-border pt-8";
+const linkClass = "font-bold text-action-soft-text underline underline-offset-4 hover:text-action";
+---
+
+<BaseLayout
+  title={project.name}
+  description={description}
+  image={{ path: `/og/${project.slug}.png`, alt: `${project.name}: precio desde y su cambio` }}
+>
+  <div class="page py-8 lg:py-12">
+    <nav aria-label="Migas de pan">
+      <ol class="flex min-w-0 items-center gap-2 text-body-sm">
+        <li><a href="/proyectos/" class="text-text-muted hover:text-text-primary">Proyectos</a></li>
+        <li aria-hidden="true" class="text-text-muted">›</li>
+        <li aria-current="page" class="truncate font-bold text-text-primary">{project.name}</li>
+      </ol>
+    </nav>
+
+    <header class="mt-4 flex flex-col gap-2">
+      <h1 class="text-h1 text-text-primary">{project.name}</h1>
+      <p class="text-title text-text-secondary">{project.developer.name} · {place}</p>
+      {!location && <p class="text-body text-text-muted">Sin ubicación publicada</p>}
+    </header>
+
+    <!-- The price card comes first in the source, so on a phone it shows before the image; on a
+         desktop it sits in the right column and stays in view while scrolling. -->
+    <div class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_376px]">
+      <aside class="lg:sticky lg:top-[calc(var(--size-nav)+24px)] lg:col-start-2 lg:row-start-1 lg:self-start">
+        <PriceCard project={project} />
+      </aside>
+
+      <div class="flex min-w-0 flex-col gap-12 lg:col-start-1 lg:row-start-1">
+        <figure class="flex flex-col gap-3">
+          <ProjectImage class="aspect-video rounded-md" priority />
+          <figcaption class="text-body-sm text-text-muted">
+            Imagen ilustrativa. Aún no tenemos fotos de este proyecto. Puedes verlas en el{" "}
+            <a href={project.sourceUrl} target="_blank" rel="noopener" class={linkClass}>
+              sitio de {project.developer.name}<span class="sr-only"> (se abre en otra pestaña)</span>
+            </a>.
+          </figcaption>
+        </figure>
+
+        <ProjectFacts project={project} />
+
+        <section aria-labelledby="historico" class={sectionClass}>
+          <h2 id="historico" class="text-h3 text-text-primary">Histórico de precios</h2>
+          {
+            hasPrices ? (
+              <HistoryChart client:visible slug={project.slug} />
+            ) : (
+              <p class="text-body text-text-secondary">
+                Este proyecto no tiene precios publicados todavía, así que no hay histórico.
+              </p>
+            )
+          }
+        </section>
+
+        <section aria-labelledby="tipologias" class={sectionClass}>
+          <h2 id="tipologias" class="text-h3 text-text-primary">Tipologías</h2>
+          <UnitTypesTable project={project} />
+        </section>
+
+        <section aria-labelledby="ubicacion" class={sectionClass}>
+          <h2 id="ubicacion" class="text-h3 text-text-primary">Ubicación</h2>
+          {
+            mapsQuery ? (
+              <div class="flex flex-wrap gap-4">
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${mapsQuery}`}
+                  target="_blank"
+                  rel="noopener"
+                  class={buttonVariants({ variant: "soft" })}
+                >
+                  <Icon name="map-outline" />
+                  Abrir en Google Maps
+                  <span class="sr-only">(se abre en otra pestaña)</span>
+                </a>
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${mapsQuery}`}
+                  target="_blank"
+                  rel="noopener"
+                  class={buttonVariants({ variant: "outline" })}
+                >
+                  Cómo llegar
+                  <span class="sr-only">(se abre en otra pestaña)</span>
+                </a>
+              </div>
+            ) : (
+              <p class="text-body text-text-secondary">
+                Sin ubicación publicada: {project.developer.name} no publica el mapa de este
+                proyecto.
+              </p>
+            )
+          }
+        </section>
+
+        <section aria-labelledby="fuente" class={sectionClass}>
+          <h2 id="fuente" class="text-h3 text-text-primary">Fuente</h2>
+          <p class="text-body text-text-secondary">
+            Los precios y las tipologías salen de la{" "}
+            <a href={project.sourceUrl} target="_blank" rel="noopener" class={linkClass}>
+              ficha del proyecto en el sitio de {project.developer.name}<span class="sr-only">
+                (se abre en otra pestaña)</span
+              ></a
+            >.
+          </p>
+        </section>
+      </div>
+    </div>
+  </div>
+</BaseLayout>

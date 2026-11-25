@@ -1,0 +1,2 @@
+# Supply chain (SPEC 10 posture): a version must be a day old before pnpm installs it.
+minimumReleaseAge: 1440

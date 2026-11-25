@@ -1,0 +1,51 @@
+---
+// The kit's top nav: 96 high (72 on mobile), provisional text brand until the logo exists.
+// On mobile the kit's two-line menu opens the same links; <details> needs no JavaScript.
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+const path = Astro.url.pathname;
+const inProjects = path.startsWith("/proyectos/");
+const linkClass =
+  "text-body font-medium text-text-secondary transition-colors duration-(--duration-fast) hover:text-text-primary aria-[current=page]:font-bold aria-[current=page]:text-text-primary";
+---
+
+<header
+  class="sticky top-0 z-40 border-b-(length:--border-width-default) border-border bg-bg-nav"
+>
+  <div
+    class="page flex h-(--size-nav-mobile) items-center justify-between gap-6 md:h-(--size-nav)"
+  >
+    <a href="/" class="text-h3 font-extrabold text-text-heading-alt">Sobreplano</a>
+
+    <nav aria-label="Principal" class="hidden flex-1 items-center gap-12 md:flex">
+      <a href="/proyectos/" class={linkClass} aria-current={inProjects ? "page" : undefined}>
+        Proyectos
+      </a>
+    </nav>
+    <a href="/proyectos/" class={cn(buttonVariants(), "hidden md:inline-flex")}>
+      Ver proyectos
+    </a>
+
+    <details class="group relative md:hidden">
+      <summary
+        class="flex size-(--size-control-md) cursor-pointer list-none items-center justify-center rounded-md border-(length:--border-width-default) border-border-input bg-bg-surface text-text-primary [&::-webkit-details-marker]:hidden"
+      >
+        <span class="sr-only">Menú</span>
+        <span aria-hidden="true" class="flex w-5 flex-col gap-1.5">
+          <span class="h-0.5 w-5 rounded-full bg-current"></span>
+          <span class="h-0.5 w-3.5 rounded-full bg-current"></span>
+        </span>
+      </summary>
+      <nav
+        aria-label="Principal"
+        class="absolute top-full right-0 mt-3 flex w-64 flex-col gap-4 rounded-md border-(length:--border-width-default) border-border-input bg-bg-surface p-4 shadow-float"
+      >
+        <a href="/proyectos/" class={linkClass} aria-current={inProjects ? "page" : undefined}>
+          Proyectos
+        </a>
+        <a href="/proyectos/" class={buttonVariants({ class: "w-full" })}>Ver proyectos</a>
+      </nav>
+    </details>
+  </div>
+</header>

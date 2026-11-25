@@ -1,0 +1,59 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+/* The tokens name the family "Plus Jakarta Sans"; @fontsource-variable registers it as
+   "Plus Jakarta Sans Variable". Declared here under the token's name, served by the site
+   (no Google Fonts). The latin file covers Spanish, ², the hard space and the minus sign. */
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url("@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-wght-normal.woff2")
+    format("woff2-variations");
+}
+
+/* The content column: 1120 wide (kit), with side gutters on narrow screens. */
+@utility page {
+  width: 100%;
+  max-width: calc(var(--size-container) + 2 * var(--spacing) * 6);
+  margin-inline: auto;
+  padding-inline: calc(var(--spacing) * 4);
+  @variant sm {
+    padding-inline: calc(var(--spacing) * 6);
+  }
+}
+
+@layer base {
+  html {
+    /* Anchors land below the sticky nav (72 on mobile, 96 from md). */
+    scroll-padding-top: var(--size-nav-mobile);
+    @variant md {
+      scroll-padding-top: var(--size-nav);
+    }
+  }
+
+  body {
+    background-color: var(--color-bg-canvas);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0ms !important;
+      animation-duration: 0ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

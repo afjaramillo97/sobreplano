@@ -1,0 +1,46 @@
+---
+// The listing: every project as a card, cheapest "desde" first, without filters (filters and
+// map come in SPEC 11b).
+import ProjectCard from "@/components/ProjectCard.astro";
+import { buttonVariants } from "@/components/ui/button";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { loadCatalog, sortByFrom } from "@/lib/catalog";
+import { formatCount } from "@/lib/format";
+
+const projects = sortByFrom(await loadCatalog());
+---
+
+<BaseLayout
+  title="Proyectos sobre plano"
+  description="Todos los proyectos de vivienda nueva sobre plano que seguimos en el Valle de Aburrá, con su precio desde y cuánto ha cambiado."
+>
+  <div class="page py-12 lg:py-20">
+    <h1 class="text-h2 text-text-heading-alt">
+      {formatCount(projects.length, "proyecto", "proyectos")}
+    </h1>
+    <p class="mt-2 max-w-2xl text-body text-text-secondary">
+      Ordenados por precio desde, del más bajo al más alto. Los que no tienen precio publicado van
+      al final.
+    </p>
+    {
+      projects.length > 0 ? (
+        <ul class="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          {projects.map((project, i) => (
+            <li>
+              <ProjectCard project={project} priority={i === 0} />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div class="mt-12 flex flex-col items-start gap-4">
+          <p class="text-body text-text-secondary">
+            Todavía no hay proyectos en el catálogo. Vuelve pronto: lo actualizamos cada día.
+          </p>
+          <a href="/" class={buttonVariants({ variant: "outline" })}>
+            Ir al inicio
+          </a>
+        </div>
+      )
+    }
+  </div>
+</BaseLayout>

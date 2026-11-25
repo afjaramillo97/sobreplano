@@ -1,0 +1,166 @@
+---
+// Home: the kit's light hero, the honest way to buy off-plan, and the projects that rose most.
+// Every figure comes from the catalog (DESIGN.md, rule 5).
+import Icon from "@/components/Icon.astro";
+import PriceChangeBadge from "@/components/PriceChangeBadge.astro";
+import ProjectCard from "@/components/ProjectCard.astro";
+import ProjectImage from "@/components/ProjectImage.astro";
+import { buttonVariants } from "@/components/ui/button";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { catalogStats, loadCatalog, mostRisen } from "@/lib/catalog";
+import { formatDate, formatMillions } from "@/lib/format";
+import type { IconName } from "@/lib/icons";
+import { MUNICIPALITY_NAMES } from "@/lib/projects";
+
+const projects = await loadCatalog();
+const stats = catalogStats(projects);
+const top = mostRisen(projects);
+const featured = top[0];
+const featuredFrom = featured?.from;
+
+// The fourth advantage, "Asesor con fuentes" (message-outline), waits for the advisor on the
+// web (SPEC 11c).
+const advantages: { icon: IconName; title: string; text: string }[] = [
+  {
+    icon: "chart-outline",
+    title: "Historial diario",
+    text: "Guardamos el precio de cada tipología todos los días, desde que la vimos publicada.",
+  },
+  {
+    icon: "dollar-square-outline",
+    title: "Precio sin letra pequeña",
+    text: "Cada “desde” dice de qué tipología es, de qué fecha y qué puede no incluir.",
+  },
+  {
+    icon: "property-insurance-outline",
+    title: "No vendemos proyectos",
+    text: "No cobramos a las constructoras ni mostramos anuncios pagados.",
+  },
+];
+---
+
+<BaseLayout
+  title="Sobreplano"
+  description="Precios de vivienda nueva sobre plano en el Valle de Aburrá, observados todos los días: mira cuánto ha subido cada proyecto desde su primer precio."
+>
+  <section class="bg-linear-to-b from-hero-nav to-hero-mid">
+    <!-- The text column takes the width of its longest line, so the title keeps its three lines. -->
+    <div class="page grid items-center gap-12 py-12 lg:grid-cols-[auto_minmax(0,1fr)] lg:py-20">
+      <div class="flex flex-col items-start gap-6">
+        <h1 class="text-h1 text-text-primary lg:whitespace-nowrap xl:text-display">
+          <span class="block">Descubre el mercado</span>
+          <span class="block">inmobiliario</span>
+          <span
+            class="block bg-linear-to-r from-headline-gradient-start via-headline-gradient-mid to-headline-gradient-end bg-clip-text text-transparent forced-colors:bg-none forced-colors:text-[CanvasText]"
+          >
+            inteligente con IA
+          </span>
+        </h1>
+        <p class="max-w-md text-title text-text-secondary">
+          Sigue el precio de cada proyecto sobre plano del Valle de Aburrá y mira cuánto ha subido
+          desde el primer precio que observamos.
+        </p>
+        <a href="/proyectos/" class={buttonVariants({ size: "lg" })}>Ver proyectos</a>
+        <ul class="mt-6 flex flex-wrap gap-x-20 gap-y-6">
+          <li class="flex items-center gap-4">
+            <span class="flex size-12 items-center justify-center rounded-full border-(length:--border-width-strong) border-border-input bg-bg-surface text-action">
+              <Icon name="properties-outline" />
+            </span>
+            <span class="flex flex-col">
+              <span class="text-h3 text-text-price">{stats.projects}</span>
+              <span class="text-body text-text-secondary">proyectos seguidos</span>
+            </span>
+          </li>
+          <li class="flex items-center gap-4">
+            <span class="flex size-12 items-center justify-center rounded-full border-(length:--border-width-strong) border-border-input bg-bg-surface text-action">
+              <Icon name="calendar-outline" />
+            </span>
+            <span class="flex flex-col">
+              <span class="text-h3 text-text-price">{stats.historyDays}</span>
+              <span class="text-body text-text-secondary">
+                {stats.historyDays === 1 ? "día de historia" : "días de historia"}
+              </span>
+            </span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="flex flex-col gap-4 lg:relative">
+        <ProjectImage class="aspect-[4/3] rounded-lg" priority />
+        {
+          stats.lastObservedOn && (
+            <p class="flex flex-col gap-1 self-start rounded-md bg-bg-night px-6 py-4 text-text-on-night lg:absolute lg:top-6 lg:right-6">
+              <span class="text-label">Datos diarios</span>
+              <span class="text-body-sm">Última revisión: {formatDate(stats.lastObservedOn)}</span>
+            </p>
+          )
+        }
+        {
+          featured && featuredFrom?.priceCop != null && featuredFrom.changePct != null && (
+            <a
+              href={`/proyectos/${featured.slug}/`}
+              class="flex flex-col items-start gap-2 rounded-md border-(length:--border-width-default) border-border bg-bg-surface p-4 shadow-sm lg:absolute lg:bottom-6 lg:left-6 lg:max-w-80"
+            >
+              <span class="text-caption text-text-muted">El que más ha subido</span>
+              <PriceChangeBadge changePct={featuredFrom.changePct} />
+              <span class="text-label text-text-primary">{featured.name}</span>
+              <span class="text-body-sm text-text-secondary">
+                desde {formatMillions(featuredFrom.priceCop)} ·{" "}
+                {MUNICIPALITY_NAMES[featured.municipality]}
+              </span>
+              <span class="text-caption text-text-muted">
+                {featuredFrom.name}, precio del {formatDate(featuredFrom.observedOn ?? "")}
+              </span>
+            </a>
+          )
+        }
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="ventajas" class="page py-20">
+    <h2 id="ventajas" class="max-w-xl text-h2 text-text-primary">
+      La forma honesta de comprar sobre plano
+    </h2>
+    <ul class="mt-12 grid gap-8 md:grid-cols-3">
+      {
+        advantages.map((advantage) => (
+          <li class="flex flex-col gap-4">
+            <span class="flex size-16 items-center justify-center rounded-full bg-action-soft text-action">
+              <Icon name={advantage.icon} size={32} />
+            </span>
+            <h3 class="text-title font-bold text-text-primary">{advantage.title}</h3>
+            <p class="text-body text-text-secondary">{advantage.text}</p>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  {
+    top.length > 0 && (
+      <section aria-labelledby="mas-subidos" class="bg-bg-subtle py-20">
+        <div class="page">
+          <h2 id="mas-subidos" class="text-h2 text-text-primary">
+            Los que más han subido
+          </h2>
+          <p class="mt-2 max-w-2xl text-body text-text-secondary">
+            Proyectos cuyo precio desde más ha subido desde el primer precio que observamos.
+          </p>
+          <ul class="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {top.map((project) => (
+              <li>
+                <ProjectCard project={project} headingLevel={3} />
+              </li>
+            ))}
+          </ul>
+          <div class="mt-12 flex justify-center">
+            <a href="/proyectos/" class={buttonVariants({ variant: "dark", size: "lg" })}>
+              Ver más proyectos
+            </a>
+          </div>
+        </div>
+      </section>
+    )
+  }
+</BaseLayout>

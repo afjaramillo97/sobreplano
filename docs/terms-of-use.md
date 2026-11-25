@@ -25,6 +25,9 @@ the site, the API or the advisor you accept these terms.
 6. **Your data.** Do not write personal data (email, phone, ID number) in the chat: it is
    redacted before it is processed or stored, and conversations are deleted after 7 days of
    inactivity.
+7. **The map.** The search map comes from OpenFreeMap, with data from OpenStreetMap
+   (© OpenStreetMap contributors) and OpenMapTiles. To draw it, your browser asks OpenFreeMap
+   for the zone you look at, so OpenFreeMap receives your IP address and that zone.
 
 ## Español
 
@@ -48,3 +51,6 @@ usar el sitio, la API o el asesor aceptas estos términos.
    cada sitio, y sin recoger datos personales.
 6. **Tus datos.** No escribas datos personales (correo, teléfono, cédula) en el chat: se
    redactan antes de procesarse o guardarse, y las conversaciones se borran tras 7 días sin uso.
+7. **El mapa.** El mapa de la búsqueda viene de OpenFreeMap, con datos de OpenStreetMap
+   (© colaboradores de OpenStreetMap) y OpenMapTiles. Para dibujarlo, tu navegador le pide a
+   OpenFreeMap la zona que miras, así que OpenFreeMap recibe tu dirección IP y esa zona.

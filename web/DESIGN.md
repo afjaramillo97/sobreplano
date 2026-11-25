@@ -46,9 +46,26 @@ Join classes with `cn` from `@/lib/utils`, never from `cn` directly. The plain o
   - `tabs`: the segmented control, and the underlined tabs as variant `line`;
   - `table`: the kit's price history table;
   - `skeleton`: no pulse;
-  - `chart`: trimmed to the container and the tooltip. shadcn's `ChartStyle` injects a `<style>` element at run time, which the CSP blocks, so series colors go in through the `style` prop instead.
+  - `chart`: trimmed to the container and the tooltip. shadcn's `ChartStyle` injects a `<style>` element at run time, which the CSP blocks, so series colors go in through the `style` prop instead;
+  - `popover`: the kit's dropdowns, always non-modal (a modal Radix popover locks the scroll with an injected `<style>`);
+  - `slider`: 4 px lavender track, action range, white 24 px thumbs with a 2 px action border; each thumb has its own name and value text;
+  - `checkbox`: drawn in the action color even unchecked, since the lavender input border falls under 3:1;
+  - `sheet` and `select`: shadcn's shape on the native `<dialog>` and `<select>`, not Radix Dialog and Select, which inject `<style>` elements the CSP blocks.
 - **No dark variants** (`dark:`) for now. The site has no dark mode, and those classes would half-apply on dark systems.
 - **Focus** is a solid 2 px `outline-ring`, offset by 2. A ring at 50 % alpha would fall under 3:1. Hide the resting outline with `outline-hidden`, never `outline-none`: in Tailwind v4 `outline-none` sets `--tw-outline-style: none`, which `focus-visible:outline-2` inherits, so the focus never shows.
+
+## Search and map (SPEC 11b)
+
+From the kit's *Search Result (Map v2)*, *Search Result - Filter (Map v2)*, *Search Result (Swipe Up)* and *Search Map v2*.
+
+- **Layout.** From 1024 px the map is a 16-radius card at the left (sticky, 32 below the nav, 48 from the edge) and the list the right column (736 wide from 1280 px, cards two by two). Below 1024 px the list and the map take turns.
+- **Quick filters.** 48 high, 1.5 px `border-input`, 8 radius, `text-body-sm` in `text-muted`, with the kit's lavender circle and chevron. With a value: `action-soft` fill, `action` border, bold `action-soft-text`. Each opens a popover that applies at once.
+- **Chips.** One per active filter, `rounded-full` `action-soft` with a close icon; the button's name is "Quitar filtro: …".
+- **Price pill.** White (`map-pill`), `rounded-full`, `text-price-pill` in `map-pill-text`, 2 px transparent border; `action` border on hover, focus or when its card is pointed; `map-pill-selected` fill with white text when chosen. Text: "$ 289 M +9,8 %", or "Sin precio". Its name starts with that text (WCAG 2.5.3): "Torre, $ 289 M +9,8 %: desde $ 289.000.000, subió 9,8 %".
+- **Group.** A 44 px `action-dark` circle with a white border and the count in `text-label`; a click zooms in until the pills part.
+- **Floating card.** The large project card over the map, bottom left (above the bar on phones), with a round close button; it takes the focus, and Esc gives it back to the pill.
+- **Map controls.** The zoom is the kit's 40 × 80 white box with `shadow-float`; "N proyectos en esta zona del mapa" and "Buscar al mover el mapa" sit in a white box at the top left. The attribution is always expanded, in the site's caption style.
+- **"Ver mapa".** The kit's dark button (`action-dark`, `map-outline` icon), floating at the bottom center of the list below 1024 px. The phone's map view ends in a white bar with "N proyectos en esta zona" and a dark "Ver lista".
 
 ## Kit assets
 

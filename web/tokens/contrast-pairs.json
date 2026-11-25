@@ -24,6 +24,19 @@
     },
     { "fg": "color.headline-gradient.mid", "bg": "color.primitive.hero.top", "kind": "large-text" },
     { "fg": "color.headline-gradient.end", "bg": "color.primitive.hero.top", "kind": "large-text" },
-    { "fg": "color.focus.ring", "bg": "color.bg.canvas", "kind": "focus" }
+    { "fg": "color.focus.ring", "bg": "color.bg.canvas", "kind": "focus" },
+    {
+      "fg": "color.text.primary",
+      "bg": "color.border.input",
+      "kind": "text",
+      "note": "the person's bubble on the advisor page, filled with the kit's #E0DEF7 (SPEC 11c)"
+    },
+    { "fg": "color.action.soft-text", "bg": "color.bg.canvas", "kind": "text" },
+    {
+      "fg": "color.action.default",
+      "bg": "color.border.input",
+      "kind": "non-text",
+      "note": "the switch's thumb when off, on the kit's lavender track (components/ui/switch.tsx)"
+    }
   ]
 }

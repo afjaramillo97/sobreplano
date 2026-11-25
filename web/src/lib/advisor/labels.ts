@@ -139,6 +139,7 @@ export const STORAGE_TEXTS = {
   clearHint:
     "Se borran de este navegador. En el servidor se borran solas a los 7 días sin actividad.",
   autoDeleteHint: "Las conversaciones se borran de este navegador a los 7 días sin actividad.",
+  keptHint: "Se quedan en este navegador hasta que las borres.",
   memoryOnly:
     "Este navegador no deja guardar conversaciones; la actual se pierde al cerrar la página.",
   dropped: "Se borró tu conversación más vieja para guardar esta: el límite es de 30.",

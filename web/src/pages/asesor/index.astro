@@ -1,0 +1,22 @@
+---
+// The advisor (SPEC 11c): one island after the kit's Message screen. The build hands it the
+// catalog, for the cards and the project in context, and the developers' hosts, the only
+// external links an answer may keep. The general suggestions are in the island; the ones about
+// a project depend on ?proyecto=, which only the browser reads.
+import AdvisorPage from "@/components/advisor/AdvisorPage";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { allowedHostsFrom } from "@/lib/advisor/links";
+import { loadCatalog, sortByFrom } from "@/lib/catalog";
+import { toSearchItem } from "@/lib/search";
+
+const catalog = sortByFrom(await loadCatalog());
+const items = catalog.map(toSearchItem);
+const allowedHosts = allowedHostsFrom(catalog.map((project) => project.sourceUrl));
+---
+
+<BaseLayout
+  title="Asesor"
+  description="Pregúntale al asesor de Sobreplano por los proyectos sobre plano del Valle de Aburrá: responde con los precios que publican las constructoras y cuánto han subido, y simula tu crédito o tu cuota inicial."
+>
+  <AdvisorPage client:load items={items} allowedHosts={allowedHosts} />
+</BaseLayout>

@@ -14,7 +14,7 @@ const KIT = import.meta.glob<string>(
     "/kit/icons/{filter-outline,map-outline,check-circle-outline,chart-outline,dollar-square-outline}.svg",
     "/kit/icons/{message-outline,property-insurance-outline,properties-outline,calendar-outline}.svg",
     "/kit/icons/{close-outline,chevron-down-outline,add-outline,check-outline,unordered-list-outline}.svg",
-    "/kit/icons/{location-marker-outline,sort-outline}.svg",
+    "/kit/icons/{location-marker-outline,sort-outline,send-bold}.svg",
   ],
   { query: "?raw", import: "default", eager: true },
 );
@@ -47,6 +47,7 @@ export const ICON_NAMES = [
   "unordered-list-outline",
   "location-marker-outline",
   "sort-outline",
+  "send-bold",
 ] as const;
 
 export type IconName = (typeof ICON_NAMES)[number];

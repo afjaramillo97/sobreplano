@@ -1,11 +1,13 @@
-// The kit's large project card (352 wide, 200 high image). The whole card is one link, with
-// one focus stop. "Desde" always comes with its unit type and its date (rule 6).
+// The kit's large project card (352 wide, 200 high image) and, as size="sm", the small card
+// of the kit's Message screen (the link card inside a bubble: 48 lavender square, two lines).
+// The whole card is one link, with one focus stop. "Desde" always comes with its unit type and
+// its date (rule 6).
 //
 // Astro pages render it without hydrating it; the search island renders it in the browser,
 // with the "desde" that passes the filters.
 import type * as React from "react";
 import type { Municipality } from "@/lib/api/client";
-import { formatArea, formatCount, formatDate, formatMillions } from "@/lib/format";
+import { formatArea, formatChange, formatCount, formatDate, formatMillions } from "@/lib/format";
 import { MUNICIPALITY_NAMES } from "@/lib/projects";
 import { cn } from "@/lib/utils";
 import Icon from "./Icon";
@@ -43,6 +45,8 @@ type Props = Omit<React.ComponentProps<"a">, "href" | "children"> & {
   priority?: boolean;
   /** Heading level of the project name, so the page outline stays in order. */
   headingLevel?: 2 | 3;
+  /** "sm": the small card of the advisor's answers and panel (SPEC 11c). */
+  size?: "md" | "sm";
 };
 
 export default function ProjectCard({
@@ -50,6 +54,7 @@ export default function ProjectCard({
   from: fromProp,
   priority = false,
   headingLevel = 2,
+  size = "md",
   className,
   ...linkProps
 }: Props) {
@@ -58,6 +63,9 @@ export default function ProjectCard({
   const place = [MUNICIPALITY_NAMES[project.municipality], project.neighborhood]
     .filter(Boolean)
     .join(", ");
+  if (size === "sm") {
+    return <SmallCard project={project} from={from} place={place} className={className} {...linkProps} />;
+  }
   return (
     <a
       href={`/proyectos/${project.slug}/`}
@@ -120,6 +128,47 @@ export default function ProjectCard({
           </div>
         )}
       </div>
+    </a>
+  );
+}
+
+type SmallCardProps = Omit<React.ComponentProps<"a">, "href" | "children"> & {
+  project: CardProject;
+  from: CardUnit | null;
+  place: string;
+};
+
+/** The small card: name, "desde" with its change, and the unit type and day of that price. */
+function SmallCard({ project, from, place, className, ...linkProps }: SmallCardProps) {
+  return (
+    <a
+      href={`/proyectos/${project.slug}/`}
+      className={cn(
+        "flex items-start gap-4 rounded-md border-(length:--border-width-default) border-border bg-bg-surface p-2 pr-4 text-left transition-colors duration-(--duration-fast) ease-out outline-hidden hover:border-border-input focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-ring motion-reduce:transition-none",
+        className,
+      )}
+      {...linkProps}
+    >
+      <span className="flex size-12 shrink-0 items-center justify-center rounded-md bg-bg-selected text-action">
+        <Icon name="properties-outline" size={24} />
+      </span>
+      <span className="flex min-w-0 flex-col gap-0.5 py-1">
+        <span className="text-body-sm font-bold text-text-primary">{project.name}</span>
+        {from?.priceCop != null ? (
+          <>
+            <span className="text-body-sm text-text-secondary">
+              desde <span className="font-bold text-text-price">{formatMillions(from.priceCop)}</span>
+              {from.changePct != null && <> · {formatChange(from.changePct)}</>}
+            </span>
+            <span className="text-body-sm text-text-muted">
+              {from.name} · precio del {from.observedOn && formatDate(from.observedOn)}
+            </span>
+          </>
+        ) : (
+          <span className="text-body-sm text-text-muted">Sin precio publicado</span>
+        )}
+        <span className="text-body-sm text-text-muted">{place}</span>
+      </span>
     </a>
   );
 }

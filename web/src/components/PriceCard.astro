@@ -1,6 +1,7 @@
 ---
 // The kit's price panel of the detail page (376 wide, sticky on desktop). "Desde" carries its
-// unit type, its date and the notice of what it may not include (rule 6).
+// unit type, its date and the notice of what it may not include (rule 6). Under the developer's
+// link, the soft "Pregúntale al asesor" opens the advisor with this project (SPEC 11c).
 import { buttonVariants } from "@/components/ui/button";
 import { formatDate, formatMillions } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -73,5 +74,11 @@ const observed = from?.observedOn ? formatDate(from.observedOn) : null;
   >
     Ver en el sitio de {project.developer.name}
     <span class="sr-only">(se abre en otra pestaña)</span>
+  </a>
+  <a
+    href={`/asesor/?proyecto=${project.slug}`}
+    class={cn(buttonVariants({ size: "lg", variant: "soft" }), "w-full")}
+  >
+    Pregúntale al asesor
   </a>
 </section>

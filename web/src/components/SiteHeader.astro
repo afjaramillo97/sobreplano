@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 const path = Astro.url.pathname;
 const inProjects = path.startsWith("/proyectos/");
+const inAdvisor = path.startsWith("/asesor/");
 const linkClass =
   "text-body font-medium text-text-secondary transition-colors duration-(--duration-fast) hover:text-text-primary aria-[current=page]:font-bold aria-[current=page]:text-text-primary";
 ---
@@ -21,6 +22,9 @@ const linkClass =
     <nav aria-label="Principal" class="hidden flex-1 items-center gap-12 md:flex">
       <a href="/proyectos/" class={linkClass} aria-current={inProjects ? "page" : undefined}>
         Proyectos
+      </a>
+      <a href="/asesor/" class={linkClass} aria-current={inAdvisor ? "page" : undefined}>
+        Asesor
       </a>
     </nav>
     <a href="/proyectos/" class={cn(buttonVariants(), "hidden md:inline-flex")}>
@@ -43,6 +47,9 @@ const linkClass =
       >
         <a href="/proyectos/" class={linkClass} aria-current={inProjects ? "page" : undefined}>
           Proyectos
+        </a>
+        <a href="/asesor/" class={linkClass} aria-current={inAdvisor ? "page" : undefined}>
+          Asesor
         </a>
         <a href="/proyectos/" class={buttonVariants({ class: "w-full" })}>Ver proyectos</a>
       </nav>

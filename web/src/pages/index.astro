@@ -23,8 +23,6 @@ const featuredFrom = featured?.from;
 const municipalities = municipalityOptions(projects);
 const budgets = [250, 300, 400, 500, 700].map((millions) => millions * 1_000_000);
 
-// The fourth advantage, "Asesor con fuentes" (message-outline), waits for the advisor on the
-// web (SPEC 11c).
 const advantages: { icon: IconName; title: string; text: string }[] = [
   {
     icon: "chart-outline",
@@ -40,6 +38,11 @@ const advantages: { icon: IconName; title: string; text: string }[] = [
     icon: "property-insurance-outline",
     title: "No vendemos proyectos",
     text: "No cobramos a las constructoras ni mostramos anuncios pagados.",
+  },
+  {
+    icon: "message-outline",
+    title: "Asesor con fuentes",
+    text: "Pregúntale por precios, alzas y cuotas: responde con nuestros datos y te dice de dónde salen.",
   },
 ];
 ---
@@ -153,7 +156,7 @@ const advantages: { icon: IconName; title: string; text: string }[] = [
     <h2 id="ventajas" class="max-w-xl text-h2 text-text-primary">
       La forma honesta de comprar sobre plano
     </h2>
-    <ul class="mt-12 grid gap-8 md:grid-cols-3">
+    <ul class="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
       {
         advantages.map((advantage) => (
           <li class="flex flex-col gap-4">

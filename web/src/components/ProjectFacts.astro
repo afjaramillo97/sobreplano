@@ -5,7 +5,7 @@
 import { formatArea } from "@/lib/format";
 import type { IconName } from "@/lib/icons";
 import type { ProjectView } from "@/lib/projects";
-import Icon from "./Icon.astro";
+import Icon from "./Icon";
 
 interface Props {
   project: ProjectView;
@@ -47,7 +47,7 @@ const facts: { icon: IconName; label: string; value: string }[] = [
         <div class="flex flex-col gap-2">
           <dt class="text-body text-text-muted">{fact.label}</dt>
           <dd class="flex items-center gap-2 text-body-lg font-bold text-text-primary">
-            <Icon name={fact.icon} class="shrink-0 text-action" />
+            <Icon name={fact.icon} className="shrink-0 text-action" />
             {fact.value}
           </dd>
         </div>

@@ -1,10 +1,10 @@
 ---
 // Home: the kit's light hero, the honest way to buy off-plan, and the projects that rose most.
 // Every figure comes from the catalog (DESIGN.md, rule 5).
-import Icon from "@/components/Icon.astro";
-import PriceChangeBadge from "@/components/PriceChangeBadge.astro";
-import ProjectCard from "@/components/ProjectCard.astro";
-import ProjectImage from "@/components/ProjectImage.astro";
+import Icon from "@/components/Icon";
+import PriceChangeBadge from "@/components/PriceChangeBadge";
+import ProjectCard from "@/components/ProjectCard";
+import ProjectImage from "@/components/ProjectImage";
 import { buttonVariants } from "@/components/ui/button";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import { catalogStats, loadCatalog, mostRisen } from "@/lib/catalog";
@@ -88,7 +88,7 @@ const advantages: { icon: IconName; title: string; text: string }[] = [
       </div>
 
       <div class="flex flex-col gap-4 lg:relative">
-        <ProjectImage class="aspect-[4/3] rounded-lg" priority />
+        <ProjectImage className="aspect-[4/3] rounded-lg" priority />
         {
           stats.lastObservedOn && (
             <p class="flex flex-col gap-1 self-start rounded-md bg-bg-night px-6 py-4 text-text-on-night lg:absolute lg:top-6 lg:right-6">

@@ -26,7 +26,9 @@ type Props = {
 export function Thread({ messages, pending, catalog, policy }: Props) {
   return (
     <>
-      <ol role="log" aria-label="Conversación con el asesor" className="flex flex-col gap-6">
+      {/* role="log" goes on a div: axe does not allow it on a list. */}
+      <div role="log" aria-label="Conversación con el asesor">
+      <ol className="flex flex-col gap-6">
         {messages.map((message, index) => (
           // Messages only ever append, so the index is a stable key.
           <li key={index}>
@@ -45,6 +47,7 @@ export function Thread({ messages, pending, catalog, policy }: Props) {
           </li>
         )}
       </ol>
+      </div>
       {pending && <StepTrace steps={pending.steps} />}
     </>
   );

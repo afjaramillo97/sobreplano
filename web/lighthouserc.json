@@ -6,7 +6,8 @@
       "url": [
         "http://localhost:4321/",
         "http://localhost:4321/proyectos/",
-        "http://localhost:4321/proyectos/mirador-de-los-guaduales/"
+        "http://localhost:4321/proyectos/mirador-de-los-guaduales/",
+        "http://localhost:4321/asesor/"
       ],
       "numberOfRuns": 3
     },

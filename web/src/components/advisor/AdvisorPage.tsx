@@ -208,14 +208,17 @@ export default function AdvisorPage({ items, allowedHosts }: Props) {
       if (error.kind === "gone" || error.kind === "full") {
         save(closeConversation(storeRef.current, conversation?.id ?? ""));
       }
-      setFailure({ error, question, at: new Date() });
+      const failed = { error, question, at: new Date() };
       if (error.kind === "gone") {
         // The server forgot the conversation: the question goes on in a new one by itself.
+        // send() clears the alert before its first await, so the alert is set after it.
         setActiveId(null);
         setContextSlug(slug);
         void send(question, null, slug);
+        setFailure(failed);
         return;
       }
+      setFailure(failed);
       if (error.kind === "rate-minute" || error.kind === "rate-day" || error.kind === "budget") {
         setDraft(question); // nothing was asked: the question waits in the box
       }
@@ -261,6 +264,12 @@ export default function AdvisorPage({ items, allowedHosts }: Props) {
   const unanswered = !busy && !failure ? unansweredQuestion(active) : null;
   const suggestions = suggestionsFor(project);
   const empty = messages.length === 0 && !pending;
+  // While a question runs it shows as pending; in a stored conversation it is already saved
+  // as the last message (for a closed tab), so the thread leaves that copy out.
+  const shownMessages =
+    pending && messages.at(-1)?.role === "user" && messages.at(-1)?.text === pending.question
+      ? messages.slice(0, -1)
+      : messages;
 
   const list = (heading: boolean) => (
     <ConversationList
@@ -349,7 +358,7 @@ export default function AdvisorPage({ items, allowedHosts }: Props) {
               disabled={blocked}
             />
           ) : (
-            <Thread messages={messages} pending={pending} catalog={catalog} policy={policy} />
+            <Thread messages={shownMessages} pending={pending} catalog={catalog} policy={policy} />
           )}
           {active?.closed && !failure && (
             <div className="flex flex-col items-start gap-3 rounded-md border-(length:--border-width-default) border-border-input bg-bg-surface p-4">

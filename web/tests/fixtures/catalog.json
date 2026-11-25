@@ -28,12 +28,152 @@
             },
             {
               "price_cop": 380000000,
+              "observed_at": "2026-07-02T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 380000000,
+              "observed_at": "2026-07-03T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 380000000,
+              "observed_at": "2026-07-04T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 380000000,
+              "observed_at": "2026-07-05T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 380000000,
+              "observed_at": "2026-07-06T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 380000000,
+              "observed_at": "2026-07-07T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 380000000,
+              "observed_at": "2026-07-08T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 380000000,
+              "observed_at": "2026-07-09T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 380000000,
+              "observed_at": "2026-07-10T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 380000000,
+              "observed_at": "2026-07-11T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 380000000,
+              "observed_at": "2026-07-12T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 380000000,
+              "observed_at": "2026-07-13T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 380000000,
+              "observed_at": "2026-07-14T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 380000000,
               "observed_at": "2026-07-15T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 380000000,
+              "observed_at": "2026-07-16T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 380000000,
+              "observed_at": "2026-07-17T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 380000000,
+              "observed_at": "2026-07-18T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 380000000,
+              "observed_at": "2026-07-19T08:00:00-05:00",
               "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
             },
             {
               "price_cop": 386000000,
               "observed_at": "2026-07-20T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 386000000,
+              "observed_at": "2026-07-21T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 386000000,
+              "observed_at": "2026-07-22T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 386000000,
+              "observed_at": "2026-07-23T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 386000000,
+              "observed_at": "2026-07-24T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 386000000,
+              "observed_at": "2026-07-25T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 386000000,
+              "observed_at": "2026-07-26T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 386000000,
+              "observed_at": "2026-07-27T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 386000000,
+              "observed_at": "2026-07-28T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 386000000,
+              "observed_at": "2026-07-29T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 386000000,
+              "observed_at": "2026-07-30T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 386000000,
+              "observed_at": "2026-07-31T08:00:00-05:00",
               "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
             },
             {
@@ -43,12 +183,247 @@
             },
             {
               "price_cop": 392000000,
+              "observed_at": "2026-08-02T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-03T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-04T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-05T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-06T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-07T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-08T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-09T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-15T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-16T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-17T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-18T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-19T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
               "observed_at": "2026-08-20T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-21T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-22T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-23T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-24T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-25T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-26T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-27T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-28T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-29T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-30T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-08-31T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-09-01T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-09-02T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-09-03T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-09-04T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-09-05T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 392000000,
+              "observed_at": "2026-09-06T08:00:00-05:00",
               "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
             },
             {
               "price_cop": 405000000,
               "observed_at": "2026-09-07T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 405000000,
+              "observed_at": "2026-09-08T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 405000000,
+              "observed_at": "2026-09-09T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 405000000,
+              "observed_at": "2026-09-10T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 405000000,
+              "observed_at": "2026-09-11T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 405000000,
+              "observed_at": "2026-09-12T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 405000000,
+              "observed_at": "2026-09-13T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 405000000,
+              "observed_at": "2026-09-14T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 405000000,
+              "observed_at": "2026-09-15T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 405000000,
+              "observed_at": "2026-09-16T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 405000000,
+              "observed_at": "2026-09-17T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 405000000,
+              "observed_at": "2026-09-18T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 405000000,
+              "observed_at": "2026-09-19T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 405000000,
+              "observed_at": "2026-09-20T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 405000000,
+              "observed_at": "2026-09-21T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 405000000,
+              "observed_at": "2026-09-22T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 405000000,
+              "observed_at": "2026-09-23T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 405000000,
+              "observed_at": "2026-09-24T08:00:00-05:00",
               "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
             },
             {
@@ -58,12 +433,182 @@
             },
             {
               "price_cop": 418000000,
+              "observed_at": "2026-09-26T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-09-27T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-09-28T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-09-29T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-09-30T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-10-01T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-10-02T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-10-03T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-10-04T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-10-05T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-10-06T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-10-07T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-10-08T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-10-09T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
               "observed_at": "2026-10-10T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-10-11T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-10-12T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-10-13T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-10-14T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-10-15T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-10-16T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-10-17T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-10-18T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 418000000,
+              "observed_at": "2026-10-19T08:00:00-05:00",
               "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
             },
             {
               "price_cop": 427000000,
               "observed_at": "2026-10-20T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 427000000,
+              "observed_at": "2026-10-21T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 427000000,
+              "observed_at": "2026-10-22T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 427000000,
+              "observed_at": "2026-10-23T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 427000000,
+              "observed_at": "2026-10-24T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 427000000,
+              "observed_at": "2026-10-25T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 427000000,
+              "observed_at": "2026-10-26T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 427000000,
+              "observed_at": "2026-10-27T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 427000000,
+              "observed_at": "2026-10-28T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 427000000,
+              "observed_at": "2026-10-29T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 427000000,
+              "observed_at": "2026-10-30T08:00:00-05:00",
+              "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
+            },
+            {
+              "price_cop": 427000000,
+              "observed_at": "2026-10-31T08:00:00-05:00",
               "source_url": "https://example.com/altamira/mirador-de-los-guaduales"
             },
             {

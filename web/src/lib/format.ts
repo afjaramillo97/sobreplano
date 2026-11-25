@@ -89,3 +89,24 @@ export function formatChange(value: number): string {
 export function formatCount(value: number, singular: string, plural: string): string {
   return `${value}${NBSP}${value === 1 ? singular : plural}`;
 }
+
+/** A day without its year, for ranges inside one year: "2026-09-07" → "7 sep". */
+export function formatDayMonth(iso: string): string {
+  return formatDate(iso).replace(/ \d{4}$/, "");
+}
+
+const clock = new Intl.DateTimeFormat("es-CO", { hour: "numeric", minute: "2-digit" });
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * When a rate limit lifts, in the reader's local time: "a las 3:45 p. m.", or "mañana a las
+ * 12:00 a. m." when it falls on the next day.
+ */
+export function formatRetryAt(retryAfterSeconds: number, now: Date = new Date()): string {
+  const at = new Date(now.getTime() + retryAfterSeconds * 1000);
+  const time = clock.format(at);
+  const sameDay = at.toDateString() === now.toDateString();
+  if (sameDay) return `a las ${time}`;
+  const tomorrow = new Date(now.getTime() + DAY_MS).toDateString() === at.toDateString();
+  return tomorrow ? `mañana a las ${time}` : `el ${formatDate(at.toISOString().slice(0, 10))}`;
+}

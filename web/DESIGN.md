@@ -45,7 +45,8 @@ Join classes with `cn` from `@/lib/utils`, never from `cn` directly. The plain o
   - `button`: kit heights 40/48/56, plus `dark`, `outline` and `soft` variants;
   - `tabs`: the segmented control, and the underlined tabs as variant `line`;
   - `table`: the kit's price history table;
-  - `skeleton`: no pulse.
+  - `skeleton`: no pulse;
+  - `chart`: trimmed to the container and the tooltip. shadcn's `ChartStyle` injects a `<style>` element at run time, which the CSP blocks, so series colors go in through the `style` prop instead.
 - **No dark variants** (`dark:`) for now. The site has no dark mode, and those classes would half-apply on dark systems.
 - **Focus** is a solid 2 px `outline-ring`, offset by 2. A ring at 50 % alpha would fall under 3:1.
 

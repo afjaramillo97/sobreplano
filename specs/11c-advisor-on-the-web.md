@@ -86,13 +86,16 @@ La base de datos no cambia. Cambian dos tipos del dominio, el puerto del agente,
 @dataclass(frozen=True)
 class AdvisorStep:
     """One tool of a turn starting or ending, for the live progress of the web."""
-    tool: str                                  # name of the tool, as in tools_used
+
+    tool: str  # name of the tool, as in tools_used
     phase: Literal["start", "end"]
+
 
 @dataclass(frozen=True)
 class AdvisorReply:
-    ...                                        # fields of today, unchanged
+    ...  # fields of today, unchanged
     projects: list[str] = field(default_factory=list[str])  # slugs the answer names, in order
+
 
 class AdvisorAgent(Protocol):
     def reply(

@@ -1,5 +1,6 @@
 """Unit tests for the AskAdvisor use case, with in-memory doubles."""
 
+from collections.abc import Callable
 from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
@@ -7,7 +8,7 @@ from uuid import UUID, uuid4
 import pytest
 
 from sobreplano.application.ask_advisor import AskAdvisor
-from sobreplano.domain.advisor import AdvisorReply, LlmCall
+from sobreplano.domain.advisor import AdvisorReply, AdvisorStep, LlmCall
 from sobreplano.domain.errors import (
     AdvisorBudgetExceededError,
     AdvisorLimitError,
@@ -31,8 +32,16 @@ class FakeAgent:
         self.error = error
         self.calls: list[tuple[UUID, str]] = []
 
-    def reply(self, thread_id: UUID, message: str) -> AdvisorReply:
+    def reply(
+        self,
+        thread_id: UUID,
+        message: str,
+        on_step: Callable[[AdvisorStep], None] | None = None,
+    ) -> AdvisorReply:
         self.calls.append((thread_id, message))
+        if on_step is not None:
+            on_step(AdvisorStep(tool="search_projects", phase="start"))
+            on_step(AdvisorStep(tool="search_projects", phase="end"))
         if self.error is not None:
             raise self.error
         return AdvisorReply(
@@ -156,3 +165,46 @@ def test_unavailable_agent_propagates_without_recording() -> None:
     with pytest.raises(AdvisorUnavailableError):
         ask(None, "Hola", TODAY)
     assert usage.rows == []
+
+
+def test_on_step_reaches_the_agent() -> None:
+    ask, _, _, _ = make()
+    steps: list[AdvisorStep] = []
+    ask(None, "Busco en Sabaneta", TODAY, steps.append)
+    assert steps == [
+        AdvisorStep(tool="search_projects", phase="start"),
+        AdvisorStep(tool="search_projects", phase="end"),
+    ]
+
+
+def test_check_passes_for_a_new_and_an_open_conversation() -> None:
+    ask, agent, usage, threads = make()
+    thread_id = threads.create()
+    threads.turns[thread_id] = 2
+    ask.check(None, TODAY)
+    ask.check(thread_id, TODAY)
+    # Read only: nothing created, counted or asked.
+    assert threads.turns == {thread_id: 2}
+    assert usage.rows == []
+    assert agent.calls == []
+
+
+def test_check_with_the_budget_spent() -> None:
+    ask, _, _, threads = make(usage=InMemoryUsage(spent_today=Decimal("0.20")))
+    with pytest.raises(AdvisorBudgetExceededError):
+        ask.check(None, TODAY)
+    assert threads.turns == {}
+
+
+def test_check_with_an_unknown_conversation() -> None:
+    ask, _, _, _ = make()
+    with pytest.raises(AdvisorThreadNotFoundError):
+        ask.check(uuid4(), TODAY)
+
+
+def test_check_with_a_full_conversation() -> None:
+    ask, _, _, threads = make()
+    thread_id = threads.create()
+    threads.turns[thread_id] = 3
+    with pytest.raises(AdvisorTurnLimitError):
+        ask.check(thread_id, TODAY)

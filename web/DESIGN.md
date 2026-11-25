@@ -6,7 +6,7 @@ The rules marked **(checked)** fail CI through `pnpm rules` (`scripts/check-desi
 
 ## Rules
 
-1. **One font.** Plus Jakarta Sans variable, served by the site (`@fontsource-variable/plus-jakarta-sans`). No Google Fonts calls. **(checked:** no other families, no `font-serif` or `font-mono`, no Inter, Roboto, Poppins, Montserrat or Playfair**)**
+1. **One font.** Plus Jakarta Sans variable, served by the site (`@fontsource-variable/plus-jakarta-sans`). No Google Fonts calls. Its space is narrow (0.17 em), so the body adds `word-spacing: 0.05em`. **(checked:** no other families, no `font-serif` or `font-mono`, no Inter, Roboto, Poppins, Montserrat or Playfair**)**
 2. **Prices.** Color `text-text-price` (the kit purple), styles `text-price-lg` and `text-price` (800, tracking −1 px). Proportional figures on cards; `tabular-nums` in tables and wherever figures line up in a column.
 3. **Radii, borders, shadows.** Radii only from the scale: `rounded-sm` 4, `rounded-md` 8, `rounded-lg` 16, `rounded-full`. The segmented control item uses 6 (8 minus the inset, see `components/ui/tabs.tsx`). Borders are 1.5 px, and 2 px on inputs and outline buttons. Shadows only `shadow-sm` and `shadow-float`. **(checked)**
 4. **Colors only from the tokens.** Action `#685DE8`, with `#5245ED` for hover and for text on lavender; the dark button is `#100A55`. The price change goes in the kit's purple badge (the POPULAR shape), never in green or red. **(checked:** no Tailwind default palette, no loose hex, `rgb()`, `hsl()` or `oklch()`**)**

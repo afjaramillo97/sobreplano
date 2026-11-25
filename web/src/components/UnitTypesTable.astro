@@ -29,7 +29,8 @@ const status = (unit: UnitTypeView) =>
 const dash = "—";
 ---
 
-<Table label={`Tipologías de ${project.name}`} className="tabular-nums">
+<!-- Cells a little tighter than the kit's 24 px, so the eight columns fit in 1120 px. -->
+<Table label={`Tipologías de ${project.name}`} className="tabular-nums [&_td]:px-4 [&_th]:px-4">
   <TableCaption className="sr-only">
     Tipologías de {project.name}, con su último precio publicado
   </TableCaption>

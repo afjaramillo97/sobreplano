@@ -24,7 +24,10 @@ the site, the API or the advisor you accept these terms.
    collecting personal data.
 6. **Your data.** Do not write personal data (email, phone, ID number) in the chat: it is
    redacted before it is processed or stored, and conversations are deleted after 7 days of
-   inactivity.
+   inactivity. The advisor page keeps the list of your conversations in your own browser
+   (localStorage), never on our servers: it deletes them after 7 days without activity unless
+   you turn on "Conservar mis conversaciones en este navegador", and "Borrar mis
+   conversaciones" deletes them at once. The server deletes its copy after 7 days anyway.
 7. **The map.** The search map comes from OpenFreeMap, with data from OpenStreetMap
    (© OpenStreetMap contributors) and OpenMapTiles. To draw it, your browser asks OpenFreeMap
    for the zone you look at, so OpenFreeMap receives your IP address and that zone.
@@ -51,6 +54,10 @@ usar el sitio, la API o el asesor aceptas estos términos.
    cada sitio, y sin recoger datos personales.
 6. **Tus datos.** No escribas datos personales (correo, teléfono, cédula) en el chat: se
    redactan antes de procesarse o guardarse, y las conversaciones se borran tras 7 días sin uso.
+   La página del asesor guarda la lista de tus conversaciones en tu propio navegador
+   (localStorage), nunca en nuestros servidores: las borra a los 7 días sin actividad, salvo
+   que actives "Conservar mis conversaciones en este navegador", y "Borrar mis conversaciones"
+   las borra de inmediato. En el servidor se borran igual a los 7 días sin uso.
 7. **El mapa.** El mapa de la búsqueda viene de OpenFreeMap, con datos de OpenStreetMap
    (© colaboradores de OpenStreetMap) y OpenMapTiles. Para dibujarlo, tu navegador le pide a
    OpenFreeMap la zona que miras, así que OpenFreeMap recibe tu dirección IP y esa zona.

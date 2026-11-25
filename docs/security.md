@@ -44,6 +44,7 @@ If the counters are down, reads are served and the advisor answers 503.
 | The advisor asking for or repeating personal data | Prompt rule 5; rubric `privacy` (100 %) | evals O2, A5, A9 | |
 | Conversations kept | Deleted after 7 days without messages (`advisor_cleanup`) | `tests/integration/test_advisor_repositories.py` | |
 | Client IPs | Only the keyed hash, for 2 days | `tests/unit/interface/test_rate_limit.py` | |
+| Conversations in the browser (SPEC 11c) | The advisor page keeps them in `localStorage` (`sobreplano.asesor.v1`), never in the URL except `c` (the thread id) and `proyecto`; deleted after 7 days without activity unless the person keeps them; "Borrar mis conversaciones" empties the key | `web/tests/unit/advisor-store.test.ts`, `web/tests/e2e/advisor.spec.ts` | Whoever uses the same browser can read them, as the terms say |
 
 ### 4. Integrity of the prices shown
 
@@ -105,6 +106,12 @@ Why the extractor prompt was not changed to fight forged blocks: the model's ans
 forged block is correct for what it was given (a block with a name, price and areas). Asking it
 to doubt well-formed blocks would cost real unit types and change the prompt version, which
 re-extracts every page, for a control that the outlier rule already gives deterministically.
+
+## Links and HTML in the answers (SPEC 11c)
+
+An answer is untrusted input on the page: a scraped page could slip a link or markup into what the model says. `AnswerMarkdown` renders Markdown with `react-markdown` and `remark-gfm`, with raw HTML skipped and images dropped, and every link goes through `web/src/lib/advisor/links.ts`: only `/proyectos/{slug}/` and `https://` URLs on the hosts of the catalog's `sourceUrl` (no credentials, no port) stay links, external ones with `rel="noopener noreferrer"`. Anything else stays as text. Tested in `web/tests/unit/advisor-links.test.ts` and `web/tests/e2e/advisor.spec.ts` (no `script` or `img` is created).
+
+CORS (SPEC 11c) allows `GET` and `POST` with the `Content-Type` header only, from the listed origins, without credentials. The middleware answers the preflight, so it never counts against the advisor's limit (`tests/unit/interface/test_cors.py`).
 
 ## The advisor's own answers (judge rubrics)
 

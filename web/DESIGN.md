@@ -50,6 +50,7 @@ Join classes with `cn` from `@/lib/utils`, never from `cn` directly. The plain o
   - `popover`: the kit's dropdowns, always non-modal (a modal Radix popover locks the scroll with an injected `<style>`);
   - `slider`: 4 px lavender track, action range, white 24 px thumbs with a 2 px action border; each thumb has its own name and value text;
   - `checkbox`: drawn in the action color even unchecked, since the lavender input border falls under 3:1;
+  - `switch`: the kit's Toggle on a native `role="switch"` button (SPEC 11c);
   - `sheet` and `select`: shadcn's shape on the native `<dialog>` and `<select>`, not Radix Dialog and Select, which inject `<style>` elements the CSP blocks.
 - **No dark variants** (`dark:`) for now. The site has no dark mode, and those classes would half-apply on dark systems.
 - **Focus** is a solid 2 px `outline-ring`, offset by 2. A ring at 50 % alpha would fall under 3:1. Hide the resting outline with `outline-hidden`, never `outline-none`: in Tailwind v4 `outline-none` sets `--tw-outline-style: none`, which `focus-visible:outline-2` inherits, so the focus never shows.
@@ -66,6 +67,19 @@ From the kit's *Search Result (Map v2)*, *Search Result - Filter (Map v2)*, *Sea
 - **Floating card.** The large project card over the map, bottom left (above the bar on phones), with a round close button; it takes the focus, and Esc gives it back to the pill.
 - **Map controls.** The zoom is the kit's 40 × 80 white box with `shadow-float`; "N proyectos en esta zona del mapa" and "Buscar al mover el mapa" sit in a white box at the top left. The attribution is always expanded, in the site's caption style.
 - **"Ver mapa".** The kit's dark button (`action-dark`, `map-outline` icon), floating at the bottom center of the list below 1024 px. The phone's map view ends in a white bar with "N proyectos en esta zona" and a dark "Ver lista".
+
+## Advisor (SPEC 11c)
+
+From the kit's *Message*, *Message - Empty State* and, on phones, *Message* and *Message - Details*.
+
+- **Layout.** From 1024 px: conversations at the left (351 from 1280 px), the thread in the middle on `bg-subtle` in a 16-radius box, the project at the right (323). The page is as wide as the kit's screen (1440), wider than the site's container, so the thread has room. Below 1024 px the thread takes the screen and the other two open as sheets from its top bar.
+- **Bubbles.** The person's: `border-input` fill (the kit's `#E0DEF7`), radius 8 with the bottom-right corner square. The advisor's: white, 1.5 px `border-input`, the top-left corner square, beside a 48 px `bg-selected` circle with the message icon (no photo). Under each: the time and, for answers, the summary of the steps ("Buscó proyectos · Comparó proyectos"), their visible source.
+- **Steps.** While a reply runs: "Pensando…", then one line per tool, a still action dot while it runs and a check when done. No spinner, so nothing moves under reduced motion.
+- **Small card.** `ProjectCard size="sm"`, after the link card inside the kit's bubble: white, radius 8, a 48 px lavender square with the properties icon, then name, "desde" with its change, unit type and day (rule 6), and place. Only for projects in the build's catalog.
+- **Right panel.** The project in context: image, name, place, the "desde" unit type's features, rows (desde, change, developer) and the soft "Ver ficha del proyecto". Without one, the small cards of the projects the conversation named.
+- **Composer.** The kit's white box: one line that grows to 160 px, the count at the left and "Enviar" (40 high, `send-bold` icon) at the right. Under it, always, the notice "Respondo con los precios que publican las constructoras. No es asesoría financiera ni una oferta. No escribas datos personales." with the link to the terms.
+- **Switch.** The kit's Toggle (`components/ui/switch.tsx`, a native `role="switch"`, not Radix, whose hidden input carries a style attribute the CSP blocks). Off, the thumb is in the action color, since the white one on the lavender track would fall under 3:1.
+- **Errors.** In a white box with `role="alert"`, with the cause and a way out (rule 7): retry, the search, or a new conversation.
 
 ## Kit assets
 

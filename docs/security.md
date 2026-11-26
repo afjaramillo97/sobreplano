@@ -44,6 +44,7 @@ If the counters are down, reads are served and the advisor answers 503.
 | The advisor asking for or repeating personal data | Prompt rule 5; rubric `privacy` (100 %) | evals O2, A5, A9 | |
 | Conversations kept | Deleted after 7 days without messages (`advisor_cleanup`) | `tests/integration/test_advisor_repositories.py` | |
 | Client IPs | Only the keyed hash, for 2 days | `tests/unit/interface/test_rate_limit.py` | |
+| Income and savings (SPEC 11d) | Computed in the browser only and kept in `localStorage` (`sobreplano.finanzas.v1`); never in a URL nor a request; the inputs have no `name` and are in no form; "Olvidar mis datos" removes the key | `web/tests/e2e/finance.spec.ts` ("no request carries the income or the savings") | `precio_max` travels in the search link, and with savings as the limit it reveals them (savings over the down payment %). Whoever uses the same browser can read them, as the terms say |
 | Conversations in the browser (SPEC 11c) | The advisor page keeps them in `localStorage` (`sobreplano.asesor.v1`), never in the URL except `c` (the thread id) and `proyecto`; deleted after 7 days without activity unless the person keeps them; "Borrar mis conversaciones" empties the key | `web/tests/unit/advisor-store.test.ts`, `web/tests/e2e/advisor.spec.ts` | Whoever uses the same browser can read them, as the terms say |
 
 ### 4. Integrity of the prices shown
@@ -54,6 +55,8 @@ If the counters are down, reads are served and the advisor answers 503.
 | Agreeing with a price or discount the user dictates | Rubric `no_false_claims`; cases A3, A8, O4 | `docs/evals.md` | |
 | Injected text on a developer's page | See "Poisoned data" below | | |
 | Corrupting the append-only history | A trigger blocks `UPDATE`, `DELETE` and `TRUNCATE` on price observations; the range rules refuse a price outside 50 million to 20 billion COP | `tests/integration/test_db_rules.py` | |
+
+The reference rate (SPEC 11d) is a third party's figure on the page. It is read at build time only, from `www.datos.gov.co` (no key, nothing about visitors is sent, and the CSP does not change), parsed as numbers and range-checked before use, with a versioned fallback (`web/src/lib/reference-rate.ts`, `web/tests/unit/reference-rate.test.ts`). What remains: a wrong figure inside the accepted range would be shown, with its source and week in view.
 
 ### 5. The AWS account
 
@@ -90,7 +93,7 @@ If the counters are down, reads are served and the advisor answers 503.
 `RATE_LIMIT_KEY` required in production, `TRUSTED_PROXY_HOPS` set to the real number of
 proxies, `API_DOCS_ENABLED=false`, the scheduled `prune_rate_limits`, the edge layer, and the
 429 alarm. For the website (SPEC 11a): `CORS_ALLOWED_ORIGINS` with the production domain, and
-the CSP as response headers (`_headers`), which adds `frame-ancestors` and violation reports.
+the CSP as response headers (`_headers`), which adds `frame-ancestors` and violation reports. For the reference rate (SPEC 11d): `REFERENCE_RATE=live` in the daily build, or the site keeps the versioned rate without saying more than its week.
 
 ## Poisoned data from a scraped page
 

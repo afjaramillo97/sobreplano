@@ -1,6 +1,6 @@
-# Frontend (SPEC 11a, 11b, 11c)
+# Frontend (SPEC 11a, 11b, 11c, 11d)
 
-The site in `web/`: a static Astro 7 site with three React islands (the price history, the search and the advisor), built from the read API. Its design rules (tokens, contrast, what CI rejects) are in [`web/DESIGN.md`](../web/DESIGN.md).
+The site in `web/`: a static Astro 7 site with React islands (the price history, the search, the advisor, the calculator, "¿Me alcanza?" and the comparison), built from the read API. Its design rules (tokens, contrast, what CI rejects) are in [`web/DESIGN.md`](../web/DESIGN.md).
 
 ## How it gets its data
 
@@ -8,6 +8,7 @@ The site in `web/`: a static Astro 7 site with three React islands (the price hi
 pnpm build
   -> GET /projects, 50 at a time until total      (SOBREPLANO_API_URL, at build time)
   -> one HTML page per project, og:image per project, sitemap
+  -> datos.gov.co, only with REFERENCE_RATE=live           (the bank rate, SPEC 11d)
 browser, on a project page
   -> GET /projects/{slug} when the chart comes into view   (PUBLIC_API_URL, CORS)
 browser, on /proyectos/ (SPEC 11b)
@@ -22,6 +23,7 @@ The price history is never written into the HTML. Only the browser asks for it, 
 | `SOBREPLANO_API_URL` | The build (server side only). Without it the build fails instead of publishing an empty catalog | `http://localhost:8000` |
 | `PUBLIC_API_URL` | The browser (history chart and advisor), and the CSP's `connect-src` | `http://localhost:8000` |
 | `PUBLIC_SITE_URL` | Canonical URLs, `og:image`, sitemap, `robots.txt`. Defaults to `http://localhost:4321` until SPEC 12 sets the domain | `http://localhost:4321` |
+| `REFERENCE_RATE` | The build. `live` reads the bank rate from datos.gov.co; unset (CI, tests) uses the versioned file. The deployment (SPEC 12) must set it | `live` |
 | `E2E_PORT` | Playwright's preview, when 4321 is taken | `4401` |
 | `CORS_ALLOWED_ORIGINS` (API) | Lets the site's origin read the API. A JSON list, in single quotes in `.env`, because uv drops bare inner quotes | `'["http://localhost:4321"]'` |
 
@@ -78,6 +80,40 @@ JavaScript budget, gzip: the first load of `/proyectos/` is about 103 KB (120 at
 
 `web/tests/e2e/advisor.spec.ts` answers `POST /advisor/chat/stream` with fixed SSE bodies through `page.route`, so no test reaches the API or the model. The live steps need a body that arrives in parts, which `route.fulfill` cannot send, so that test swaps `fetch` with `addInitScript`. The tests wait for the island to hydrate before typing.
 
+## Calculator, "¿Me alcanza?" and comparison (SPEC 11d)
+
+Everything is computed in the browser: no API call, and income and savings never go in a request.
+
+| Page | Island | What the build hands it |
+| --- | --- | --- |
+| `/calculadora/` | `finance/Calculator.tsx` (`client:load`) | The catalog as `SearchItem`s, to count what fits, and the reference rate |
+| `/proyectos/{slug}/` | `finance/AffordabilityBlock.tsx` (`client:visible`) and `compare/CompareButton.tsx` (`client:idle`) | The "desde" price, its unit type and day, the rate |
+| `/comparar/?p=a,b,c` | `compare/Comparison.tsx` (`client:load`) | `CompareItem`s (`lib/compare.ts`): current unit types with both areas, and the rate |
+
+- **Maths:** `web/src/lib/finance.ts` is the port of `domain/finance.py` (decimals, never floats). `uv run python -m sobreplano.interface.cli.finance_vectors` writes what Python gives for fixed inputs to `web/tests/fixtures/finance-vectors.json`; `--check` fails CI if the file is stale. Change a formula in both places, then regenerate.
+- **Calculator:** the max price never needs construction installments (the savings cover its down payment), so when the savings are the limit it also shows the price the income allows and what reaching it would take each month.
+- **Comparison:** 2 to 4 projects, one area at a time (private or built, "No reportada" when missing, never estimated). The lowest price per m² is marked over every compared project. Price per m² rounds half to even, as the API does. Below 1024 px two columns show, each with a selector. In the local database (data up to 2 Nov 2026), 73 of 103 unit types report a private area (Constructora Capital 100 %, Londoño Gómez 32 %); all report a built one.
+- **Selection:** the search's "Comparar" checkboxes and the project page's button. Opening `/comparar/?p=…` replaces the saved selection with the URL's; unknown and repeated slugs are ignored.
+
+### Storage
+
+| Key | What | Cleared by |
+| --- | --- | --- |
+| `sobreplano.finanzas.v1` (`lib/finances-store.ts`) | Income, savings, VIS or not, months, rate, term, down payment | "Olvidar mis datos" |
+| `sobreplano.comparar.v1` (`lib/compare-store.ts`) | Up to 4 slugs | "Quitar todos" |
+
+Without `localStorage` (private mode, full quota) the islands work in memory and say so.
+
+### The reference rate
+
+The average rate banks lent at for housing in the latest week, weighted by the amount disbursed, from the Superfinanciera's open data (dataset `qzsc-9esp`, format 414, weekly, CC BY-SA 4.0): VIS and not VIS, in pesos only. `web/src/lib/reference-rate.ts` queries it at build time when `REFERENCE_RATE=live` and falls back to `web/src/data/reference-rate.json` if the network fails or the answer does not pass (each rate 5 to 30 % EA and at least 50 loans, week under 45 days old).
+
+To refresh the fallback, in a pull request: `pnpm --dir web rate:update`, then regenerate the screenshots. The 45-day limit applies to the live query only: an old versioned file is still used, and the cut-off date on the page is the only sign.
+
+### JavaScript budget
+
+`/calculadora/` and `/comparar/`: at most 90 KB gzip of initial JavaScript (89.5 kB and 85.8 kB when written; React alone is about 68). Their islands join classes with `cx`, not `cn` (tailwind-merge), import `button-variants.ts` rather than `button.tsx`, and use `finance/NativeSelect.tsx` instead of `ui/select.tsx`, whose icon brings every icon. CI does not check this budget.
+
 ## Running it locally
 
 Node 24 and pnpm 12 through corepack (`corepack enable pnpm`, or `corepack pnpm …`). If `corepack enable` cannot write to `/usr/local/bin`, use `corepack enable --install-directory ~/.local/bin pnpm`.
@@ -105,12 +141,13 @@ pnpm --dir web preview          # http://localhost:4321
 | Command | What |
 | --- | --- |
 | `pnpm --dir web check` | `astro check`: types, 0 errors and 0 warnings |
-| `pnpm --dir web test` | Vitest: formats, view model, history, search, map style, catalog coverage, contrast pairs, design rules, icons |
+| `pnpm --dir web test` | Vitest: formats, view model, history, search, map style, catalog coverage, contrast pairs, design rules, icons, the finance port against Python's vectors, the reference rate, the browser stores and the comparison. No test reaches the network |
+| `pnpm --dir web rate:update` | Rewrites the versioned reference rate from datos.gov.co (reaches the network) |
 | `pnpm --dir web rules` | Colors, radii, shadows and fonts outside the tokens fail, with file and line |
 | `pnpm --dir web tokens` | Regenerates `src/styles/tokens.css`; CI fails if it changes |
 | `uv run python -m sobreplano.interface.cli.export_openapi` then `pnpm --dir web api:types` | After any API change: the contract and its TypeScript types. `test_openapi_snapshot.py` fails until the contract is exported |
-| `pnpm --dir web e2e` | Playwright against the build (API running): axe at 390 and 1440 px (also with "Más filtros" open and on the phone's map view), no horizontal scroll at 320 px, the `429` and `500` states, the keyboard, no CSP errors, and the search (`search.spec.ts`: filters and their URL, the map, its pills and groups, the phone's map view, the page without JavaScript) |
-| `pnpm --dir web lhci` | Lighthouse CI on `/`, `/proyectos/`, one project page and `/asesor/`, mobile, with the budgets in `web/lighthouserc.json` |
+| `pnpm --dir web e2e` | Playwright against the build (API running): axe at 390 and 1440 px (also with "Más filtros" open and on the phone's map view), no horizontal scroll at 320 px, the `429` and `500` states, the keyboard, no CSP errors, and the search (`search.spec.ts`: filters and their URL, the map, its pills and groups, the phone's map view, the page without JavaScript), plus the calculator and "¿Me alcanza?" (`finance.spec.ts`) and the comparison (`compare.spec.ts`). A test that clicks or types right after loading waits with `hydrated()` first |
+| `pnpm --dir web lhci` | Lighthouse CI on `/`, `/proyectos/`, one project page, `/asesor/`, `/calculadora/` and `/comparar/`, mobile, with the budgets in `web/lighthouserc.json` |
 
 ## Screenshots
 
@@ -122,8 +159,10 @@ To update them after an intended change, run the build and the comparison in the
 docker run --rm -v "$PWD:/work" -v sobreplano-web-node-modules:/work/web/node_modules -w /work/web \
   -e CI=1 -e SOBREPLANO_API_URL=http://host.docker.internal:8000 -e PUBLIC_API_URL=http://host.docker.internal:8000 \
   mcr.microsoft.com/playwright:v1.65.1-noble \
-  bash -c 'npm i -g pnpm@12.23.0 && pnpm install --frozen-lockfile --store-dir /tmp/pnpm-store && pnpm build && node_modules/.bin/playwright test visual --update-snapshots'
+  bash -c 'npm i -g pnpm@12.23.0 && pnpm install --frozen-lockfile --store-dir /tmp/pnpm-store && pnpm build && node_modules/.bin/playwright test visual --update-snapshots=all'
 ```
+
+`all` matters: the comparison allows 1 % of different pixels, so a small change in a tall page passes and, without it, the old image stays.
 
 Then look at every changed image before committing it, and put the matching kit screen beside it in the PR. The image's version must match `@playwright/test` in `web/package.json`. When Dependabot updates one, update the other (also in `.github/workflows/web.yml`) and make the screenshots again.
 

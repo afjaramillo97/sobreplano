@@ -31,6 +31,12 @@ the site, the API or the advisor you accept these terms.
 7. **The map.** The search map comes from OpenFreeMap, with data from OpenStreetMap
    (© OpenStreetMap contributors) and OpenMapTiles. To draw it, your browser asks OpenFreeMap
    for the zone you look at, so OpenFreeMap receives your IP address and that zone.
+8. **The calculator and the comparison.** The interest rate they start with is a reference: the
+   average banks lent at for housing in one week, from the Superintendencia Financiera's open
+   data (datos.gov.co, CC BY-SA 4.0). Your bank may offer you another one. The income and
+   savings you write stay in your own browser (localStorage) and are not sent to us; "Olvidar
+   mis datos" deletes them. If you open the search from the calculator, the maximum price goes
+   in the page address, as any search filter does.
 
 ## Español
 
@@ -61,3 +67,9 @@ usar el sitio, la API o el asesor aceptas estos términos.
 7. **El mapa.** El mapa de la búsqueda viene de OpenFreeMap, con datos de OpenStreetMap
    (© colaboradores de OpenStreetMap) y OpenMapTiles. Para dibujarlo, tu navegador le pide a
    OpenFreeMap la zona que miras, así que OpenFreeMap recibe tu dirección IP y esa zona.
+8. **La calculadora y el comparador.** La tasa de interés con la que arrancan es de referencia:
+   el promedio al que prestaron los bancos para vivienda en una semana, según los datos abiertos
+   de la Superintendencia Financiera (datos.gov.co, CC BY-SA 4.0). Tu banco puede darte otra.
+   El ingreso y el ahorro que escribes se quedan en tu propio navegador (localStorage) y no se
+   nos envían; "Olvidar mis datos" los borra. Si abres la búsqueda desde la calculadora, el
+   precio máximo va en la dirección de la página, como cualquier filtro de la búsqueda.

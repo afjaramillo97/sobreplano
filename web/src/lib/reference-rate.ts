@@ -44,11 +44,19 @@ export function todayInBogota(now: Date = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(now);
 }
 
+/** The first day of a cut-off the validation still accepts: today minus MAX_AGE_DAYS - 1. */
+export function oldestCutOff(today: string): string {
+  return new Date(Date.parse(today) - (MAX_AGE_DAYS - 1) * DAY_MS).toISOString().slice(0, 10);
+}
+
 /**
  * One row per product and week: the sum of rate x amount, the amount and the loans, of the
  * banks (tipo_entidad 1). The latest week comes first, so two rows are enough.
+ *
+ * Only the weeks the validation accepts: without that filter the API sums the whole dataset
+ * (two months, about 18 million rows) and may not answer within the timeout.
  */
-export function queryUrl(): string {
+export function queryUrl(today: string): string {
   const products = Object.values(PRODUCTS)
     .map((product) => `'${product}'`)
     .join(",");
@@ -57,7 +65,7 @@ export function queryUrl(): string {
       "fecha_corte,producto_de_cr_dito," +
       "sum(tasa_efectiva_promedio*montos_desembolsados) as weighted," +
       "sum(montos_desembolsados) as amount,sum(numero_de_creditos) as loans",
-    $where: `tipo_entidad='1' AND producto_de_cr_dito in(${products})`,
+    $where: `tipo_entidad='1' AND fecha_corte>='${oldestCutOff(today)}' AND producto_de_cr_dito in(${products})`,
     $group: "fecha_corte,producto_de_cr_dito",
     $order: "fecha_corte DESC,producto_de_cr_dito",
     $limit: "2",
@@ -129,7 +137,7 @@ export async function fetchReferenceRate({
   fetcher = fetch,
   today = todayInBogota(),
 }: FetchOptions = {}): Promise<ReferenceRate> {
-  const response = await fetcher(queryUrl(), { signal: AbortSignal.timeout(TIMEOUT_MS) });
+  const response = await fetcher(queryUrl(today), { signal: AbortSignal.timeout(TIMEOUT_MS) });
   if (!response.ok) throw new Error(`datos.gov.co answered ${response.status}`);
   return parseReferenceRate(await response.json(), today);
 }

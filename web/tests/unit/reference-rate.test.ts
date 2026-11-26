@@ -5,6 +5,7 @@ import {
   buildReferenceRate,
   fetchReferenceRate,
   loadReferenceRate,
+  oldestCutOff,
   queryUrl,
   todayInBogota,
 } from "../../src/lib/reference-rate";
@@ -64,13 +65,21 @@ describe("a valid answer", () => {
   it("asks for the banks' loans in pesos, grouped by week and product", async () => {
     const fetcher = answering(ROWS);
     await fetchReferenceRate({ fetcher, today: TODAY });
-    expect(fetcher).toHaveBeenCalledWith(queryUrl(), expect.objectContaining({}));
-    const params = new URL(queryUrl()).searchParams;
+    expect(fetcher).toHaveBeenCalledWith(queryUrl(TODAY), expect.objectContaining({}));
+    const params = new URL(queryUrl(TODAY)).searchParams;
     expect(params.get("$where")).toContain("tipo_entidad='1'");
     expect(params.get("$where")).toContain(VIS);
     expect(params.get("$where")).toContain(NO_VIS);
     expect(params.get("$where")).not.toContain("UVR");
     expect(params.get("$group")).toBe("fecha_corte,producto_de_cr_dito");
+  });
+
+  it("asks only for the weeks the validation accepts, so the API does not sum two months", () => {
+    // 44 days before 25 Nov: the oldest cut-off that is still under 45 days old.
+    expect(oldestCutOff(TODAY)).toBe("2026-10-12");
+    expect(new URL(queryUrl(TODAY)).searchParams.get("$where")).toContain(
+      "fecha_corte>='2026-10-12'",
+    );
   });
 
   it("replaces the versioned rate without logging", async () => {

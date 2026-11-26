@@ -126,6 +126,7 @@ Mismas tres funciones y constantes, con los mismos nombres en camelCase. Usa `de
   - Si falla la red o la respuesta no pasa la validación, usa el archivo versionado y lo anota en el log del build.
   - En CI y en las pruebas (`REFERENCE_RATE` sin definir), usa siempre el archivo, para que las capturas no cambien.
 - **Validación:** cada tasa entre 5 % y 30 % E.A., al menos 50 créditos en la semana y corte de menos de 45 días. Si una tasa no cumple, se usa la del archivo.
+- La consulta pide solo los cortes de los últimos 45 días (`fecha_corte >= hoy − 44`). Sin ese filtro la API suma los dos meses del conjunto y el 26 nov no respondió en 60 s; con él responde en unos 2 s y el resultado es el mismo, porque un corte más viejo no pasaría la validación.
 - `pnpm --dir web rate:update` reescribe el archivo con la consulta en vivo, para actualizar el respaldo en un PR.
 - La tasa se redondea a dos decimales y se muestra así: "Tasa promedio de los bancos para vivienda No VIS: 15,45 % E.A., semana del 13 nov 2026. Fuente: Superfinanciera (datos abiertos)."
 - La reconstrucción diaria del sitio (SPEC 12) la mantiene al día. Hasta entonces se actualiza con `rate:update`.

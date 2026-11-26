@@ -17,7 +17,7 @@ from langgraph.graph import MessagesState  # pyright: ignore[reportMissingTypeSt
 from langgraph.graph.state import CompiledStateGraph  # pyright: ignore[reportMissingTypeStubs]
 from openai import APIError
 
-from sobreplano.domain.advisor import AdvisorReply, ToolCallRecord
+from sobreplano.domain.advisor import AdvisorReply, AdvisorStep, ToolCallRecord
 from sobreplano.domain.errors import AdvisorLimitError, AdvisorUnavailableError
 from sobreplano.domain.figures import ungrounded_figures
 from sobreplano.domain.language import Language, detect_language
@@ -33,6 +33,8 @@ from sobreplano.infrastructure.advisor.grounding import (
     thread_source_numbers,
     tool_definition_numbers,
 )
+from sobreplano.infrastructure.advisor.mentions import mentioned_projects
+from sobreplano.infrastructure.advisor.step_callback import StepCallback
 from sobreplano.infrastructure.advisor.tools import DETAIL_LIMIT_RESULT
 from sobreplano.infrastructure.advisor.usage_callback import UsageCallback
 
@@ -80,7 +82,12 @@ class LangGraphAdvisor:
         self._callbacks = list(callbacks)
         self._tags = list(tags)
 
-    def reply(self, thread_id: UUID, message: str) -> AdvisorReply:
+    def reply(
+        self,
+        thread_id: UUID,
+        message: str,
+        on_step: Callable[[AdvisorStep], None] | None = None,
+    ) -> AdvisorReply:
         """Run one turn of the conversation and return the last answer.
 
         Personal data in message is redacted before the graph runs, so the model, the memory
@@ -91,6 +98,10 @@ class LangGraphAdvisor:
         and arguments) or the tool definitions. If one does not, the model rewrites the
         answer once without tools; if the rewrite still has one, the answer is a fixed text.
         Either way the thread keeps a single final answer.
+
+        on_step, if given, hears each tool start and end through a LangChain callback; the
+        graph and the answer are the same with or without it. The reply's projects are
+        the ones the final text names, after redaction and the figure check.
 
         Raises:
             AdvisorUnavailableError: if there is no API key or the provider fails.
@@ -103,10 +114,11 @@ class LangGraphAdvisor:
         tools = self._tools()
         graph = build_advisor_graph(chat_model, tools, self._checkpointer)
         usage = UsageCallback(self._model_name, SYSTEM_PROMPT.version)
+        steps = [StepCallback(on_step)] if on_step is not None else []
         config: RunnableConfig = {
             "configurable": {"thread_id": str(thread_id)},
             "recursion_limit": RECURSION_LIMIT,
-            "callbacks": [usage, *self._callbacks],
+            "callbacks": [usage, *steps, *self._callbacks],
             # Read by the Langfuse handler: the conversation is the session.
             "metadata": {
                 "langfuse_session_id": str(thread_id),
@@ -170,6 +182,7 @@ class LangGraphAdvisor:
             llm_calls=usage.calls,
             tool_calls=tool_calls,
             guardrails=guardrails,
+            projects=mentioned_projects(text, tool_calls),
         )
 
     def _grounded_text(

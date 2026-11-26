@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 from decimal import Decimal
+from typing import Literal
 from uuid import UUID
 
 from sobreplano.domain.errors import DomainValidationError
@@ -36,6 +37,14 @@ class ToolCallRecord:
 
 
 @dataclass(frozen=True)
+class AdvisorStep:
+    """One tool of a turn starting or ending, for the live progress of the web."""
+
+    tool: str  # name of the tool, as in tools_used
+    phase: Literal["start", "end"]
+
+
+@dataclass(frozen=True)
 class AdvisorReply:
     """The advisor's answer to one message, with the tools and LLM calls it took."""
 
@@ -45,6 +54,8 @@ class AdvisorReply:
     tool_calls: list[ToolCallRecord]  # in call order, with their arguments and results
     # Guardrails that fired, e.g. "input_redacted:email"; empty on a plain turn.
     guardrails: list[str] = field(default_factory=list[str])
+    # Slugs of the projects the answer names, in order of first mention.
+    projects: list[str] = field(default_factory=list[str])
 
 
 @dataclass(frozen=True)

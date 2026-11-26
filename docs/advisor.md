@@ -109,6 +109,27 @@ uv run --env-file .env python -m sobreplano.interface.cli.advise --thread <threa
 RUN_LLM_TESTS=1 uv run --env-file .env pytest tests/llm/test_advisor_live.py -s   # paid
 ```
 
+## Streaming (SPEC 11c)
+
+`POST /advisor/chat/stream` takes the same body as `/advisor/chat` and answers Server-Sent Events, for the web page. The text never streams word by word: the redaction and the figure check (SPEC 10) need the whole answer, so the stream tells the steps and then sends the verified answer.
+
+| Event | `data` | When |
+| --- | --- | --- |
+| `step` | `{"tool": "search_projects", "phase": "start"}` | A tool starts (`end` when it ends, also after a tool error) |
+| `answer` | `{"thread_id", "reply", "tools_used", "projects", "remaining_today"}` | Once, last |
+| `error` | `{"status": 503, "detail": "advisor could not answer"}` | The turn failed after the stream opened (tool rounds, provider down, a turn over 60 s); `404`, `409` or a budget `503` if another tab got there first |
+
+- What is known before the turn is a plain HTTP answer, never a `200` with an `error`: `422`, `429` (`Retry-After`), `503` (counters down or budget spent), `404` and `409`. `AdvisorTurnCheckDep` runs `AskAdvisor.check` as a dependency, read only.
+- The steps come from `StepCallback` (`infrastructure/advisor/step_callback.py`), a LangChain handler added to the graph's `callbacks` only when the caller passes `on_step`. The graph, the terminal and the evals do not change.
+- The turn runs in a thread with its own session (`get_advisor_opener`) and commits the conversation and `llm_usage`, also after too many tool rounds. If the browser goes away, the turn still ends and is recorded. FastAPI sends a `: ping` comment every 15 s, `Cache-Control: no-cache` and `X-Accel-Buffering: no`.
+- `projects` (also in `/advisor/chat`): `mentioned_projects` in `infrastructure/advisor/mentions.py` keeps the projects returned by `search_projects`, `get_project` and `compare_projects` whose name the final text contains (no accents, no case, whole words, longest name first), in order of first mention, at most 6.
+- `remaining_today`: advisor messages the client has left today (30 minus the ones counted, from `RateLimiter.check`), or `null` with the limits off.
+
+```bash
+curl -N -X POST localhost:8000/advisor/chat/stream -H 'content-type: application/json' \
+  -d '{"message": "¿Qué hay en Itagüí por menos de 300 millones?"}'
+```
+
 ## Retention and privacy
 
 Conversations are anonymous. The prompt never asks for personal data and does not repeat it.

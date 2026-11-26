@@ -1,6 +1,6 @@
 """Contract of POST /advisor/chat with in-memory doubles: no database, no model, no mocks."""
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
@@ -9,7 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from sobreplano.application.ask_advisor import AskAdvisor
-from sobreplano.domain.advisor import AdvisorReply, LlmCall
+from sobreplano.domain.advisor import AdvisorReply, AdvisorStep, LlmCall
 from sobreplano.domain.errors import AdvisorLimitError, AdvisorUnavailableError
 from sobreplano.infrastructure.settings import Settings
 from sobreplano.interface.api.dependencies import get_ask_advisor, get_session
@@ -30,7 +30,12 @@ class FakeAgent:
         self.error: Exception | None = None
         self.messages: list[str] = []
 
-    def reply(self, thread_id: UUID, message: str) -> AdvisorReply:
+    def reply(
+        self,
+        thread_id: UUID,
+        message: str,
+        on_step: Callable[[AdvisorStep], None] | None = None,
+    ) -> AdvisorReply:
         self.messages.append(message)
         if self.error is not None:
             raise self.error
@@ -39,6 +44,7 @@ class FakeAgent:
             tools_used=["search_projects"],
             llm_calls=[CALL],
             tool_calls=[],
+            projects=["arrayanes-del-sur", "cipres"],
         )
 
 
@@ -123,6 +129,7 @@ def test_new_conversation_matches_the_contract(client: TestClient, world: World)
     assert status == 200
     assert body["reply"] == "Encontré 2 proyectos."
     assert body["tools_used"] == ["search_projects"]
+    assert body["projects"] == ["arrayanes-del-sur", "cipres"]
     assert UUID(str(body["thread_id"])) in world.threads.turns
     assert world.session.commits == 1
     assert world.usage.rows == [CALL]

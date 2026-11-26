@@ -1,11 +1,12 @@
 """Ports: the repository interfaces that infrastructure implements."""
 
+from collections.abc import Callable
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Protocol
 from uuid import UUID
 
-from sobreplano.domain.advisor import AdvisorReply, LlmCall
+from sobreplano.domain.advisor import AdvisorReply, AdvisorStep, LlmCall
 from sobreplano.domain.catalog import Developer, GeoPoint, Project, UnitType
 from sobreplano.domain.listings import (
     DeveloperSummary,
@@ -117,8 +118,16 @@ class DeveloperSite(Protocol):
 class AdvisorAgent(Protocol):
     """Answers one user message inside a conversation that it remembers by thread_id."""
 
-    def reply(self, thread_id: UUID, message: str) -> AdvisorReply:
+    def reply(
+        self,
+        thread_id: UUID,
+        message: str,
+        on_step: Callable[[AdvisorStep], None] | None = None,
+    ) -> AdvisorReply:
         """Answer message within the conversation thread_id.
+
+        on_step, if given, is told when each tool starts and ends; it may be called from
+        another thread, and an error it raises does not stop the turn.
 
         Raises:
             AdvisorUnavailableError: if the model cannot be reached.

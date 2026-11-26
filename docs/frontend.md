@@ -1,6 +1,6 @@
-# Frontend (SPEC 11a, 11b)
+# Frontend (SPEC 11a, 11b, 11c)
 
-The site in `web/`: a static Astro 7 site with two React islands (the price history and the search), built from the read API. Its design rules (tokens, contrast, what CI rejects) are in [`web/DESIGN.md`](../web/DESIGN.md).
+The site in `web/`: a static Astro 7 site with three React islands (the price history, the search and the advisor), built from the read API. Its design rules (tokens, contrast, what CI rejects) are in [`web/DESIGN.md`](../web/DESIGN.md).
 
 ## How it gets its data
 
@@ -20,7 +20,7 @@ The price history is never written into the HTML. Only the browser asks for it, 
 | Variable | Used by | Example |
 | --- | --- | --- |
 | `SOBREPLANO_API_URL` | The build (server side only). Without it the build fails instead of publishing an empty catalog | `http://localhost:8000` |
-| `PUBLIC_API_URL` | The browser (history chart), and the CSP's `connect-src` | `http://localhost:8000` |
+| `PUBLIC_API_URL` | The browser (history chart and advisor), and the CSP's `connect-src` | `http://localhost:8000` |
 | `PUBLIC_SITE_URL` | Canonical URLs, `og:image`, sitemap, `robots.txt`. Defaults to `http://localhost:4321` until SPEC 12 sets the domain | `http://localhost:4321` |
 | `E2E_PORT` | Playwright's preview, when 4321 is taken | `4401` |
 | `CORS_ALLOWED_ORIGINS` (API) | Lets the site's origin read the API. A JSON list, in single quotes in `.env`, because uv drops bare inner quotes | `'["http://localhost:4321"]'` |
@@ -64,6 +64,20 @@ JavaScript budget, gzip: the first load of `/proyectos/` is about 103 KB (120 at
 
 `web/tests/e2e/fixtures.ts` answers every request to `tiles.openfreemap.org` with `web/tests/fixtures/map-style.json` (land only, no tiles, fonts or sprites) and aborts the rest, so no test and no screenshot depends on the network. A test that wants the map down routes the same host to a `503`. The fictitious catalog has two projects about 240 m apart in Itagüí, to test the groups.
 
+## The advisor (SPEC 11c)
+
+`/asesor/` is one island (`web/src/components/advisor/AdvisorPage.tsx`, `client:load`), after the kit's *Message* screen. The build hands it the catalog as `SearchItem`s (for the small cards and the project in context) and the hosts of the developers' sites. The browser sends `POST /advisor/chat/stream` to `PUBLIC_API_URL` and reads the events with `fetch` and `eventsource-parser` (`web/src/lib/advisor/stream.ts`), one message at a time.
+
+- **URL:** `c` (the `thread_id` of a stored conversation) and `proyecto` (a catalog slug, from the project page's "Pregúntale al asesor"); unknown values are ignored.
+- **Storage:** `localStorage`, key `sobreplano.asesor.v1` (`web/src/lib/advisor/store.ts`): at most 30 conversations, deleted after 7 days without activity unless "Conservar mis conversaciones en este navegador" is on. Without storage (private mode, full quota) the page keeps the current conversation in memory and says so. A conversation the server no longer has (`404`) or that reached 20 messages (`409`) stays readable and is marked closed.
+- **Links:** only project pages and the developers' hosts (`web/src/lib/advisor/links.ts`, see `docs/security.md`).
+- **Errors:** the texts and actions of SPEC 11c §6 are in `web/src/lib/advisor/labels.ts`.
+- **Weight:** the first load is about 110 KB gzip (150 at most); `react-markdown` and `remark-gfm` load with the first answer.
+
+### Testing without the API
+
+`web/tests/e2e/advisor.spec.ts` answers `POST /advisor/chat/stream` with fixed SSE bodies through `page.route`, so no test reaches the API or the model. The live steps need a body that arrives in parts, which `route.fulfill` cannot send, so that test swaps `fetch` with `addInitScript`. The tests wait for the island to hydrate before typing.
+
 ## Running it locally
 
 Node 24 and pnpm 12 through corepack (`corepack enable pnpm`, or `corepack pnpm …`). If `corepack enable` cannot write to `/usr/local/bin`, use `corepack enable --install-directory ~/.local/bin pnpm`.
@@ -96,7 +110,7 @@ pnpm --dir web preview          # http://localhost:4321
 | `pnpm --dir web tokens` | Regenerates `src/styles/tokens.css`; CI fails if it changes |
 | `uv run python -m sobreplano.interface.cli.export_openapi` then `pnpm --dir web api:types` | After any API change: the contract and its TypeScript types. `test_openapi_snapshot.py` fails until the contract is exported |
 | `pnpm --dir web e2e` | Playwright against the build (API running): axe at 390 and 1440 px (also with "Más filtros" open and on the phone's map view), no horizontal scroll at 320 px, the `429` and `500` states, the keyboard, no CSP errors, and the search (`search.spec.ts`: filters and their URL, the map, its pills and groups, the phone's map view, the page without JavaScript) |
-| `pnpm --dir web lhci` | Lighthouse CI on `/`, `/proyectos/` and one project page, mobile, with the budgets in `web/lighthouserc.json` |
+| `pnpm --dir web lhci` | Lighthouse CI on `/`, `/proyectos/`, one project page and `/asesor/`, mobile, with the budgets in `web/lighthouserc.json` |
 
 ## Screenshots
 

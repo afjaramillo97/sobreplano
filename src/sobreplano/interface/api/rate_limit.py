@@ -12,7 +12,7 @@ from fastapi import Depends, HTTPException, Request
 
 from sobreplano.domain.errors import RateLimitStoreError
 from sobreplano.domain.ports import RateLimitRepository
-from sobreplano.domain.rate_limit import Limit, check_limit, windows_at
+from sobreplano.domain.rate_limit import Limit, Remaining, check_limit, remaining, windows_at
 from sobreplano.infrastructure.settings import Settings
 
 logger = logging.getLogger(__name__)
@@ -94,15 +94,18 @@ class RateLimiter:
         digest = hmac.new(self._key, ip.encode(), hashlib.sha256).hexdigest()
         return digest[:CLIENT_KEY_LENGTH]
 
-    def check(self, bucket: Bucket, request: Request) -> None:
+    def check(self, bucket: Bucket, request: Request) -> Remaining | None:
         """Count this request for its client and let it through, or refuse it.
+
+        Returns what the client may still ask in each window after this request, or None
+        when the limits are off or the counters are down for a group that is still served.
 
         Raises:
             HTTPException: 429 with Retry-After when a window's limit is exceeded; 503 when
                 the counters are down and the group fails closed (the advisor).
         """
         if not self._enabled:
-            return
+            return None
         ip = client_ip(
             request.client.host if request.client else None,
             request.headers.get("x-forwarded-for"),
@@ -118,10 +121,11 @@ class RateLimiter:
                 logger.error("rate limit store down, refusing bucket=%s: %s", bucket, error)
                 raise HTTPException(503, detail="service unavailable") from error
             logger.error("rate limit store down, serving bucket=%s: %s", bucket, error)
-            return
-        exceeded = check_limit(counts, self._limits[bucket], windows, now)
+            return None
+        limit = self._limits[bucket]
+        exceeded = check_limit(counts, limit, windows, now)
         if exceeded is None:
-            return
+            return remaining(counts, limit)
         logger.warning(
             "rate_limited bucket=%s window=%s client=%s", bucket, exceeded.window, key[:8]
         )
@@ -151,11 +155,11 @@ def limit_detail(request: Request, limiter: RateLimiterDep) -> None:
     limiter.check(Bucket.DETAIL, request)
 
 
-def limit_advisor(request: Request, limiter: RateLimiterDep) -> None:
-    """Rate limit of POST /advisor/chat."""
-    limiter.check(Bucket.ADVISOR, request)
+def limit_advisor(request: Request, limiter: RateLimiterDep) -> Remaining | None:
+    """Rate limit of POST /advisor/chat and /advisor/chat/stream; what is left, if counted."""
+    return limiter.check(Bucket.ADVISOR, request)
 
 
 ListRateLimitDep = Annotated[None, Depends(limit_list)]
 DetailRateLimitDep = Annotated[None, Depends(limit_detail)]
-AdvisorRateLimitDep = Annotated[None, Depends(limit_advisor)]
+AdvisorRateLimitDep = Annotated[Remaining | None, Depends(limit_advisor)]

@@ -43,6 +43,7 @@ export const PAGES = {
   projectWithMap: "/proyectos/mirador-de-los-guaduales/",
   projectWithoutMap: "/proyectos/bosque-de-ditaires/",
   terms: "/terminos/",
+  advisor: "/asesor/",
   notFound: "/esta-pagina-no-existe/",
 } as const;
 

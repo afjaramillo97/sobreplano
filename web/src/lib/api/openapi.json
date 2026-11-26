@@ -41,6 +41,13 @@
       "ChatOut": {
         "description": "The advisor's answer and the conversation to continue it in.",
         "properties": {
+          "projects": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Projects",
+            "type": "array"
+          },
           "reply": {
             "title": "Reply",
             "type": "string"
@@ -61,7 +68,8 @@
         "required": [
           "thread_id",
           "reply",
-          "tools_used"
+          "tools_used",
+          "projects"
         ],
         "title": "ChatOut",
         "type": "object"
@@ -720,7 +728,7 @@
   "paths": {
     "/advisor/chat": {
       "post": {
-        "description": "Answer one message with Sobreplano's data.\n\nThe only route that writes: it commits the conversation and the token log, also before\nthe 503 for too many tool rounds, so the spend is not lost.",
+        "description": "Answer one message with Sobreplano's data.\n\nCommits the conversation and the token log, also before the 503 for too many tool\nrounds, so the spend is not lost.",
         "operationId": "chat_advisor_chat_post",
         "requestBody": {
           "content": {
@@ -755,6 +763,63 @@
           }
         },
         "summary": "Chat",
+        "tags": [
+          "advisor"
+        ]
+      }
+    },
+    "/advisor/chat/stream": {
+      "post": {
+        "description": "Answer one message as Server-Sent Events, telling each tool as it starts and ends.\n\nEvents: `step` (StepOut) when a tool starts or ends, then one `answer` (StreamAnswerOut)\nor one `error` (StreamErrorOut). The answer is the verified text, never partial text.\nWhat is known before the turn (422, 429, 404, 409, 503) is a plain HTTP answer, as in\nPOST /advisor/chat.\n\nThe turn runs in a thread with its own session and commits the conversation and the\ntoken log, also after too many tool rounds. If the client goes away or the stream\ntimes out, the turn still ends and is recorded.",
+        "operationId": "chat_stream_advisor_chat_stream_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/event-stream": {
+                "itemSchema": {
+                  "properties": {
+                    "data": {
+                      "type": "string"
+                    },
+                    "event": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "retry": {
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Chat Stream",
         "tags": [
           "advisor"
         ]

@@ -1,0 +1,34 @@
+---
+// "¿Qué puedo comprar?" (SPEC 11d): one island with the form cards of the kit's Tenancy
+// Application and the figures of its Rental Portfolio. The build hands it the catalog, to count
+// the projects that fit, and the reference rate. Nothing the person types leaves the browser.
+import Calculator from "@/components/finance/Calculator";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { loadCatalog, sortByFrom } from "@/lib/catalog";
+import { buildReferenceRate } from "@/lib/reference-rate";
+import { toSearchItem } from "@/lib/search";
+
+const items = sortByFrom(await loadCatalog()).map(toSearchItem);
+const reference = await buildReferenceRate();
+---
+
+<BaseLayout
+  title="Calculadora: ¿qué puedo comprar?"
+  description="Calcula hasta qué precio de vivienda sobre plano puedes llegar con tu ingreso y tu ahorro, cuánto pagarías al mes y qué proyectos del Valle de Aburrá caben. Tus datos no salen de tu navegador."
+>
+  <header class="border-b-(length:--border-width-default) border-border">
+    <div class="page flex flex-col items-center gap-3 py-8 text-center lg:py-12">
+      <h1 class="text-h1 text-text-primary">¿Qué puedo comprar?</h1>
+      <p class="max-w-xl text-body text-text-secondary">
+        Con tu ingreso y tu ahorro, hasta qué precio llegas, cuánto pagarías al mes y qué
+        proyectos caben.
+      </p>
+      <noscript>
+        <p class="text-body font-bold text-text-primary">
+          La calculadora necesita JavaScript para hacer las cuentas.
+        </p>
+      </noscript>
+    </div>
+  </header>
+  <Calculator client:load items={items} reference={reference} />
+</BaseLayout>

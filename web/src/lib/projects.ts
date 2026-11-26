@@ -20,6 +20,9 @@ export type UnitTypeView = {
   /** Private area when known, built area otherwise. */
   areaM2: number;
   areaBasis: "private" | "built";
+  /** Both areas as reported, for the comparison, which keeps to one of them (SPEC 11d). */
+  privateAreaM2: number | null;
+  builtAreaM2: number | null;
   /** Latest price, only while the unit type is current. */
   priceCop: number | null;
   /** Price per m² on areaBasis, only while the unit type is current. */
@@ -106,6 +109,8 @@ export function toUnitTypeView(unit: UnitTypeOut, lastObservedOn: string | null)
     bathrooms: unit.bathrooms,
     areaM2,
     areaBasis: unit.area_basis,
+    privateAreaM2: unit.private_area_m2,
+    builtAreaM2: unit.built_area_m2,
     priceCop: current && latest ? latest.price_cop : null,
     pricePerM2Cop: current ? unit.price_per_m2_cop : null,
     observedOn: latest?.observed_on ?? null,

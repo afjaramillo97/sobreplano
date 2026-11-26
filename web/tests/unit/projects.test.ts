@@ -56,6 +56,13 @@ describe("unit type status", () => {
     expect(view.observedOn).toBe(TODAY);
   });
 
+  it("keeps both areas as the API reports them", () => {
+    const both = toUnitTypeView(unit("A", {}, { private: 58.5, built: 64 }), TODAY);
+    expect(both).toMatchObject({ privateAreaM2: 58.5, builtAreaM2: 64 });
+    const builtOnly = toUnitTypeView(unit("B", {}, { built: 64 }), TODAY);
+    expect(builtOnly).toMatchObject({ privateAreaM2: null, builtAreaM2: 64 });
+  });
+
   it("is not-published when last seen before that day, and loses its current price", () => {
     const view = toUnitTypeView(
       unit("Tipo B", { latest: [380_000_000, BEFORE], first: [350_000_000, "2026-09-01"], change: 8.6 }),

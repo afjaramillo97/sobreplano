@@ -230,6 +230,11 @@ node_modules/
 *.tfvars
 # Scraped data: never commit
 data/
+# Except the site's versioned reference rate (SPEC 11d): a public average, not scraped data.
+# Only that file; anything else put in the folder stays ignored.
+!web/src/data/
+web/src/data/*
+!web/src/data/reference-rate.json
 # Playwright, Terraform plans, env files
 playwright-report/
 test-results/

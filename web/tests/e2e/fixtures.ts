@@ -44,6 +44,9 @@ export const PAGES = {
   projectWithoutMap: "/proyectos/bosque-de-ditaires/",
   terms: "/terminos/",
   advisor: "/asesor/",
+  calculator: "/calculadora/",
+  // Three projects: one without private area, one without built area, one with both.
+  compare: "/comparar/?p=altos-de-niquia,torres-del-ancon,mirador-de-los-guaduales",
   notFound: "/esta-pagina-no-existe/",
 } as const;
 
@@ -54,6 +57,36 @@ export const VIEWPORTS = {
 
 /** Whether a path is a project page, whose history island loads on view. */
 export const isProjectPage = (path: string) => /^\/proyectos\/[a-z0-9-]+\/$/.test(path);
+
+/**
+ * Waits until every island on screen has hydrated. A button of the server render clicked before
+ * that does nothing, and typed text would be lost. Islands that load on view (client:visible)
+ * count until they are scrolled to.
+ */
+export async function hydrated(page: Page) {
+  await expect(page.locator("astro-island[ssr]")).toHaveCount(0);
+}
+
+/**
+ * Leaves finances saved before the first page loads, once: a reload keeps what the test or the
+ * page did with them.
+ */
+export async function saveFinances(
+  page: Page,
+  finances: { incomeCop: number; savingsCop: number; monthsToDelivery?: number },
+) {
+  await page.addInitScript((value) => {
+    if (sessionStorage.getItem("finances-seeded")) return;
+    localStorage.setItem("sobreplano.finanzas.v1", value);
+    sessionStorage.setItem("finances-seeded", "1");
+  }, JSON.stringify(finances));
+}
+
+/** Waits for what a page draws only in the browser, before looking at it. */
+export async function settle(page: Page, path: string) {
+  if (isProjectPage(path)) await loadHistory(page);
+  if (path.startsWith("/comparar/")) await expect(page.getByRole("table")).toBeVisible();
+}
 
 /** Brings the history into view, which loads the island, and waits until it settles. */
 export async function loadHistory(page: Page) {

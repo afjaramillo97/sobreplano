@@ -1,11 +1,13 @@
 ---
-// The kit's price panel of the detail page (376 wide, sticky on desktop). "Desde" carries its
+// The kit's price panel of the detail page (376 wide). "Desde" carries its
 // unit type, its date and the notice of what it may not include (rule 6). Under the developer's
-// link, the soft "Pregúntale al asesor" opens the advisor with this project (SPEC 11c).
+// link, the soft "Pregúntale al asesor" opens the advisor with this project (SPEC 11c), and
+// "Agregar al comparador" (SPEC 11d), a small island.
 import { buttonVariants } from "@/components/ui/button";
 import { formatDate, formatMillions } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { ProjectView } from "@/lib/projects";
+import CompareButton from "./compare/CompareButton";
 import PriceChangeBadge from "./PriceChangeBadge";
 
 interface Props {
@@ -81,4 +83,5 @@ const observed = from?.observedOn ? formatDate(from.observedOn) : null;
   >
     Pregúntale al asesor
   </a>
+  <CompareButton client:idle slug={project.slug} />
 </section>

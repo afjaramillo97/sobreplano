@@ -81,6 +81,18 @@ From the kit's *Message*, *Message - Empty State* and, on phones, *Message* and 
 - **Switch.** The kit's Toggle (`components/ui/switch.tsx`, a native `role="switch"`, not Radix, whose hidden input carries a style attribute the CSP blocks). Off, the thumb is in the action color, since the white one on the lavender track would fall under 3:1.
 - **Errors.** In a white box with `role="alert"`, with the cause and a way out (rule 7): retry, the search, or a new conversation.
 
+## Calculator, "¿Me alcanza?" and comparison (SPEC 11d)
+
+From the kit's *Tenancy Application* (form cards), *Rental Portfolio* (figures) and the table of the detail page.
+
+- **Form.** White cards, 1.5 px `border-input`, 8 radius, 24 padding, with a bold `text-title`. Inputs 48 high with the label always above, "$" or the unit inside, the error under the field in `text-destructive`, shown once the person leaves it. Money gets its thousands dots on leaving. Choices of two (VIS, area) are the kit's option chips on native radios. The credit settings fold in a `<details>`.
+- **Result.** "Puedes comprar hasta" over the price in `text-price-lg`, the limit in a sentence, then a two-column list of figures (one column on a phone), the payment as a share of income on an 8 px bar with marks at 30 and 40 % (the text carries the meaning), the construction months and the button to the search. No sticky column.
+- **"¿Me alcanza?".** A card under the price card. Because of it, the project page's right column is no longer sticky: both together are taller than a laptop screen.
+- **Comparison table.** Header row on `bg-subtle`, 1.5 px `border` between rows, row headers at the left from 1024 px; below, each label spans two columns over its values. Price per m² in `tabular-nums`; the lowest is marked with the words "Menor $/m²", never color alone. The change badge goes without its icon.
+- **Selecting.** "Comparar" in a white chip over the card image's top right corner, a sibling of the card link; the floating "Comparar (N)" bar at the bottom (over the list's column from 1024 px).
+- **Finance islands** (JavaScript budget, `docs/frontend.md`): `cx` instead of `cn`, so no class overrides another; the select's chevron is drawn in CSS.
+- **Checkbox on a server-rendered island:** native, drawn like `ui/checkbox`. Radix adds a hidden input with a `style` attribute, which the CSP blocks.
+
 ## Kit assets
 
 - **Icons** come from the private submodule `kit/` (`sobreplano-kit`, 115 SVG with `currentColor`) through `src/lib/icons.ts`. Without the submodule, the build uses our own drawings in `src/assets/icons-fallback/`. Each icon the site uses must be listed in `ICON_NAMES` and have a fallback; a test checks both.

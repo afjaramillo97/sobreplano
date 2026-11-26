@@ -1,7 +1,8 @@
 ---
-// A project page: header, image, fact sheet, price card, price history (the one island),
-// unit types, location and source. Built from GET /projects; the history is fetched by the
-// browser and never written into this HTML (SPEC 11a §8).
+// A project page: header, image, fact sheet, price card, "¿Me alcanza?" (SPEC 11d), price
+// history, unit types, location and source. Built from GET /projects; the history is fetched by
+// the browser and never written into this HTML (SPEC 11a §8).
+import AffordabilityBlock from "@/components/finance/AffordabilityBlock";
 import HistoryChart from "@/components/HistoryChart";
 import Icon from "@/components/Icon";
 import PriceCard from "@/components/PriceCard.astro";
@@ -13,6 +14,7 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import { loadCatalog } from "@/lib/catalog";
 import { formatMillions } from "@/lib/format";
 import { MUNICIPALITY_NAMES, type ProjectView } from "@/lib/projects";
+import { buildReferenceRate } from "@/lib/reference-rate";
 
 export async function getStaticPaths() {
   const projects = await loadCatalog();
@@ -24,6 +26,7 @@ interface Props {
 }
 
 const { project } = Astro.props;
+const reference = await buildReferenceRate();
 const { from, location } = project;
 const place = [MUNICIPALITY_NAMES[project.municipality], project.neighborhood]
   .filter(Boolean)
@@ -58,10 +61,22 @@ const linkClass = "font-bold text-action-soft-text underline underline-offset-4 
     </header>
 
     <!-- The price card comes first in the source, so on a phone it shows before the image; on a
-         desktop it sits in the right column and stays in view while the history scrolls by. -->
+         desktop it sits in the right column, with "¿Me alcanza?" under it. The column is not
+         sticky: together they are taller than a laptop screen, which would cut the block off. -->
     <div class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_376px]">
-      <aside class="lg:sticky lg:top-[calc(var(--size-nav)+24px)] lg:col-start-2 lg:row-start-1 lg:self-start">
+      <aside class="flex flex-col gap-6 lg:col-start-2 lg:row-start-1 lg:self-start">
         <PriceCard project={project} />
+        {
+          from?.priceCop != null && from.observedOn && (
+            <AffordabilityBlock
+              client:visible
+              priceCop={from.priceCop}
+              unitName={from.name}
+              observedOn={from.observedOn}
+              reference={reference}
+            />
+          )
+        }
       </aside>
 
       <div class="flex min-w-0 flex-col gap-12 lg:col-start-1 lg:row-start-1">

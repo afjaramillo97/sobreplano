@@ -27,6 +27,9 @@ jobs:
         run: uv run pyright
       - name: lint-imports
         run: uv run lint-imports
+      # The web port of finance.py is tested against these; they must be what Python gives now.
+      - name: finance vectors unchanged
+        run: uv run python -m sobreplano.interface.cli.finance_vectors --check
       - uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
         with:
           version: latest

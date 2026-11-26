@@ -4,7 +4,7 @@
 
 Sobreplano is a portfolio project (AI Engineer): a search engine for new off-plan housing in the Aburrá Valley, Colombia, with a daily price history and an AI advisor. Its differentiator versus portals (Fincaraíz, Metrocuadrado, La Haus) is showing how much each project has risen since its first observed price.
 
-Status: week 3 of 8. Schema, read API and the first scraper (Londoño Gómez) are in place (SPECs 01–04); since SPEC 05 the scraper runs daily in AWS (Lambda + Supabase cloud); SPEC 06 adds Constructora Capital and reuses extractions by clean-text hash; SPEC 08 adds the advisor (`POST /advisor/chat`, LangGraph, memory in Postgres); SPEC 09 adds the evals (golden sets, LLM judge, prompt versions, Langfuse); SPEC 10 adds guardrails and data protection (rate limits, redaction, figure check, closed database, security pass); SPEC 11a adds the website in `web/` (home, listing and project pages with the price history); SPEC 11b adds the search on `/proyectos/` (filters in the URL, MapLibre map on OpenFreeMap with price pills) and the home page search. SPEC 11c adds the advisor on the web: `/asesor/` (after the kit's Message screen), `POST /advisor/chat/stream` (SSE steps, then the verified answer) and the conversations in the browser. Budget: at most ~20 USD/month, so check cost before proposing any new service.
+Status: week 3 of 8. Schema, read API and the first scraper (Londoño Gómez) are in place (SPECs 01–04); since SPEC 05 the scraper runs daily in AWS (Lambda + Supabase cloud); SPEC 06 adds Constructora Capital and reuses extractions by clean-text hash; SPEC 08 adds the advisor (`POST /advisor/chat`, LangGraph, memory in Postgres); SPEC 09 adds the evals (golden sets, LLM judge, prompt versions, Langfuse); SPEC 10 adds guardrails and data protection (rate limits, redaction, figure check, closed database, security pass); SPEC 11a adds the website in `web/` (home, listing and project pages with the price history); SPEC 11b adds the search on `/proyectos/` (filters in the URL, MapLibre map on OpenFreeMap with price pills) and the home page search. SPEC 11c adds the advisor on the web: `/asesor/` (after the kit's Message screen), `POST /advisor/chat/stream` (SSE steps, then the verified answer) and the conversations in the browser. SPEC 11d adds `/calculadora/`, "¿Me alcanza?" on project pages and the comparison on `/comparar/`, computed in the browser with a TypeScript port of `finance.py` and the Superfinanciera's reference rate. Budget: at most ~20 USD/month, so check cost before proposing any new service.
 
 ## Stack
 
@@ -146,6 +146,8 @@ pnpm --dir web rules                                    # colors, radii, shadows
 pnpm --dir web tokens                                   # regenerate src/styles/tokens.css (CI fails on a diff)
 uv run python -m sobreplano.interface.cli.export_openapi && pnpm --dir web api:types   # after any API change
 SOBREPLANO_API_URL=http://localhost:8000 PUBLIC_API_URL=http://localhost:8000 pnpm --dir web build
+uv run python -m sobreplano.interface.cli.finance_vectors          # after any change to finance.py (then port it to web/src/lib/finance.ts); CI runs --check
+pnpm --dir web rate:update                              # refresh the versioned bank rate (network)
 pnpm --dir web e2e                                      # Playwright against the build; screenshots only on Linux
 pnpm --dir web lhci                                     # Lighthouse CI budgets
 ```

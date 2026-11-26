@@ -233,6 +233,7 @@ test.describe("the advisor page", () => {
     await ask(page, "Hola");
     await expect(alert(page)).toContainText("Llegaste al límite de preguntas de hoy. Podrás seguir");
     await expect(alert(page).getByRole("link", { name: "Seguir con la búsqueda" })).toHaveAttribute("href", "/proyectos/");
+    await expect(alert(page).getByRole("link", { name: "Probar la calculadora" })).toHaveAttribute("href", "/calculadora/");
   });
 
   test("a 503 for the budget says to come back tomorrow", async ({ page }) => {
@@ -241,6 +242,7 @@ test.describe("the advisor page", () => {
     await ask(page, "Hola");
     await expect(alert(page)).toContainText("El asesor ya respondió todo lo que podía hoy.");
     await expect(alert(page).getByRole("link", { name: "Seguir con la búsqueda" })).toBeVisible();
+    await expect(alert(page).getByRole("link", { name: "Probar la calculadora" })).toBeVisible();
     await expect(alert(page)).not.toContainText("advisor");
   });
 

@@ -1,0 +1,14 @@
+{
+  "vis": {
+    "rateEaPct": 14.57,
+    "loans": 1153
+  },
+  "noVis": {
+    "rateEaPct": 15.45,
+    "loans": 737
+  },
+  "cutOff": "2026-11-13",
+  "fetchedOn": "2026-11-25",
+  "source": "Superintendencia Financiera de Colombia, datos abiertos (formato 414), CC BY-SA 4.0",
+  "sourceUrl": "https://www.datos.gov.co/d/qzsc-9esp"
+}

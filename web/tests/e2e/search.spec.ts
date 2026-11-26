@@ -1,6 +1,6 @@
 // The search on /proyectos/ (SPEC 11b): filters in the URL, the map and its pills, the phone's
 // map view, and the page without JavaScript. The map draws the local style (fixtures.ts).
-import { expect, MAP_HOST, type Page, test, VIEWPORTS } from "./fixtures";
+import { expect, hydrated, MAP_HOST, type Page, test, VIEWPORTS } from "./fixtures";
 
 // formatCount puts a hard space between the number and the noun; \s matches it.
 const ZONE = /(\d+)\sproyectos? en esta zona del mapa/;
@@ -17,6 +17,19 @@ async function zoneCount(page: Page): Promise<number> {
 }
 
 const heading = (page: Page) => page.getByRole("heading", { level: 1 });
+
+/**
+ * Three zoom steps with the keyboard, each one finished before the next: MapLibre eases a step
+ * for about 300 ms, and a press during it starts from halfway, so under load the final zoom (and
+ * the count read right after) would vary from run to run.
+ */
+async function zoomWithKeys(page: Page, key: "Minus" | "Equal"): Promise<void> {
+  await page.locator(".maplibregl-canvas").focus();
+  for (let i = 0; i < 3; i++) {
+    await page.keyboard.press(key);
+    await page.waitForTimeout(600);
+  }
+}
 const cardNames = (page: Page) => page.locator("#resultados a h2, #resultados a h3").allTextContents();
 
 test.describe("filters", () => {
@@ -143,8 +156,7 @@ test.describe("map", () => {
     await waitForMap(page);
     const before = await zoneCount(page);
     await expect(heading(page)).toHaveText(`${before + 1} proyecto${before === 0 ? "" : "s"}`);
-    await page.locator(".maplibregl-canvas").focus();
-    for (let i = 0; i < 3; i++) await page.keyboard.press("Minus");
+    await zoomWithKeys(page, "Minus");
     await expect.poll(() => zoneCount(page)).toBeGreaterThan(before);
     const after = await zoneCount(page);
     // The listed projects are those in the zone, plus the one without coordinates.
@@ -154,8 +166,7 @@ test.describe("map", () => {
     await page.locator("label", { hasText: "Buscar al mover el mapa" }).click();
     await expect(page).toHaveURL(/[?&]mover=0$/);
     await expect(heading(page)).toHaveText("14 proyectos");
-    await page.locator(".maplibregl-canvas").focus();
-    for (let i = 0; i < 3; i++) await page.keyboard.press("Equal");
+    await zoomWithKeys(page, "Equal");
     await expect.poll(() => zoneCount(page)).toBeLessThan(after);
     await expect(heading(page)).toHaveText("14 proyectos");
   });
@@ -192,8 +203,7 @@ test.describe("phone", () => {
 
   test("shows the map on 'Ver mapa', in the URL, and goes back to the list with Atrás", async ({ page }) => {
     await page.goto("/proyectos/?municipio=medellin");
-    // The button is in the server render: clicked before the island hydrates, nothing happens.
-    await expect(page.locator("astro-island[ssr]")).toHaveCount(0);
+    await hydrated(page);
     await page.getByRole("button", { name: "Ver mapa" }).click();
     await expect(page).toHaveURL("/proyectos/?municipio=medellin&vista=mapa");
     await expect(page.getByText(/^\d+\sproyectos? en esta zona$/)).toBeVisible();

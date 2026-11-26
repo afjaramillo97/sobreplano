@@ -7,7 +7,9 @@
         "http://localhost:4321/",
         "http://localhost:4321/proyectos/",
         "http://localhost:4321/proyectos/mirador-de-los-guaduales/",
-        "http://localhost:4321/asesor/"
+        "http://localhost:4321/asesor/",
+        "http://localhost:4321/calculadora/",
+        "http://localhost:4321/comparar/?p=altos-de-niquia,torres-del-ancon,mirador-de-los-guaduales"
       ],
       "numberOfRuns": 3
     },

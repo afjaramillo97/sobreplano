@@ -1,0 +1,1376 @@
+{
+  "constants": {
+    "maxPaymentToIncome": "0.40",
+    "minDownPaymentPct": "20",
+    "maxRateEaPct": "40",
+    "minYears": 5,
+    "maxYears": 30,
+    "maxPlanMonths": 60
+  },
+  "mortgage": [
+    {
+      "input": {
+        "priceCop": 236000000,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "priceCop": 236000000,
+        "downPaymentCop": 70800000,
+        "loanCop": 165200000,
+        "months": 240,
+        "monthlyPaymentCop": 2108879,
+        "totalPaidCop": 506130960,
+        "totalInterestCop": 340930960,
+        "minMonthlyIncomeCop": 5272198
+      }
+    },
+    {
+      "input": {
+        "priceCop": 289000000,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "priceCop": 289000000,
+        "downPaymentCop": 86700000,
+        "loanCop": 202300000,
+        "months": 240,
+        "monthlyPaymentCop": 2582483,
+        "totalPaidCop": 619795920,
+        "totalInterestCop": 417495920,
+        "minMonthlyIncomeCop": 6456208
+      }
+    },
+    {
+      "input": {
+        "priceCop": 289900000,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "priceCop": 289900000,
+        "downPaymentCop": 86970000,
+        "loanCop": 202930000,
+        "months": 240,
+        "monthlyPaymentCop": 2590526,
+        "totalPaidCop": 621726240,
+        "totalInterestCop": 418796240,
+        "minMonthlyIncomeCop": 6476315
+      }
+    },
+    {
+      "input": {
+        "priceCop": 380000000,
+        "rateEaPct": "14.57",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "priceCop": 380000000,
+        "downPaymentCop": 114000000,
+        "loanCop": 266000000,
+        "months": 240,
+        "monthlyPaymentCop": 3245926,
+        "totalPaidCop": 779022240,
+        "totalInterestCop": 513022240,
+        "minMonthlyIncomeCop": 8114815
+      }
+    },
+    {
+      "input": {
+        "priceCop": 427600000,
+        "rateEaPct": "15.45",
+        "years": 15,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "priceCop": 427600000,
+        "downPaymentCop": 128280000,
+        "loanCop": 299320000,
+        "months": 180,
+        "monthlyPaymentCop": 4077693,
+        "totalPaidCop": 733984740,
+        "totalInterestCop": 434664740,
+        "minMonthlyIncomeCop": 10194233
+      }
+    },
+    {
+      "input": {
+        "priceCop": 510000000,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "40"
+      },
+      "output": {
+        "priceCop": 510000000,
+        "downPaymentCop": 204000000,
+        "loanCop": 306000000,
+        "months": 240,
+        "monthlyPaymentCop": 3906277,
+        "totalPaidCop": 937506480,
+        "totalInterestCop": 631506480,
+        "minMonthlyIncomeCop": 9765693
+      }
+    },
+    {
+      "input": {
+        "priceCop": 890000000,
+        "rateEaPct": "15.45",
+        "years": 10,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "priceCop": 890000000,
+        "downPaymentCop": 267000000,
+        "loanCop": 623000000,
+        "months": 120,
+        "monthlyPaymentCop": 9843535,
+        "totalPaidCop": 1181224200,
+        "totalInterestCop": 558224200,
+        "minMonthlyIncomeCop": 24608838
+      }
+    },
+    {
+      "input": {
+        "priceCop": 1250000000,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "priceCop": 1250000000,
+        "downPaymentCop": 375000000,
+        "loanCop": 875000000,
+        "months": 240,
+        "monthlyPaymentCop": 11169910,
+        "totalPaidCop": 2680778400,
+        "totalInterestCop": 1805778400,
+        "minMonthlyIncomeCop": 27924775
+      }
+    },
+    {
+      "input": {
+        "priceCop": 380000000,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "20"
+      },
+      "output": {
+        "priceCop": 380000000,
+        "downPaymentCop": 76000000,
+        "loanCop": 304000000,
+        "months": 240,
+        "monthlyPaymentCop": 3880746,
+        "totalPaidCop": 931379040,
+        "totalInterestCop": 627379040,
+        "minMonthlyIncomeCop": 9701865
+      }
+    },
+    {
+      "input": {
+        "priceCop": 380000000,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "99"
+      },
+      "output": {
+        "priceCop": 380000000,
+        "downPaymentCop": 376200000,
+        "loanCop": 3800000,
+        "months": 240,
+        "monthlyPaymentCop": 48509,
+        "totalPaidCop": 11642160,
+        "totalInterestCop": 7842160,
+        "minMonthlyIncomeCop": 121273
+      }
+    },
+    {
+      "input": {
+        "priceCop": 380000000,
+        "rateEaPct": "15.45",
+        "years": 5,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "priceCop": 380000000,
+        "downPaymentCop": 114000000,
+        "loanCop": 266000000,
+        "months": 60,
+        "monthlyPaymentCop": 6252014,
+        "totalPaidCop": 375120840,
+        "totalInterestCop": 109120840,
+        "minMonthlyIncomeCop": 15630035
+      }
+    },
+    {
+      "input": {
+        "priceCop": 380000000,
+        "rateEaPct": "15.45",
+        "years": 30,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "priceCop": 380000000,
+        "downPaymentCop": 114000000,
+        "loanCop": 266000000,
+        "months": 360,
+        "monthlyPaymentCop": 3247389,
+        "totalPaidCop": 1169060040,
+        "totalInterestCop": 903060040,
+        "minMonthlyIncomeCop": 8118473
+      }
+    },
+    {
+      "input": {
+        "priceCop": 380000000,
+        "rateEaPct": "0.01",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "priceCop": 380000000,
+        "downPaymentCop": 114000000,
+        "loanCop": 266000000,
+        "months": 240,
+        "monthlyPaymentCop": 1109447,
+        "totalPaidCop": 266267280,
+        "totalInterestCop": 267280,
+        "minMonthlyIncomeCop": 2773618
+      }
+    },
+    {
+      "input": {
+        "priceCop": 380000000,
+        "rateEaPct": "40",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "priceCop": 380000000,
+        "downPaymentCop": 114000000,
+        "loanCop": 266000000,
+        "months": 240,
+        "monthlyPaymentCop": 7573069,
+        "totalPaidCop": 1817536560,
+        "totalInterestCop": 1551536560,
+        "minMonthlyIncomeCop": 18932673
+      }
+    },
+    {
+      "input": {
+        "priceCop": 1250000000,
+        "rateEaPct": "40",
+        "years": 30,
+        "downPaymentPct": "20"
+      },
+      "output": {
+        "priceCop": 1250000000,
+        "downPaymentCop": 250000000,
+        "loanCop": 1000000000,
+        "months": 360,
+        "monthlyPaymentCop": 28437331,
+        "totalPaidCop": 10237439160,
+        "totalInterestCop": 9237439160,
+        "minMonthlyIncomeCop": 71093328
+      }
+    },
+    {
+      "input": {
+        "priceCop": 236000000,
+        "rateEaPct": "0.01",
+        "years": 5,
+        "downPaymentPct": "99"
+      },
+      "output": {
+        "priceCop": 236000000,
+        "downPaymentCop": 233640000,
+        "loanCop": 2360000,
+        "months": 60,
+        "monthlyPaymentCop": 39343,
+        "totalPaidCop": 2360580,
+        "totalInterestCop": 580,
+        "minMonthlyIncomeCop": 98358
+      }
+    },
+    {
+      "input": {
+        "priceCop": 100000001,
+        "rateEaPct": "12",
+        "years": 20,
+        "downPaymentPct": "50"
+      },
+      "output": {
+        "priceCop": 100000001,
+        "downPaymentCop": 50000001,
+        "loanCop": 50000000,
+        "months": 240,
+        "monthlyPaymentCop": 529312,
+        "totalPaidCop": 127034880,
+        "totalInterestCop": 77034880,
+        "minMonthlyIncomeCop": 1323280
+      }
+    },
+    {
+      "input": {
+        "priceCop": 412000000,
+        "rateEaPct": "13.275",
+        "years": 18,
+        "downPaymentPct": "33.33"
+      },
+      "output": {
+        "priceCop": 412000000,
+        "downPaymentCop": 137319600,
+        "loanCop": 274680400,
+        "months": 216,
+        "monthlyPaymentCop": 3208382,
+        "totalPaidCop": 693010512,
+        "totalInterestCop": 418330112,
+        "minMonthlyIncomeCop": 8020955
+      }
+    },
+    {
+      "input": {
+        "priceCop": 520000000,
+        "rateEaPct": "14.52",
+        "years": 25,
+        "downPaymentPct": "20.5"
+      },
+      "output": {
+        "priceCop": 520000000,
+        "downPaymentCop": 106600000,
+        "loanCop": 413400000,
+        "months": 300,
+        "monthlyPaymentCop": 4861139,
+        "totalPaidCop": 1458341700,
+        "totalInterestCop": 1044941700,
+        "minMonthlyIncomeCop": 12152848
+      }
+    },
+    {
+      "input": {
+        "priceCop": 350000000,
+        "rateEaPct": "12",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "priceCop": 350000000,
+        "downPaymentCop": 105000000,
+        "loanCop": 245000000,
+        "months": 240,
+        "monthlyPaymentCop": 2593627,
+        "totalPaidCop": 622470480,
+        "totalInterestCop": 377470480,
+        "minMonthlyIncomeCop": 6484068
+      }
+    },
+    {
+      "input": {
+        "priceCop": 5000000000,
+        "rateEaPct": "15.45",
+        "years": 30,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "priceCop": 5000000000,
+        "downPaymentCop": 1500000000,
+        "loanCop": 3500000000,
+        "months": 360,
+        "monthlyPaymentCop": 42728806,
+        "totalPaidCop": 15382370160,
+        "totalInterestCop": 11882370160,
+        "minMonthlyIncomeCop": 106822015
+      }
+    },
+    {
+      "input": {
+        "priceCop": 1,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "priceCop": 1,
+        "downPaymentCop": 0,
+        "loanCop": 1,
+        "months": 240,
+        "monthlyPaymentCop": 0,
+        "totalPaidCop": 0,
+        "totalInterestCop": -1,
+        "minMonthlyIncomeCop": 0
+      }
+    }
+  ],
+  "affordability": [
+    {
+      "input": {
+        "monthlyIncomeCop": 8000000,
+        "savingsCop": 60000000,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "maxMonthlyPaymentCop": 3200000,
+        "maxLoanCop": 250673455,
+        "maxPriceByIncomeCop": 358104936,
+        "maxPriceBySavingsCop": 200000000,
+        "maxPriceCop": 200000000,
+        "limitedBy": "savings",
+        "downPaymentCop": 60000000,
+        "loanCop": 140000000
+      }
+    },
+    {
+      "input": {
+        "monthlyIncomeCop": 8000000,
+        "savingsCop": 60000000,
+        "rateEaPct": "14.57",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "maxMonthlyPaymentCop": 3200000,
+        "maxLoanCop": 262236432,
+        "maxPriceByIncomeCop": 374623474,
+        "maxPriceBySavingsCop": 200000000,
+        "maxPriceCop": 200000000,
+        "limitedBy": "savings",
+        "downPaymentCop": 60000000,
+        "loanCop": 140000000
+      }
+    },
+    {
+      "input": {
+        "monthlyIncomeCop": 3000000,
+        "savingsCop": 900000000,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "maxMonthlyPaymentCop": 1200000,
+        "maxLoanCop": 94002546,
+        "maxPriceByIncomeCop": 134289351,
+        "maxPriceBySavingsCop": 3000000000,
+        "maxPriceCop": 134289351,
+        "limitedBy": "income",
+        "downPaymentCop": 40286805,
+        "loanCop": 94002546
+      }
+    },
+    {
+      "input": {
+        "monthlyIncomeCop": 5000000,
+        "savingsCop": 900000000,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "maxMonthlyPaymentCop": 2000000,
+        "maxLoanCop": 156670909,
+        "maxPriceByIncomeCop": 223815585,
+        "maxPriceBySavingsCop": 3000000000,
+        "maxPriceCop": 223815585,
+        "limitedBy": "income",
+        "downPaymentCop": 67144676,
+        "loanCop": 156670909
+      }
+    },
+    {
+      "input": {
+        "monthlyIncomeCop": 12000000,
+        "savingsCop": 500000000,
+        "rateEaPct": "15.45",
+        "years": 15,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "maxMonthlyPaymentCop": 4800000,
+        "maxLoanCop": 352340421,
+        "maxPriceByIncomeCop": 503343458,
+        "maxPriceBySavingsCop": 1666666667,
+        "maxPriceCop": 503343458,
+        "limitedBy": "income",
+        "downPaymentCop": 151003037,
+        "loanCop": 352340421
+      }
+    },
+    {
+      "input": {
+        "monthlyIncomeCop": 20000000,
+        "savingsCop": 10000000,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "maxMonthlyPaymentCop": 8000000,
+        "maxLoanCop": 626683637,
+        "maxPriceByIncomeCop": 895262339,
+        "maxPriceBySavingsCop": 33333333,
+        "maxPriceCop": 33333333,
+        "limitedBy": "savings",
+        "downPaymentCop": 10000000,
+        "loanCop": 23333333
+      }
+    },
+    {
+      "input": {
+        "monthlyIncomeCop": 12000000,
+        "savingsCop": 150000000,
+        "rateEaPct": "12",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "maxMonthlyPaymentCop": 4800000,
+        "maxLoanCop": 453419055,
+        "maxPriceByIncomeCop": 647741507,
+        "maxPriceBySavingsCop": 500000000,
+        "maxPriceCop": 500000000,
+        "limitedBy": "savings",
+        "downPaymentCop": 150000000,
+        "loanCop": 350000000
+      }
+    },
+    {
+      "input": {
+        "monthlyIncomeCop": 30000000,
+        "savingsCop": 76000000,
+        "rateEaPct": "14.57",
+        "years": 20,
+        "downPaymentPct": "20"
+      },
+      "output": {
+        "maxMonthlyPaymentCop": 12000000,
+        "maxLoanCop": 983386619,
+        "maxPriceByIncomeCop": 1229233274,
+        "maxPriceBySavingsCop": 380000000,
+        "maxPriceCop": 380000000,
+        "limitedBy": "savings",
+        "downPaymentCop": 76000000,
+        "loanCop": 304000000
+      }
+    },
+    {
+      "input": {
+        "monthlyIncomeCop": 8000000,
+        "savingsCop": 0,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "maxMonthlyPaymentCop": 3200000,
+        "maxLoanCop": 250673455,
+        "maxPriceByIncomeCop": 358104936,
+        "maxPriceBySavingsCop": 0,
+        "maxPriceCop": 0,
+        "limitedBy": "savings",
+        "downPaymentCop": 0,
+        "loanCop": 0
+      }
+    },
+    {
+      "input": {
+        "monthlyIncomeCop": 6000000,
+        "savingsCop": 188005091,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "50"
+      },
+      "output": {
+        "maxMonthlyPaymentCop": 2400000,
+        "maxLoanCop": 188005091,
+        "maxPriceByIncomeCop": 376010182,
+        "maxPriceBySavingsCop": 376010182,
+        "maxPriceCop": 376010182,
+        "limitedBy": "savings",
+        "downPaymentCop": 188005091,
+        "loanCop": 188005091
+      }
+    },
+    {
+      "input": {
+        "monthlyIncomeCop": 20000000,
+        "savingsCop": 100000001,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "40"
+      },
+      "output": {
+        "maxMonthlyPaymentCop": 8000000,
+        "maxLoanCop": 626683637,
+        "maxPriceByIncomeCop": 1044472729,
+        "maxPriceBySavingsCop": 250000003,
+        "maxPriceCop": 250000003,
+        "limitedBy": "savings",
+        "downPaymentCop": 100000001,
+        "loanCop": 150000002
+      }
+    },
+    {
+      "input": {
+        "monthlyIncomeCop": 8000000,
+        "savingsCop": 60000000,
+        "rateEaPct": "15.45",
+        "years": 5,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "maxMonthlyPaymentCop": 3200000,
+        "maxLoanCop": 136148133,
+        "maxPriceByIncomeCop": 194497332,
+        "maxPriceBySavingsCop": 200000000,
+        "maxPriceCop": 194497332,
+        "limitedBy": "income",
+        "downPaymentCop": 58349200,
+        "loanCop": 136148132
+      }
+    },
+    {
+      "input": {
+        "monthlyIncomeCop": 8000000,
+        "savingsCop": 60000000,
+        "rateEaPct": "15.45",
+        "years": 30,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "maxMonthlyPaymentCop": 3200000,
+        "maxLoanCop": 262118254,
+        "maxPriceByIncomeCop": 374454649,
+        "maxPriceBySavingsCop": 200000000,
+        "maxPriceCop": 200000000,
+        "limitedBy": "savings",
+        "downPaymentCop": 60000000,
+        "loanCop": 140000000
+      }
+    },
+    {
+      "input": {
+        "monthlyIncomeCop": 8000000,
+        "savingsCop": 900000000,
+        "rateEaPct": "0.01",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "maxMonthlyPaymentCop": 3200000,
+        "maxLoanCop": 767229353,
+        "maxPriceByIncomeCop": 1096041934,
+        "maxPriceBySavingsCop": 3000000000,
+        "maxPriceCop": 1096041934,
+        "limitedBy": "income",
+        "downPaymentCop": 328812580,
+        "loanCop": 767229354
+      }
+    },
+    {
+      "input": {
+        "monthlyIncomeCop": 8000000,
+        "savingsCop": 900000000,
+        "rateEaPct": "40",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "maxMonthlyPaymentCop": 3200000,
+        "maxLoanCop": 112398293,
+        "maxPriceByIncomeCop": 160568990,
+        "maxPriceBySavingsCop": 3000000000,
+        "maxPriceCop": 160568990,
+        "limitedBy": "income",
+        "downPaymentCop": 48170697,
+        "loanCop": 112398293
+      }
+    },
+    {
+      "input": {
+        "monthlyIncomeCop": 8000000,
+        "savingsCop": 900000000,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "20"
+      },
+      "output": {
+        "maxMonthlyPaymentCop": 3200000,
+        "maxLoanCop": 250673455,
+        "maxPriceByIncomeCop": 313341819,
+        "maxPriceBySavingsCop": 4500000000,
+        "maxPriceCop": 313341819,
+        "limitedBy": "income",
+        "downPaymentCop": 62668364,
+        "loanCop": 250673455
+      }
+    },
+    {
+      "input": {
+        "monthlyIncomeCop": 8000000,
+        "savingsCop": 900000000,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "99"
+      },
+      "output": {
+        "maxMonthlyPaymentCop": 3200000,
+        "maxLoanCop": 250673455,
+        "maxPriceByIncomeCop": 25067345499,
+        "maxPriceBySavingsCop": 909090909,
+        "maxPriceCop": 909090909,
+        "limitedBy": "savings",
+        "downPaymentCop": 900000000,
+        "loanCop": 9090909
+      }
+    },
+    {
+      "input": {
+        "monthlyIncomeCop": 4700000,
+        "savingsCop": 55500000,
+        "rateEaPct": "13.275",
+        "years": 18,
+        "downPaymentPct": "33.33"
+      },
+      "output": {
+        "maxMonthlyPaymentCop": 1880000,
+        "maxLoanCop": 160953115,
+        "maxPriceByIncomeCop": 241417602,
+        "maxPriceBySavingsCop": 166516652,
+        "maxPriceCop": 166516652,
+        "limitedBy": "savings",
+        "downPaymentCop": 55500000,
+        "loanCop": 111016652
+      }
+    },
+    {
+      "input": {
+        "monthlyIncomeCop": 6350001,
+        "savingsCop": 95000000,
+        "rateEaPct": "14.52",
+        "years": 25,
+        "downPaymentPct": "20.5"
+      },
+      "output": {
+        "maxMonthlyPaymentCop": 2540000,
+        "maxLoanCop": 216006191,
+        "maxPriceByIncomeCop": 271705900,
+        "maxPriceBySavingsCop": 463414634,
+        "maxPriceCop": 271705900,
+        "limitedBy": "income",
+        "downPaymentCop": 55699710,
+        "loanCop": 216006190
+      }
+    },
+    {
+      "input": {
+        "monthlyIncomeCop": 1423500,
+        "savingsCop": 20000000,
+        "rateEaPct": "14.57",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "maxMonthlyPaymentCop": 569400,
+        "maxLoanCop": 46661695,
+        "maxPriceByIncomeCop": 66659564,
+        "maxPriceBySavingsCop": 66666667,
+        "maxPriceCop": 66659564,
+        "limitedBy": "income",
+        "downPaymentCop": 19997869,
+        "loanCop": 46661695
+      }
+    },
+    {
+      "input": {
+        "monthlyIncomeCop": 100000000,
+        "savingsCop": 3000000000,
+        "rateEaPct": "15.45",
+        "years": 30,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "maxMonthlyPaymentCop": 40000000,
+        "maxLoanCop": 3276478175,
+        "maxPriceByIncomeCop": 4680683108,
+        "maxPriceBySavingsCop": 10000000000,
+        "maxPriceCop": 4680683108,
+        "limitedBy": "income",
+        "downPaymentCop": 1404204932,
+        "loanCop": 3276478176
+      }
+    },
+    {
+      "input": {
+        "monthlyIncomeCop": 1,
+        "savingsCop": 1,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "maxMonthlyPaymentCop": 0,
+        "maxLoanCop": 31,
+        "maxPriceByIncomeCop": 45,
+        "maxPriceBySavingsCop": 3,
+        "maxPriceCop": 3,
+        "limitedBy": "savings",
+        "downPaymentCop": 1,
+        "loanCop": 2
+      }
+    }
+  ],
+  "downPaymentPlan": [
+    {
+      "input": {
+        "priceCop": 236000000,
+        "downPaymentPct": "30",
+        "months": 18,
+        "upfrontCop": 0
+      },
+      "output": {
+        "downPaymentCop": 70800000,
+        "upfrontCop": 0,
+        "months": 18,
+        "monthlyInstallmentCop": 3933333,
+        "loanAtDeliveryCop": 165200000
+      }
+    },
+    {
+      "input": {
+        "priceCop": 289000000,
+        "downPaymentPct": "30",
+        "months": 24,
+        "upfrontCop": 10000000
+      },
+      "output": {
+        "downPaymentCop": 86700000,
+        "upfrontCop": 10000000,
+        "months": 24,
+        "monthlyInstallmentCop": 3195833,
+        "loanAtDeliveryCop": 202300000
+      }
+    },
+    {
+      "input": {
+        "priceCop": 289900000,
+        "downPaymentPct": "30",
+        "months": 30,
+        "upfrontCop": 20000000
+      },
+      "output": {
+        "downPaymentCop": 86970000,
+        "upfrontCop": 20000000,
+        "months": 30,
+        "monthlyInstallmentCop": 2232333,
+        "loanAtDeliveryCop": 202930000
+      }
+    },
+    {
+      "input": {
+        "priceCop": 380000000,
+        "downPaymentPct": "30",
+        "months": 36,
+        "upfrontCop": 60000000
+      },
+      "output": {
+        "downPaymentCop": 114000000,
+        "upfrontCop": 60000000,
+        "months": 36,
+        "monthlyInstallmentCop": 1500000,
+        "loanAtDeliveryCop": 266000000
+      }
+    },
+    {
+      "input": {
+        "priceCop": 427600000,
+        "downPaymentPct": "30",
+        "months": 24,
+        "upfrontCop": 5000000
+      },
+      "output": {
+        "downPaymentCop": 128280000,
+        "upfrontCop": 5000000,
+        "months": 24,
+        "monthlyInstallmentCop": 5136667,
+        "loanAtDeliveryCop": 299320000
+      }
+    },
+    {
+      "input": {
+        "priceCop": 510000000,
+        "downPaymentPct": "20",
+        "months": 12,
+        "upfrontCop": 0
+      },
+      "output": {
+        "downPaymentCop": 102000000,
+        "upfrontCop": 0,
+        "months": 12,
+        "monthlyInstallmentCop": 8500000,
+        "loanAtDeliveryCop": 408000000
+      }
+    },
+    {
+      "input": {
+        "priceCop": 890000000,
+        "downPaymentPct": "30",
+        "months": 48,
+        "upfrontCop": 100000000
+      },
+      "output": {
+        "downPaymentCop": 267000000,
+        "upfrontCop": 100000000,
+        "months": 48,
+        "monthlyInstallmentCop": 3479167,
+        "loanAtDeliveryCop": 623000000
+      }
+    },
+    {
+      "input": {
+        "priceCop": 1250000000,
+        "downPaymentPct": "30",
+        "months": 60,
+        "upfrontCop": 150000000
+      },
+      "output": {
+        "downPaymentCop": 375000000,
+        "upfrontCop": 150000000,
+        "months": 60,
+        "monthlyInstallmentCop": 3750000,
+        "loanAtDeliveryCop": 875000000
+      }
+    },
+    {
+      "input": {
+        "priceCop": 380000000,
+        "downPaymentPct": "30",
+        "months": 1,
+        "upfrontCop": 0
+      },
+      "output": {
+        "downPaymentCop": 114000000,
+        "upfrontCop": 0,
+        "months": 1,
+        "monthlyInstallmentCop": 114000000,
+        "loanAtDeliveryCop": 266000000
+      }
+    },
+    {
+      "input": {
+        "priceCop": 380000000,
+        "downPaymentPct": "30",
+        "months": 60,
+        "upfrontCop": 0
+      },
+      "output": {
+        "downPaymentCop": 114000000,
+        "upfrontCop": 0,
+        "months": 60,
+        "monthlyInstallmentCop": 1900000,
+        "loanAtDeliveryCop": 266000000
+      }
+    },
+    {
+      "input": {
+        "priceCop": 380000000,
+        "downPaymentPct": "20",
+        "months": 24,
+        "upfrontCop": 0
+      },
+      "output": {
+        "downPaymentCop": 76000000,
+        "upfrontCop": 0,
+        "months": 24,
+        "monthlyInstallmentCop": 3166667,
+        "loanAtDeliveryCop": 304000000
+      }
+    },
+    {
+      "input": {
+        "priceCop": 380000000,
+        "downPaymentPct": "99",
+        "months": 24,
+        "upfrontCop": 0
+      },
+      "output": {
+        "downPaymentCop": 376200000,
+        "upfrontCop": 0,
+        "months": 24,
+        "monthlyInstallmentCop": 15675000,
+        "loanAtDeliveryCop": 3800000
+      }
+    },
+    {
+      "input": {
+        "priceCop": 380000000,
+        "downPaymentPct": "30",
+        "months": 24,
+        "upfrontCop": 114000000
+      },
+      "output": {
+        "downPaymentCop": 114000000,
+        "upfrontCop": 114000000,
+        "months": 24,
+        "monthlyInstallmentCop": 0,
+        "loanAtDeliveryCop": 266000000
+      }
+    },
+    {
+      "input": {
+        "priceCop": 100000001,
+        "downPaymentPct": "50",
+        "months": 10,
+        "upfrontCop": 0
+      },
+      "output": {
+        "downPaymentCop": 50000001,
+        "upfrontCop": 0,
+        "months": 10,
+        "monthlyInstallmentCop": 5000000,
+        "loanAtDeliveryCop": 50000000
+      }
+    },
+    {
+      "input": {
+        "priceCop": 100000010,
+        "downPaymentPct": "50",
+        "months": 2,
+        "upfrontCop": 0
+      },
+      "output": {
+        "downPaymentCop": 50000005,
+        "upfrontCop": 0,
+        "months": 2,
+        "monthlyInstallmentCop": 25000003,
+        "loanAtDeliveryCop": 50000005
+      }
+    },
+    {
+      "input": {
+        "priceCop": 400000000,
+        "downPaymentPct": "30",
+        "months": 16,
+        "upfrontCop": 1
+      },
+      "output": {
+        "downPaymentCop": 120000000,
+        "upfrontCop": 1,
+        "months": 16,
+        "monthlyInstallmentCop": 7500000,
+        "loanAtDeliveryCop": 280000000
+      }
+    },
+    {
+      "input": {
+        "priceCop": 412000000,
+        "downPaymentPct": "33.33",
+        "months": 27,
+        "upfrontCop": 12345678
+      },
+      "output": {
+        "downPaymentCop": 137319600,
+        "upfrontCop": 12345678,
+        "months": 27,
+        "monthlyInstallmentCop": 4628664,
+        "loanAtDeliveryCop": 274680400
+      }
+    },
+    {
+      "input": {
+        "priceCop": 520000000,
+        "downPaymentPct": "20.5",
+        "months": 33,
+        "upfrontCop": 0
+      },
+      "output": {
+        "downPaymentCop": 106600000,
+        "upfrontCop": 0,
+        "months": 33,
+        "monthlyInstallmentCop": 3230303,
+        "loanAtDeliveryCop": 413400000
+      }
+    },
+    {
+      "input": {
+        "priceCop": 381000000,
+        "downPaymentPct": "30",
+        "months": 7,
+        "upfrontCop": 0
+      },
+      "output": {
+        "downPaymentCop": 114300000,
+        "upfrontCop": 0,
+        "months": 7,
+        "monthlyInstallmentCop": 16328571,
+        "loanAtDeliveryCop": 266700000
+      }
+    },
+    {
+      "input": {
+        "priceCop": 5000000000,
+        "downPaymentPct": "30",
+        "months": 60,
+        "upfrontCop": 0
+      },
+      "output": {
+        "downPaymentCop": 1500000000,
+        "upfrontCop": 0,
+        "months": 60,
+        "monthlyInstallmentCop": 25000000,
+        "loanAtDeliveryCop": 3500000000
+      }
+    },
+    {
+      "input": {
+        "priceCop": 10,
+        "downPaymentPct": "30",
+        "months": 3,
+        "upfrontCop": 0
+      },
+      "output": {
+        "downPaymentCop": 3,
+        "upfrontCop": 0,
+        "months": 3,
+        "monthlyInstallmentCop": 1,
+        "loanAtDeliveryCop": 7
+      }
+    },
+    {
+      "input": {
+        "priceCop": 1,
+        "downPaymentPct": "30",
+        "months": 1,
+        "upfrontCop": 0
+      },
+      "output": {
+        "downPaymentCop": 0,
+        "upfrontCop": 0,
+        "months": 1,
+        "monthlyInstallmentCop": 0,
+        "loanAtDeliveryCop": 1
+      }
+    }
+  ],
+  "errors": [
+    {
+      "fn": "simulate_mortgage",
+      "input": {
+        "priceCop": 0,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "code": "price-not-positive",
+      "message": "price_cop must be > 0, got 0"
+    },
+    {
+      "fn": "simulate_mortgage",
+      "input": {
+        "priceCop": -1,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "code": "price-not-positive",
+      "message": "price_cop must be > 0, got -1"
+    },
+    {
+      "fn": "simulate_mortgage",
+      "input": {
+        "priceCop": 380000000,
+        "rateEaPct": "0",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "code": "rate-out-of-range",
+      "message": "annual_rate_ea_pct must be > 0 and <= 40, got 0"
+    },
+    {
+      "fn": "simulate_mortgage",
+      "input": {
+        "priceCop": 380000000,
+        "rateEaPct": "40.01",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "code": "rate-out-of-range",
+      "message": "annual_rate_ea_pct must be > 0 and <= 40, got 40.01"
+    },
+    {
+      "fn": "simulate_mortgage",
+      "input": {
+        "priceCop": 380000000,
+        "rateEaPct": "15.45",
+        "years": 4,
+        "downPaymentPct": "30"
+      },
+      "code": "years-out-of-range",
+      "message": "years must be between 5 and 30"
+    },
+    {
+      "fn": "simulate_mortgage",
+      "input": {
+        "priceCop": 380000000,
+        "rateEaPct": "15.45",
+        "years": 31,
+        "downPaymentPct": "30"
+      },
+      "code": "years-out-of-range",
+      "message": "years must be between 5 and 30"
+    },
+    {
+      "fn": "simulate_mortgage",
+      "input": {
+        "priceCop": 380000000,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "19.99"
+      },
+      "code": "down-payment-out-of-range",
+      "message": "down_payment_pct must be >= 20 and < 100, got 19.99"
+    },
+    {
+      "fn": "simulate_mortgage",
+      "input": {
+        "priceCop": 380000000,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "100"
+      },
+      "code": "down-payment-out-of-range",
+      "message": "down_payment_pct must be >= 20 and < 100, got 100"
+    },
+    {
+      "fn": "max_affordable_price",
+      "input": {
+        "monthlyIncomeCop": 0,
+        "savingsCop": 60000000,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "code": "income-not-positive",
+      "message": "monthly_income_cop must be > 0, got 0"
+    },
+    {
+      "fn": "max_affordable_price",
+      "input": {
+        "monthlyIncomeCop": 8000000,
+        "savingsCop": -1,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "code": "savings-negative",
+      "message": "savings_cop must be >= 0, got -1"
+    },
+    {
+      "fn": "max_affordable_price",
+      "input": {
+        "monthlyIncomeCop": 8000000,
+        "savingsCop": 60000000,
+        "rateEaPct": "40.01",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "code": "rate-out-of-range",
+      "message": "annual_rate_ea_pct must be > 0 and <= 40, got 40.01"
+    },
+    {
+      "fn": "max_affordable_price",
+      "input": {
+        "monthlyIncomeCop": 8000000,
+        "savingsCop": 60000000,
+        "rateEaPct": "15.45",
+        "years": 31,
+        "downPaymentPct": "30"
+      },
+      "code": "years-out-of-range",
+      "message": "years must be between 5 and 30"
+    },
+    {
+      "fn": "max_affordable_price",
+      "input": {
+        "monthlyIncomeCop": 8000000,
+        "savingsCop": 60000000,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "19"
+      },
+      "code": "down-payment-out-of-range",
+      "message": "down_payment_pct must be >= 20 and < 100, got 19"
+    },
+    {
+      "fn": "down_payment_plan",
+      "input": {
+        "priceCop": 0,
+        "downPaymentPct": "30",
+        "months": 24,
+        "upfrontCop": 0
+      },
+      "code": "price-not-positive",
+      "message": "price_cop must be > 0, got 0"
+    },
+    {
+      "fn": "down_payment_plan",
+      "input": {
+        "priceCop": 380000000,
+        "downPaymentPct": "100",
+        "months": 24,
+        "upfrontCop": 0
+      },
+      "code": "down-payment-out-of-range",
+      "message": "down_payment_pct must be >= 20 and < 100, got 100"
+    },
+    {
+      "fn": "down_payment_plan",
+      "input": {
+        "priceCop": 380000000,
+        "downPaymentPct": "30",
+        "months": 0,
+        "upfrontCop": 0
+      },
+      "code": "months-out-of-range",
+      "message": "months must be between 1 and 60"
+    },
+    {
+      "fn": "down_payment_plan",
+      "input": {
+        "priceCop": 380000000,
+        "downPaymentPct": "30",
+        "months": 61,
+        "upfrontCop": 0
+      },
+      "code": "months-out-of-range",
+      "message": "months must be between 1 and 60"
+    },
+    {
+      "fn": "down_payment_plan",
+      "input": {
+        "priceCop": 380000000,
+        "downPaymentPct": "30",
+        "months": 24,
+        "upfrontCop": -1
+      },
+      "code": "upfront-out-of-range",
+      "message": "upfront_cop must be between 0 and the down payment (114000000), got -1"
+    },
+    {
+      "fn": "down_payment_plan",
+      "input": {
+        "priceCop": 380000000,
+        "downPaymentPct": "30",
+        "months": 24,
+        "upfrontCop": 114000001
+      },
+      "code": "upfront-out-of-range",
+      "message": "upfront_cop must be between 0 and the down payment (114000000), got 114000001"
+    }
+  ]
+}

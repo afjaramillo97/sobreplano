@@ -4,7 +4,9 @@ import {
   addToComparison,
   clearComparison,
   COMPARE_KEY,
+  compareUrl,
   isComparisonFull,
+  parseCompare,
   readComparison,
   removeFromComparison,
   writeComparison,
@@ -66,5 +68,33 @@ describe("readComparison and writeComparison", () => {
     expect(writeComparison(storage, ["a"])).toBe(false);
     expect(writeComparison(null, ["a"])).toBe(false);
     expect(readComparison(null)).toEqual([]);
+  });
+});
+
+describe("the URL of the comparison", () => {
+  const known = new Set(["uno", "dos", "tres", "cuatro", "cinco"]);
+
+  it("carries the selection in its order", () => {
+    expect(compareUrl(["tres", "uno"])).toBe("/comparar/?p=tres,uno");
+    expect(parseCompare("?p=tres,uno", known)).toEqual(["tres", "uno"]);
+  });
+
+  it("ignores unknown slugs and repeats", () => {
+    expect(parseCompare("?p=uno,inexistente,uno", known)).toEqual(["uno"]);
+    expect(parseCompare("?p=", known)).toEqual([]);
+  });
+
+  it("takes four at most", () => {
+    expect(parseCompare("?p=uno,dos,tres,cuatro,cinco", known)).toEqual([
+      "uno",
+      "dos",
+      "tres",
+      "cuatro",
+    ]);
+  });
+
+  it("asks for nothing without p, so the saved selection stays", () => {
+    expect(parseCompare("", known)).toBeNull();
+    expect(parseCompare("?otro=1", known)).toBeNull();
   });
 });

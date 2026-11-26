@@ -192,6 +192,8 @@ test.describe("phone", () => {
 
   test("shows the map on 'Ver mapa', in the URL, and goes back to the list with Atrás", async ({ page }) => {
     await page.goto("/proyectos/?municipio=medellin");
+    // The button is in the server render: clicked before the island hydrates, nothing happens.
+    await expect(page.locator("astro-island[ssr]")).toHaveCount(0);
     await page.getByRole("button", { name: "Ver mapa" }).click();
     await expect(page).toHaveURL("/proyectos/?municipio=medellin&vista=mapa");
     await expect(page.getByText(/^\d+\sproyectos? en esta zona$/)).toBeVisible();

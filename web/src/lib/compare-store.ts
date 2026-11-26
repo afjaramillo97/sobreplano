@@ -1,6 +1,7 @@
 /**
- * The projects chosen to compare (SPEC 11d §4): their slugs in one versioned localStorage key,
- * in the order chosen, at most MAX_COMPARED and without repeats.
+ * The projects chosen to compare (SPEC 11d §4-§5): their slugs in one versioned localStorage
+ * key, in the order chosen, at most MAX_COMPARED and without repeats, and the URL that carries
+ * them to /comparar/. No dependencies: the search ships it.
  */
 import { readJson, removeKey, writeJson } from "./browser-storage";
 
@@ -45,4 +46,21 @@ export function removeFromComparison(slugs: readonly string[], slug: string): st
 /** Whether one more project can be chosen. */
 export function isComparisonFull(slugs: readonly string[]): boolean {
   return slugs.length >= MAX_COMPARED;
+}
+
+const PARAM = "p";
+
+/** The comparison page of a selection, in its order. */
+export function compareUrl(slugs: readonly string[]): string {
+  return `/comparar/?${PARAM}=${slugs.map(encodeURIComponent).join(",")}`;
+}
+
+/**
+ * The slugs a query string asks to compare: those of the catalog, without repeats, the first
+ * MAX_COMPARED. Null when it asks for none (no "p"), so the saved selection stays as it was.
+ */
+export function parseCompare(search: string, known: ReadonlySet<string>): string[] | null {
+  const value = new URLSearchParams(search).get(PARAM);
+  if (value === null) return null;
+  return normalizeSlugs(value.split(",").filter((slug) => known.has(slug)));
 }

@@ -42,7 +42,8 @@ test("a 429 shows when the chart comes back, keeps the price, and is not retried
   );
   await page.goto(PAGES.projectWithMap);
   await loadHistory(page);
-  await expect(page.getByRole("status")).toContainText(
+  // The page has other live regions ("¿Me alcanza?", the comparison button).
+  await expect(page.locator("section[aria-labelledby=historico]").getByRole("status")).toContainText(
     /Consultaste muchas fichas en poco tiempo\. Podrás ver la gráfica a las \d{1,2}:\d{2}/,
   );
   await expect(page.locator("section[aria-labelledby=precio-titulo]")).toBeVisible();

@@ -30,6 +30,7 @@ import {
 import type { ReferenceRate } from "@/lib/reference-rate";
 import type { SearchItem } from "@/lib/search";
 import Assumptions from "./Assumptions";
+import NativeSelect from "./NativeSelect";
 import RateNote from "./RateNote";
 import TextField from "./TextField";
 import { useFinances } from "./useFinances";
@@ -302,26 +303,17 @@ function TermSelect({ value, onChange }: { value: number; onChange: (years: numb
       <label htmlFor={id} className="text-label text-text-primary">
         Plazo del crédito
       </label>
-      {/* The shape of ui/select with the chevron drawn in CSS: its icon would bring every
-          icon of the site into the island. */}
-      <div className="relative">
-        <select
-          id={id}
-          value={value}
-          onChange={(event) => onChange(Number(event.target.value))}
-          className="h-(--size-control-md) w-full cursor-pointer appearance-none rounded-md border-(length:--border-width-strong) border-input bg-muted py-2 pr-12 pl-4 text-body text-foreground outline-hidden focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-ring"
-        >
-          {TERMS.map((years) => (
-            <option key={years} value={years}>
-              {years} años
-            </option>
-          ))}
-        </select>
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 right-5 size-2 -translate-y-3/4 rotate-45 border-r-2 border-b-2 border-primary"
-        />
-      </div>
+      <NativeSelect
+        id={id}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+      >
+        {TERMS.map((years) => (
+          <option key={years} value={years}>
+            {years} años
+          </option>
+        ))}
+      </NativeSelect>
     </div>
   );
 }

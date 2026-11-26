@@ -4,9 +4,12 @@
 // filters, so the page works and is indexed without JavaScript.
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 
+import CompareBar from "@/components/compare/CompareBar";
+import { useComparison } from "@/components/compare/useComparison";
 import Icon from "@/components/Icon";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { addToComparison, removeFromComparison } from "@/lib/compare-store";
 import { formatCount } from "@/lib/format";
 import {
   activeChips,
@@ -23,6 +26,8 @@ import {
   searchResults,
   splitByBounds,
 } from "@/lib/search";
+import { useMediaQuery } from "@/lib/use-media-query";
+import { cn } from "@/lib/utils";
 import { FilterBar } from "./FilterBar";
 import { FiltersSheet, preloadFiltersSheet } from "./FiltersSheet";
 import { ResultCards } from "./ResultCards";
@@ -46,19 +51,6 @@ const SORT_DESCRIPTIONS: Record<SortKey, string> = {
 // The card grid: three columns without the map, one or two in the panel beside it.
 const GRID = "lg:no-js:grid-cols-3 lg:js:grid-cols-1 xl:js:grid-cols-2";
 
-/** Whether a media query matches; false on the server and until hydration. */
-function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(false);
-  useEffect(() => {
-    const list = window.matchMedia(query);
-    const sync = () => setMatches(list.matches);
-    sync();
-    list.addEventListener("change", sync);
-    return () => list.removeEventListener("change", sync);
-  }, [query]);
-  return matches;
-}
-
 export default function SearchPage({ items }: { items: SearchItem[] }) {
   const developers = useMemo(() => developerOptions(items), [items]);
   const developerSlugs = useMemo(() => developers.map((d) => d.slug), [developers]);
@@ -70,6 +62,20 @@ export default function SearchPage({ items }: { items: SearchItem[] }) {
   const histogram = useMemo(() => priceHistogram(items, state), [items, state]);
   const chips = activeChips(state, developerNames);
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const comparison = useComparison();
+  // A saved project that left the catalog does not count: the comparison would drop it.
+  const slugsInCatalog = useMemo(() => new Set(items.map((item) => item.slug)), [items]);
+  const compared = comparison.slugs.filter((slug) => slugsInCatalog.has(slug));
+  const compare = {
+    slugs: compared,
+    toggle: (slug: string) =>
+      comparison.save(
+        compared.includes(slug)
+          ? removeFromComparison(compared, slug)
+          : addToComparison(compared, slug),
+      ),
+  };
 
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   // Below 1024 px the list and the map take turns (the kit's Search Result Swipe Up and
@@ -221,7 +227,13 @@ export default function SearchPage({ items }: { items: SearchItem[] }) {
       {/* The kit's dark "Ver mapa" button, floating over the list below 1024 px. The wrapper
           hides it without JavaScript, where it could not work. */}
       {!phoneMap && (
-        <div className="fixed bottom-6 left-1/2 z-30 hidden -translate-x-1/2 js:block lg:js:hidden">
+        <div
+          className={cn(
+            "fixed left-1/2 z-30 hidden -translate-x-1/2 js:block lg:js:hidden",
+            // Above the comparison bar while it shows.
+            compared.length > 0 ? "bottom-32" : "bottom-6",
+          )}
+        >
           <button type="button" onClick={showMap} className={buttonVariants({ variant: "dark", className: "shadow-float" })}>
             <Icon name="map-outline" size={20} />
             Ver mapa
@@ -229,9 +241,17 @@ export default function SearchPage({ items }: { items: SearchItem[] }) {
         </div>
       )}
 
+      {!phoneMap && compared.length > 0 && (
+        <CompareBar slugs={compared} memoryOnly={comparison.memoryOnly} onClear={comparison.clear} />
+      )}
+
       <div
         inert={phoneMap}
-        className="page py-12 pb-28 lg:py-20 lg:js:mx-0 lg:js:max-w-none lg:js:px-12 lg:js:py-8"
+        className={cn(
+          "page py-12 pb-28 lg:py-20 lg:js:mx-0 lg:js:max-w-none lg:js:px-12 lg:js:py-8",
+          // Room under the last card for the floating bar (and "Ver mapa" over it).
+          compared.length > 0 && "pb-48 lg:js:pb-28",
+        )}
       >
         <h1 className="text-h2 text-text-heading-alt search-pending:invisible">
           {formatCount(shownCount, "proyecto", "proyectos")}
@@ -291,6 +311,7 @@ export default function SearchPage({ items }: { items: SearchItem[] }) {
                   <ResultCards
                     results={listed}
                     priority
+                    compare={compare}
                     highlighted={highlighted}
                     onHighlight={isDesktop && mapShown ? setHighlighted : undefined}
                     className={GRID}
@@ -309,7 +330,12 @@ export default function SearchPage({ items }: { items: SearchItem[] }) {
                     <p className="mt-2 text-body text-text-secondary">
                       Su constructora no publica el mapa, así que no salen en él.
                     </p>
-                    <ResultCards results={unlocated} headingLevel={3} className={`mt-8 ${GRID}`} />
+                    <ResultCards
+                      results={unlocated}
+                      headingLevel={3}
+                      compare={compare}
+                      className={`mt-8 ${GRID}`}
+                    />
                   </section>
                 )}
               </>

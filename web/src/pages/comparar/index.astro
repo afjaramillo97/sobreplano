@@ -1,0 +1,30 @@
+---
+// The comparison (SPEC 11d): one island that reads ?p= in the browser. The build hands it every
+// project's current unit types, never their history, and the reference rate.
+import Comparison from "@/components/compare/Comparison";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { loadCatalog } from "@/lib/catalog";
+import { toCompareItem } from "@/lib/compare";
+import { buildReferenceRate } from "@/lib/reference-rate";
+
+const items = (await loadCatalog()).map(toCompareItem);
+const reference = await buildReferenceRate();
+---
+
+<BaseLayout
+  title="Comparar proyectos"
+  description="Compara de 2 a 4 proyectos de vivienda sobre plano del Valle de Aburrá por su precio por metro cuadrado, su precio desde y cuánto han subido."
+>
+  <header class="border-b-(length:--border-width-default) border-border">
+    <div class="page flex flex-col items-center gap-3 py-8 text-center lg:py-12">
+      <h1 class="text-h1 text-text-primary">Comparar proyectos</h1>
+      <p class="max-w-xl text-body text-text-secondary">
+        De 2 a 4 proyectos, lado a lado, por su precio por metro cuadrado.
+      </p>
+      <noscript>
+        <p class="text-body font-bold text-text-primary">La comparación necesita JavaScript.</p>
+      </noscript>
+    </div>
+  </header>
+  <Comparison client:load items={items} reference={reference} />
+</BaseLayout>

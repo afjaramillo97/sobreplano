@@ -47,6 +47,9 @@ type Props = Omit<React.ComponentProps<"a">, "href" | "children"> & {
   headingLevel?: 2 | 3;
   /** "sm": the small card of the advisor's answers and panel (SPEC 11c). */
   size?: "md" | "sm";
+  /** A control over the image's top right corner, such as the search's "Comparar". It is a
+      sibling of the link, never inside it: controls do not nest. */
+  action?: React.ReactNode;
 };
 
 export default function ProjectCard({
@@ -55,6 +58,7 @@ export default function ProjectCard({
   priority = false,
   headingLevel = 2,
   size = "md",
+  action,
   className,
   ...linkProps
 }: Props) {
@@ -66,7 +70,7 @@ export default function ProjectCard({
   if (size === "sm") {
     return <SmallCard project={project} from={from} place={place} className={className} {...linkProps} />;
   }
-  return (
+  const card = (
     <a
       href={`/proyectos/${project.slug}/`}
       className={cn(
@@ -129,6 +133,13 @@ export default function ProjectCard({
         )}
       </div>
     </a>
+  );
+  if (!action) return card;
+  return (
+    <div className="relative h-full">
+      {card}
+      <div className="absolute top-3 right-3">{action}</div>
+    </div>
   );
 }
 

@@ -10,6 +10,24 @@
   "mortgage": [
     {
       "input": {
+        "priceCop": 200000000,
+        "rateEaPct": "15.45",
+        "years": 20,
+        "downPaymentPct": "30"
+      },
+      "output": {
+        "priceCop": 200000000,
+        "downPaymentCop": 60000000,
+        "loanCop": 140000000,
+        "months": 240,
+        "monthlyPaymentCop": 1787186,
+        "totalPaidCop": 428924640,
+        "totalInterestCop": 288924640,
+        "minMonthlyIncomeCop": 4467965
+      }
+    },
+    {
+      "input": {
         "priceCop": 236000000,
         "rateEaPct": "15.45",
         "years": 20,

@@ -23,6 +23,8 @@ Inputs = dict[str, int | str]
 
 # (price, rate % EA, years, down payment %)
 MORTGAGE_CASES: tuple[tuple[int, str, int, str], ...] = (
+    # The max price of the calculator's acceptance case, whose payment it shows.
+    (200_000_000, "15.45", 20, "30"),
     # Prices of the fictitious catalog, at the reference rates.
     (236_000_000, "15.45", 20, "30"),
     (289_000_000, "15.45", 20, "30"),

@@ -167,7 +167,10 @@ Abrir `/comparar/?p=…` reemplaza la selección guardada por la de la URL, para
 
 - **Precio máximo:** `maxAffordablePrice(ingreso, ahorro, tasa, plazo, % cuota inicial)`, el menor entre el límite por ingreso y el límite por ahorro, con la frase de cuál limita.
 - **Cuota:** la del precio máximo (`simulateMortgage`), con dos marcas: "Hasta 30 % de tu ingreso: holgado" y "Hasta 40 %: el máximo que permite la ley". La de 30 % es una guía, no una regla del banco.
-- **Durante la obra:** con meses hasta la entrega, `downPaymentPlan(precio máximo, % cuota inicial, meses, ahorro)` da cuánto pagar al mes. El ahorro cuenta como abono inicial hasta el valor de la cuota inicial.
+- **Durante la obra**, con meses hasta la entrega. El precio máximo nunca pasa de `ahorro / % de cuota inicial`, así que su cuota inicial ya está cubierta por el ahorro y no hay nada que pagar al mes. Por eso:
+  - si lo limita el ahorro, una segunda línea muestra hasta dónde llega el ingreso: `downPaymentPlan(precio por ingreso, % cuota inicial, meses, ahorro)`, con "Si pagas $W al mes durante los N meses de obra (Z % de tu ingreso), podrías llegar a $Y";
+  - si lo limita el ingreso (o los dos límites coinciden): "Tu ahorro cubre la cuota inicial: no tendrías cuotas durante la obra".
+  - El ahorro cuenta como abono inicial hasta el valor de la cuota inicial. El precio máximo y el botón de la búsqueda no cambian con los meses.
 - **"¿Me alcanza?" en la ficha:** con el "desde" del proyecto:
   - si el precio es menor o igual al máximo: "Te alcanza", con la cuota y su porcentaje del ingreso;
   - si lo limita el ahorro: "Te faltan $X de cuota inicial", con el plan mensual si hay meses;
@@ -246,6 +249,7 @@ Cada criterio se verifica pegando el comando y su salida en el PR (constitución
 - **Sí:** VIS o No VIS lo elige la persona, con No VIS por defecto. La API no sabe si un proyecto es VIS (SPEC 16), y el precio solo no basta para clasificarlo.
 - **Sí:** finanzas guardadas siempre en `localStorage` (Andrés, 25 nov), con "Olvidar mis datos". **No:** guardarlas en la URL, que se comparte y queda en el historial.
 - **Sí:** puerto a TypeScript con vectores generados desde Python y `decimal.js-light`. **No:** números de punto flotante, que pueden cambiar un peso al redondear y harían que la calculadora y el asesor den cifras distintas. **No:** llamar al asesor o a un endpoint nuevo para calcular, porque los ingresos saldrían del dispositivo.
+- **Sí:** con el ahorro como límite, la calculadora muestra además el precio que permite el ingreso y la cuota de obra que haría falta para llegar a él (Andrés, 25 nov). La regla anterior, el plan sobre el precio máximo, daba siempre $0: el ahorro cubre por construcción su cuota inicial.
 - **Sí:** una sola página para la calculadora, con las tarjetas de formulario del kit y los ajustes plegados. **No:** el paso a paso de *Tenancy Application*: son seis campos, y partirlos en pasos esconde el resultado.
 - **Sí:** selección del comparador desde la búsqueda y la ficha, guardada en `localStorage` y pasada en la URL (Andrés, 25 nov). La URL manda al abrir, para que un enlace compartido muestre lo mismo.
 - **Sí:** $/m² siempre sobre un área elegida, privada o construida, con "No reportada" cuando falta. **No:** mezclar bases en una misma columna (regla de la *Propuesta curada*, Gráficas).

@@ -24,6 +24,11 @@ const percent = new Intl.NumberFormat("es-CO", {
   signDisplay: "exceptZero",
 });
 const area = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 2 });
+const share = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 });
+const rate = new Intl.NumberFormat("es-CO", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 // API dates are days without a time; UTC keeps a browser west of Greenwich on the same day.
 const dateParts = new Intl.DateTimeFormat("es-CO", {
   day: "numeric",
@@ -59,6 +64,16 @@ export function formatMillionsShort(value: number): string {
 /** A change in percent, as the API gives it (12.5 means 12.5 %): → "+12,5 %", "−3,0 %". */
 export function formatPct(value: number): string {
   return `${percent.format(value).replace("-", MINUS)}${NBSP}%`;
+}
+
+/** A share of a whole, unsigned: 23.44 → "23,4 %". */
+export function formatShare(value: number): string {
+  return `${share.format(value)}${NBSP}%`;
+}
+
+/** An annual rate, always with two decimals: 15.4 → "15,40 %". */
+export function formatRate(value: number): string {
+  return `${rate.format(value)}${NBSP}%`;
 }
 
 /** An area in square meters: 58.5 → "58,5 m²". */

@@ -9,6 +9,8 @@ import {
   formatMillions,
   formatMillionsShort,
   formatPct,
+  formatRate,
+  formatShare,
 } from "../../src/lib/format";
 
 // Spelled out so a lost hard space or minus sign fails loudly.
@@ -51,6 +53,15 @@ describe("formatPct", () => {
 
   it("gives no sign to zero", () => {
     expect(formatPct(0)).toBe(`0,0${NBSP}%`);
+  });
+});
+
+describe("formatShare and formatRate", () => {
+  it("writes shares unsigned and rates with two decimals", () => {
+    expect(formatShare(23.44)).toBe(`23,4${NBSP}%`);
+    expect(formatShare(40)).toBe(`40${NBSP}%`);
+    expect(formatRate(15.45)).toBe(`15,45${NBSP}%`);
+    expect(formatRate(15.4)).toBe(`15,40${NBSP}%`);
   });
 });
 

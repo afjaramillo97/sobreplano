@@ -74,6 +74,8 @@ describe("toSearchItem", () => {
     bathrooms: 1,
     areaM2: 50,
     areaBasis: "private",
+    privateAreaM2: 50,
+    builtAreaM2: null,
     priceCop,
     pricePerM2Cop: 1,
     observedOn: "2026-11-02",

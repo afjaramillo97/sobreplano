@@ -17,6 +17,7 @@
     "tokens": "node scripts/build-tokens.mjs",
     "rules": "node scripts/check-design-rules.mjs",
     "api:types": "openapi-typescript src/lib/api/openapi.json -o src/lib/api/schema.d.ts",
+    "rate:update": "node scripts/update-reference-rate.ts",
     "astro": "astro",
     "lhci": "lhci autorun"
   },

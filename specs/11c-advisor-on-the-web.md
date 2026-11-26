@@ -1,6 +1,6 @@
 # SPEC 11c — Asesor en la web
 
-> **Estado:** aprobado
+> **Estado:** implementado
 > **Depende de:** SPEC 08, SPEC 10, SPEC 11b
 > **Fecha:** 2026-11-25
 > **Objetivo:** Poner el asesor en la página `/asesor/` del sitio, calcada de la pantalla *Message* del kit Estatery, con los pasos de cada respuesta en vivo por SSE, tarjetas de los proyectos que menciona y las conversaciones guardadas en el navegador.
@@ -311,9 +311,9 @@ Cada criterio se verifica pegando el comando y su salida en el PR (constitución
 - [x] Con el teclado solo se llega a la lista de conversaciones, a las preguntas sugeridas, al compositor, a las tarjetas y al panel derecho, y el foco siempre se ve.
 - [x] Lighthouse CI (móvil) en `/asesor/`: rendimiento ≥ 0,90, accesibilidad = 1,00 y CLS ≤ 0,1. El PR anota el JavaScript inicial (gzip), que debe ser ≤ 150 KB.
 - [x] Ninguna página muestra mensajes `Content Security Policy` en la consola, y la CSP no cambia.
-- [ ] Las capturas de `/asesor/` a 390 y 1440 px están aprobadas y el PR las muestra al lado de *Message* del kit. Las del inicio y la ficha que cambian por las entradas nuevas se regeneran en Linux.
+- [x] Las capturas de `/asesor/` a 390 y 1440 px están aprobadas y el PR las muestra al lado de *Message* del kit. Las del inicio y la ficha que cambian por las entradas nuevas se regeneran en Linux.
 - [x] `grep -rl '"history"' web/dist` no devuelve nada.
-- [ ] Los workflows `ci.yml` y `web.yml` quedan en verde en el PR.
+- [x] Los workflows `ci.yml` y `web.yml` quedan en verde en el PR.
 
 ## Decisiones tomadas y descartadas
 

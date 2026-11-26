@@ -393,10 +393,16 @@ export default function AdvisorPage({ items, allowedHosts }: Props) {
                   Reintentar
                 </Button>
               )}
+              {/* The day's limit and the budget: the search and the calculator still work. */}
               {view.action === "search" && (
-                <a href="/proyectos/" className={buttonVariants({ size: "sm", variant: "soft" })}>
-                  Seguir con la búsqueda
-                </a>
+                <div className="flex flex-wrap gap-2">
+                  <a href="/proyectos/" className={buttonVariants({ size: "sm", variant: "soft" })}>
+                    Seguir con la búsqueda
+                  </a>
+                  <a href="/calculadora/" className={buttonVariants({ size: "sm", variant: "soft" })}>
+                    Probar la calculadora
+                  </a>
+                </div>
               )}
               {view.action === "new-conversation" && (
                 <Button type="button" size="sm" onClick={() => startNew(true, failure.question)}>

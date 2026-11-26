@@ -289,30 +289,30 @@ Ningún paso tiene llamadas pagas ni cuentas nuevas. La única dependencia nueva
 
 Cada criterio se verifica pegando el comando y su salida en el PR (constitución, principio 6).
 
-- [ ] `uv run pytest -m "not integration"`, `uv run ruff check`, `uv run ruff format --check`, `uv run pyright` y `uv run lint-imports` pasan, incluidos los tests nuevos de los pasos 1 y 2.
-- [ ] `uv run --env-file .env pytest tests/integration` pasa, incluido el turno por el endpoint nuevo.
-- [ ] `uv run python -m sobreplano.interface.cli.export_openapi --check` sale con 0 después de regenerar el contrato.
-- [ ] Con la API local y un agente falso, `curl -N -X POST localhost:8000/advisor/chat/stream -H 'content-type: application/json' -d '{"message":"hola"}'` muestra eventos `step` y un `answer` con `thread_id`, `projects` y `remaining_today`.
-- [ ] Con el presupuesto del día agotado, el mismo `curl -i` responde `HTTP/1.1 503` y no `200` con el flujo abierto. Lo mismo con un `thread_id` inexistente (`404`) y con una conversación de 20 mensajes (`409`).
-- [ ] Con `CORS_ALLOWED_ORIGINS='["http://localhost:4321"]'`, el `OPTIONS` previo de un `POST` desde ese origen trae `access-control-allow-origin` y `access-control-allow-methods` con `POST`, y no suma al contador del asesor.
-- [ ] Sin `on_step`, `LangGraphAdvisor.reply` devuelve lo mismo que antes del spec para los casos de `tests/unit/infrastructure/test_langgraph_advisor.py`, que siguen pasando sin cambios.
-- [ ] `pnpm --dir web test`, `pnpm --dir web check`, `pnpm --dir web rules` y `pnpm --dir web tokens && git diff --exit-code web/src/styles/tokens.css` pasan.
-- [ ] En `/asesor/`, una pregunta sugerida muestra "Pensando…", los pasos en vivo, la respuesta con su tabla y dos tarjetas S con enlace a la ficha (Playwright con la API simulada).
-- [ ] Un enlace de la respuesta a un dominio que no es de ninguna constructora del catálogo se ve como texto, sin `<a>`; uno a la constructora abre en otra pestaña con `rel="noopener noreferrer"`.
-- [ ] Una respuesta con `<script>` o `<img src=x onerror=…>` en el texto no crea ningún elemento `script` ni `img` en la página.
-- [ ] Al recargar `/asesor/?c={id}` se ve la conversación completa, y la siguiente pregunta lleva su `thread_id`.
-- [ ] Desde la ficha, "Pregúntale al asesor" abre `/asesor/?proyecto={slug}` con el proyecto en el panel derecho y las tres preguntas sugeridas con su nombre.
-- [ ] Con el reloj de Playwright 8 días adelante, una conversación sin actividad desaparece. Con "Conservar mis conversaciones" encendido, sigue ahí. "Borrar mis conversaciones" vacía la lista.
-- [ ] Con un `429` y `Retry-After: 20`, el envío queda desactivado con la cuenta regresiva y se activa al llegar a cero. Con `Retry-After: 3600`, se ve el texto del límite diario y el enlace a la búsqueda.
-- [ ] Con un `503` de presupuesto, un `409` y un `404`, se ven los textos y acciones de la sección 6, en `role="alert"`.
-- [ ] Con el flujo cortado después de un `step`, se ve "Se perdió la conexión antes de la respuesta." con "Reintentar", y el compositor vuelve a funcionar.
-- [ ] Mientras una respuesta está en curso, el botón de enviar está desactivado y Enter no manda una segunda petición (Playwright cuenta una sola).
-- [ ] `@axe-core/playwright` no reporta violaciones en `/asesor/` (vacía, con conversación, con error y con cada hoja abierta) a 390 y 1440 px.
-- [ ] Con el teclado solo se llega a la lista de conversaciones, a las preguntas sugeridas, al compositor, a las tarjetas y al panel derecho, y el foco siempre se ve.
-- [ ] Lighthouse CI (móvil) en `/asesor/`: rendimiento ≥ 0,90, accesibilidad = 1,00 y CLS ≤ 0,1. El PR anota el JavaScript inicial (gzip), que debe ser ≤ 150 KB.
-- [ ] Ninguna página muestra mensajes `Content Security Policy` en la consola, y la CSP no cambia.
+- [x] `uv run pytest -m "not integration"`, `uv run ruff check`, `uv run ruff format --check`, `uv run pyright` y `uv run lint-imports` pasan, incluidos los tests nuevos de los pasos 1 y 2.
+- [x] `uv run --env-file .env pytest tests/integration` pasa, incluido el turno por el endpoint nuevo.
+- [x] `uv run python -m sobreplano.interface.cli.export_openapi --check` sale con 0 después de regenerar el contrato.
+- [x] Con la API local y un agente falso, `curl -N -X POST localhost:8000/advisor/chat/stream -H 'content-type: application/json' -d '{"message":"hola"}'` muestra eventos `step` y un `answer` con `thread_id`, `projects` y `remaining_today`.
+- [x] Con el presupuesto del día agotado, el mismo `curl -i` responde `HTTP/1.1 503` y no `200` con el flujo abierto. Lo mismo con un `thread_id` inexistente (`404`) y con una conversación de 20 mensajes (`409`).
+- [x] Con `CORS_ALLOWED_ORIGINS='["http://localhost:4321"]'`, el `OPTIONS` previo de un `POST` desde ese origen trae `access-control-allow-origin` y `access-control-allow-methods` con `POST`, y no suma al contador del asesor.
+- [x] Sin `on_step`, `LangGraphAdvisor.reply` devuelve lo mismo que antes del spec para los casos de `tests/unit/infrastructure/test_langgraph_advisor.py`, que siguen pasando sin cambios.
+- [x] `pnpm --dir web test`, `pnpm --dir web check`, `pnpm --dir web rules` y `pnpm --dir web tokens && git diff --exit-code web/src/styles/tokens.css` pasan.
+- [x] En `/asesor/`, una pregunta sugerida muestra "Pensando…", los pasos en vivo, la respuesta con su tabla y dos tarjetas S con enlace a la ficha (Playwright con la API simulada).
+- [x] Un enlace de la respuesta a un dominio que no es de ninguna constructora del catálogo se ve como texto, sin `<a>`; uno a la constructora abre en otra pestaña con `rel="noopener noreferrer"`.
+- [x] Una respuesta con `<script>` o `<img src=x onerror=…>` en el texto no crea ningún elemento `script` ni `img` en la página.
+- [x] Al recargar `/asesor/?c={id}` se ve la conversación completa, y la siguiente pregunta lleva su `thread_id`.
+- [x] Desde la ficha, "Pregúntale al asesor" abre `/asesor/?proyecto={slug}` con el proyecto en el panel derecho y las tres preguntas sugeridas con su nombre.
+- [x] Con el reloj de Playwright 8 días adelante, una conversación sin actividad desaparece. Con "Conservar mis conversaciones" encendido, sigue ahí. "Borrar mis conversaciones" vacía la lista.
+- [x] Con un `429` y `Retry-After: 20`, el envío queda desactivado con la cuenta regresiva y se activa al llegar a cero. Con `Retry-After: 3600`, se ve el texto del límite diario y el enlace a la búsqueda.
+- [x] Con un `503` de presupuesto, un `409` y un `404`, se ven los textos y acciones de la sección 6, en `role="alert"`.
+- [x] Con el flujo cortado después de un `step`, se ve "Se perdió la conexión antes de la respuesta." con "Reintentar", y el compositor vuelve a funcionar.
+- [x] Mientras una respuesta está en curso, el botón de enviar está desactivado y Enter no manda una segunda petición (Playwright cuenta una sola).
+- [x] `@axe-core/playwright` no reporta violaciones en `/asesor/` (vacía, con conversación, con error y con cada hoja abierta) a 390 y 1440 px.
+- [x] Con el teclado solo se llega a la lista de conversaciones, a las preguntas sugeridas, al compositor, a las tarjetas y al panel derecho, y el foco siempre se ve.
+- [x] Lighthouse CI (móvil) en `/asesor/`: rendimiento ≥ 0,90, accesibilidad = 1,00 y CLS ≤ 0,1. El PR anota el JavaScript inicial (gzip), que debe ser ≤ 150 KB.
+- [x] Ninguna página muestra mensajes `Content Security Policy` en la consola, y la CSP no cambia.
 - [ ] Las capturas de `/asesor/` a 390 y 1440 px están aprobadas y el PR las muestra al lado de *Message* del kit. Las del inicio y la ficha que cambian por las entradas nuevas se regeneran en Linux.
-- [ ] `grep -rl '"history"' web/dist` no devuelve nada.
+- [x] `grep -rl '"history"' web/dist` no devuelve nada.
 - [ ] Los workflows `ci.yml` y `web.yml` quedan en verde en el PR.
 
 ## Decisiones tomadas y descartadas

@@ -318,6 +318,129 @@ test.describe("the advisor page", () => {
   });
 });
 
+/** Swaps fetch: the stream sends these parts at once, then stays open, so the wait never ends. */
+async function holdStream(page: Page, parts: string[]) {
+  await page.addInitScript((body) => {
+    const original = window.fetch;
+    window.fetch = async (input, init) => {
+      if (!String(input).endsWith("/advisor/chat/stream")) return original(input, init);
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          for (const part of body as string[]) controller.enqueue(encoder.encode(part));
+        },
+      });
+      return new Response(stream, { headers: { "content-type": "text/event-stream" } });
+    };
+  }, parts);
+}
+
+const start = (tool: string) => sse("step", { tool, phase: "start" });
+const end = (tool: string) => sse("step", { tool, phase: "end" });
+const orbit = (page: Page) => page.getByTestId("thinking-orbit");
+const shimmer = (page: Page) => page.getByTestId("shimmer-text");
+const firstBall = (page: Page) =>
+  orbit(page).locator("span").first().evaluate((el) => (el as HTMLElement).style.transform);
+const letterAnimations = (page: Page) =>
+  shimmer(page)
+    .locator("[data-char]")
+    .evaluateAll((els) => els.map((el) => getComputedStyle(el).animationName));
+
+test.describe("the waiting animation (SPEC 11e)", () => {
+  test("without reduced motion, the orbit moves and the letters shimmer", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await holdStream(page, []);
+    await open(page, ADVISOR);
+    await ask(page, "Hola");
+    await expect(orbit(page)).toHaveCount(1);
+    const before = await firstBall(page);
+    await page.waitForTimeout(200);
+    expect(await firstBall(page)).not.toBe(before);
+    expect(new Set(await letterAnimations(page))).toEqual(new Set(["shimmer"]));
+    const delays = await shimmer(page)
+      .locator("[data-char]")
+      .evaluateAll((els) => els.map((el) => (el as HTMLElement).style.animationDelay));
+    expect(delays.slice(0, 3)).toEqual(["0ms", "60ms", "120ms"]);
+  });
+
+  test("with reduced motion, the orbit holds its still frame and the letters do not shimmer", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await holdStream(page, []);
+    await open(page, ADVISOR);
+    await ask(page, "Hola");
+    await expect(orbit(page)).toHaveCount(1);
+    const before = await firstBall(page);
+    await page.waitForTimeout(200);
+    expect(await firstBall(page)).toBe(before);
+    const animations = await letterAnimations(page);
+    expect(animations.length).toBeGreaterThan(0);
+    expect(new Set(animations)).toEqual(new Set(["none"]));
+  });
+
+  test("a screen reader gets the line whole, never letter by letter", async ({ page }) => {
+    await holdStream(page, [start("search_projects")]);
+    await open(page, ADVISOR);
+    await ask(page, "Hola");
+    await expect(shimmer(page)).toHaveCount(1);
+    const tree = await page.getByTestId("step-trace").ariaSnapshot();
+    expect(tree).toContain("Buscando proyectos…");
+    expect(tree).not.toMatch(/\bB\b/);
+  });
+
+  test("with several steps running, one orbit and one shimmer, on the newest; done steps stay still", async ({ page }) => {
+    await holdStream(page, [
+      start("search_projects"),
+      start("get_project"),
+      start("compare_projects"),
+      end("search_projects"),
+    ]);
+    await open(page, ADVISOR);
+    await ask(page, "Compara dos");
+    const trace = page.getByTestId("step-trace");
+    await expect(trace.getByText("Buscó proyectos")).toBeVisible();
+    await expect(orbit(page)).toHaveCount(1);
+    await expect(shimmer(page)).toHaveCount(1);
+    const animated = trace.getByRole("listitem").filter({ has: orbit(page) });
+    await expect(animated).toHaveCount(1);
+    await expect(animated).toContainText("Comparando proyectos…");
+    await expect(animated.getByTestId("shimmer-text")).toHaveCount(1);
+    const done = trace.getByRole("listitem").filter({ hasText: "Buscó proyectos" });
+    await expect(done.locator("[data-char]")).toHaveCount(0);
+    await expect(trace.getByText("Revisando el proyecto…")).toBeVisible();
+  });
+
+  test("when the answer arrives, the animation is gone", async ({ page }) => {
+    await routeStream(page, [ok()]);
+    await open(page, ADVISOR);
+    await ask(page, "¿Qué hay en Itagüí?");
+    await expect(log(page).getByRole("table")).toBeVisible();
+    await expect(orbit(page)).toHaveCount(0);
+    await expect(shimmer(page)).toHaveCount(0);
+  });
+
+  test("at 320 px a long step breaks between words, never inside one", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 700 });
+    await holdStream(page, [start("max_affordable_price")]);
+    await open(page, ADVISOR);
+    await ask(page, "¿Cuánto puedo comprar?");
+    await expect(shimmer(page)).toHaveCount(1);
+    const lines = await shimmer(page)
+      .locator('[aria-hidden="true"]')
+      .first()
+      .evaluate((el) => new Set([...el.getClientRects()].map((r) => Math.round(r.top))).size);
+    expect(lines).toBeGreaterThan(1);
+    // Chrome gives one rect per letter, so a word that breaks shows two tops.
+    const brokenWords = await shimmer(page)
+      .locator(".whitespace-nowrap")
+      .evaluateAll(
+        (els) =>
+          els.filter((el) => new Set([...el.getClientRects()].map((r) => Math.round(r.top))).size > 1)
+            .length,
+      );
+    expect(brokenWords).toBe(0);
+  });
+});
+
 test.describe("the conversations in the browser", () => {
   test("one inactive for 8 days disappears", async ({ page }) => {
     await page.clock.setFixedTime(NOW);
@@ -384,6 +507,16 @@ test.describe("accessibility", () => {
         await expectNoViolations(page);
         await ask(page, "Otra");
         await expect(alert(page)).toContainText("No pude responder esta vez.");
+        await expectNoViolations(page);
+      });
+
+      test("while the advisor works, with the animation moving, axe finds nothing", async ({ page }) => {
+        await page.emulateMedia({ reducedMotion: "no-preference" });
+        await holdStream(page, [start("search_projects"), end("search_projects"), start("get_project")]);
+        await open(page, ADVISOR);
+        await ask(page, "¿Qué hay en Itagüí?");
+        await expect(page.getByTestId("thinking-orbit")).toBeVisible();
+        await expect(page.getByTestId("shimmer-text")).toContainText("Revisando el proyecto…");
         await expectNoViolations(page);
       });
 

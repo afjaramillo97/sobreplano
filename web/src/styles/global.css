@@ -44,6 +44,23 @@
   text-decoration: underline;
 }
 
+/* The advisor's running line (SPEC 11e): each letter goes from the text's gray to action and
+   back. Color, never opacity, so the text keeps 4.5:1 on white. Used only with motion-safe:,
+   so under prefers-reduced-motion the letters have no animation at all. */
+@theme {
+  --animate-shimmer: shimmer 1.8s ease-in-out infinite;
+  @keyframes shimmer {
+    0%,
+    40%,
+    100% {
+      color: var(--color-text-secondary);
+    }
+    20% {
+      color: var(--color-action);
+    }
+  }
+}
+
 /* The content column: 1120 wide (kit), with side gutters on narrow screens. */
 @utility page {
   width: 100%;

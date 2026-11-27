@@ -51,6 +51,9 @@ describe("contrast", () => {
         (s) => `color.headline-gradient.${s} on color.primitive.hero.top`,
       ),
       "color.focus.ring on color.bg.canvas",
+      // The advisor's shimmer goes from one to the other on the card (SPEC 11e).
+      "color.action.default on color.bg.surface",
+      "color.text.secondary on color.bg.surface",
     ];
     for (const pair of required) expect(declared).toContain(pair);
   });

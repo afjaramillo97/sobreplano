@@ -34,6 +34,18 @@
     { "fg": "color.action.soft-text", "bg": "color.bg.canvas", "kind": "text" },
     {
       "fg": "color.action.default",
+      "bg": "color.bg.surface",
+      "kind": "text",
+      "note": "the peak of the advisor's running-line shimmer on its card (SPEC 11e)"
+    },
+    {
+      "fg": "color.text.secondary",
+      "bg": "color.bg.surface",
+      "kind": "text",
+      "note": "the rest of the shimmer, and the steps' text on the card"
+    },
+    {
+      "fg": "color.action.default",
       "bg": "color.border.input",
       "kind": "non-text",
       "note": "the switch's thumb when off, on the kit's lavender track (components/ui/switch.tsx)"

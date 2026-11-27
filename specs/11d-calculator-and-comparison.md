@@ -1,6 +1,6 @@
 # SPEC 11d — Calculadora, "¿Me alcanza?" y comparador
 
-> **Estado:** aprobado
+> **Estado:** implementado
 > **Depende de:** SPEC 08, SPEC 11b, SPEC 11c
 > **Fecha:** 2026-11-25
 > **Objetivo:** Agregar al sitio la calculadora "¿Qué puedo comprar?", el bloque "¿Me alcanza?" en cada ficha y el comparador de 2 a 4 proyectos por $/m², con la misma matemática de `finance.py` y una tasa de referencia de los bancos que la persona puede cambiar.
@@ -217,29 +217,29 @@ Ningún paso tiene llamadas pagas ni cuentas nuevas. En `web/` entra `decimal.js
 
 Cada criterio se verifica pegando el comando y su salida en el PR (constitución, principio 6).
 
-- [ ] `uv run python -m sobreplano.interface.cli.finance_vectors --check` sale con 0, y sale con 1 al cambiar un caso del JSON (probado y revertido).
-- [ ] `uv run pytest -m "not integration"`, `uv run ruff check`, `uv run ruff format --check`, `uv run pyright` y `uv run lint-imports` pasan.
-- [ ] `pnpm --dir web test` pasa, incluido `finance.test.ts`, que recorre todos los vectores y da los mismos pesos que Python en cada caso.
-- [ ] `pnpm --dir web check`, `pnpm --dir web rules` y `pnpm --dir web tokens && git diff --exit-code web/src/styles/tokens.css` pasan.
-- [ ] `REFERENCE_RATE=live pnpm --dir web rate:update` escribe un corte de los últimos 45 días con dos tasas entre 5 % y 30 %. El PR pega la salida.
-- [ ] Sin red y con `REFERENCE_RATE=live`, `pnpm --dir web build` termina, usa el archivo versionado y lo anota en el log.
-- [ ] En `/calculadora/`, con ingreso de $8.000.000, ahorro de $60.000.000, No VIS, 20 años y 30 %, el precio máximo, la cuota y lo que limita coinciden con `max_affordable_price` de Python para la tasa de referencia del archivo (Playwright compara contra un vector).
-- [ ] "Ver N proyectos hasta $X" abre `/proyectos/?precio_max=X` y la búsqueda muestra esos N proyectos.
-- [ ] Ninguna petición del navegador lleva el ingreso ni el ahorro: Playwright revisa las URL y los cuerpos de todas las peticiones de la sesión.
-- [ ] Al recargar la página, los datos siguen ahí. "Olvidar mis datos" los borra y el formulario queda vacío.
-- [ ] Con una tasa propia, el resultado la usa. "Usar la tasa de referencia" vuelve a la del build.
-- [ ] En una ficha, con datos guardados, "¿Me alcanza?" muestra el caso correcto (alcanza, falta ahorro, cuota alta) para tres proyectos del catálogo ficticio elegidos para cada caso.
-- [ ] Al elegir dos proyectos en la búsqueda y uno desde una ficha, "Comparar (3)" abre `/comparar/?p=…` con los tres en ese orden.
-- [ ] Con "Área construida", una tipología sin área construida dice "No reportada" y no entra en la marca del menor $/m².
-- [ ] `/comparar/?p=uno,inexistente,uno` muestra la explicación de menos de 2 proyectos y el enlace a la búsqueda.
-- [ ] `@axe-core/playwright` no reporta violaciones en `/calculadora/`, `/comparar/` y la ficha con el bloque, a 390 y 1440 px.
-- [ ] A 320 px de ancho, ninguna de las páginas nuevas tiene scroll horizontal.
-- [ ] Lighthouse CI (móvil) en `/calculadora/` y `/comparar/`: rendimiento ≥ 0,90, accesibilidad = 1,00 y CLS ≤ 0,1. El PR anota el JavaScript inicial de cada una (gzip), que debe ser ≤ 90 KB.
-- [ ] La CSP no cambia y no hay mensajes `Content Security Policy` en la consola.
-- [ ] La fuente, la licencia y la fecha de corte de la tasa se ven en la calculadora y en "¿Me alcanza?".
-- [ ] Las capturas de las páginas nuevas están aprobadas y el PR las muestra al lado de *Tenancy Application* y *Rental Portfolio* del kit. Las de la navegación que cambian se regeneran en Linux.
-- [ ] `grep -rl '"history"' web/dist` no devuelve nada.
-- [ ] Los workflows `ci.yml` y `web.yml` quedan en verde en el PR.
+- [x] `uv run python -m sobreplano.interface.cli.finance_vectors --check` sale con 0, y sale con 1 al cambiar un caso del JSON (probado y revertido).
+- [x] `uv run pytest -m "not integration"`, `uv run ruff check`, `uv run ruff format --check`, `uv run pyright` y `uv run lint-imports` pasan.
+- [x] `pnpm --dir web test` pasa, incluido `finance.test.ts`, que recorre todos los vectores y da los mismos pesos que Python en cada caso.
+- [x] `pnpm --dir web check`, `pnpm --dir web rules` y `pnpm --dir web tokens && git diff --exit-code web/src/styles/tokens.css` pasan.
+- [x] `REFERENCE_RATE=live pnpm --dir web rate:update` escribe un corte de los últimos 45 días con dos tasas entre 5 % y 30 %. El PR pega la salida.
+- [x] Sin red y con `REFERENCE_RATE=live`, `pnpm --dir web build` termina, usa el archivo versionado y lo anota en el log.
+- [x] En `/calculadora/`, con ingreso de $8.000.000, ahorro de $60.000.000, No VIS, 20 años y 30 %, el precio máximo, la cuota y lo que limita coinciden con `max_affordable_price` de Python para la tasa de referencia del archivo (Playwright compara contra un vector).
+- [x] "Ver N proyectos hasta $X" abre `/proyectos/?precio_max=X` y la búsqueda muestra esos N proyectos.
+- [x] Ninguna petición del navegador lleva el ingreso ni el ahorro: Playwright revisa las URL y los cuerpos de todas las peticiones de la sesión.
+- [x] Al recargar la página, los datos siguen ahí. "Olvidar mis datos" los borra y el formulario queda vacío.
+- [x] Con una tasa propia, el resultado la usa. "Usar la tasa de referencia" vuelve a la del build.
+- [x] En una ficha, con datos guardados, "¿Me alcanza?" muestra el caso correcto (alcanza, falta ahorro, cuota alta) para tres proyectos del catálogo ficticio elegidos para cada caso.
+- [x] Al elegir dos proyectos en la búsqueda y uno desde una ficha, "Comparar (3)" abre `/comparar/?p=…` con los tres en ese orden.
+- [x] Con "Área construida", una tipología sin área construida dice "No reportada" y no entra en la marca del menor $/m².
+- [x] `/comparar/?p=uno,inexistente,uno` muestra la explicación de menos de 2 proyectos y el enlace a la búsqueda.
+- [x] `@axe-core/playwright` no reporta violaciones en `/calculadora/`, `/comparar/` y la ficha con el bloque, a 390 y 1440 px.
+- [x] A 320 px de ancho, ninguna de las páginas nuevas tiene scroll horizontal.
+- [x] Lighthouse CI (móvil) en `/calculadora/` y `/comparar/`: rendimiento ≥ 0,90, accesibilidad = 1,00 y CLS ≤ 0,1. El PR anota el JavaScript inicial de cada una (gzip), que debe ser ≤ 90 KB.
+- [x] La CSP no cambia y no hay mensajes `Content Security Policy` en la consola.
+- [x] La fuente, la licencia y la fecha de corte de la tasa se ven en la calculadora y en "¿Me alcanza?".
+- [x] Las capturas de las páginas nuevas están aprobadas y el PR las muestra al lado de *Tenancy Application* y *Rental Portfolio* del kit. Las de la navegación que cambian se regeneran en Linux. Aprobadas con el merge del PR #38; la comparación con el kit se hizo fuera del PR, porque el repositorio es público y la licencia del kit no deja publicar sus pantallas.
+- [x] `grep -rl '"history"' web/dist` no devuelve nada.
+- [x] Los workflows `ci.yml` y `web.yml` quedan en verde en el PR.
 
 ## Decisiones tomadas y descartadas
 
